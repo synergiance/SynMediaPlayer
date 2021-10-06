@@ -7,8 +7,9 @@ using VRC.SDK3.Components;
 using VRC.SDK3.Components.Video;
 using VRC.SDKBase;
 using VRC.Udon;
+using Synergiance.MediaPlayer.UI;
 
-namespace SynPhaxe {
+namespace Synergiance.MediaPlayer {
 	[DefaultExecutionOrder(100)]
 	public class MediaPlayer : UdonSharpBehaviour {
 		[Header("Objects")] // Objects and components
@@ -39,6 +40,7 @@ namespace SynPhaxe {
 		[SerializeField]  private UdonSharpBehaviour callback;                      // Used for sending events
 		[SerializeField]  private string             setStatusMethod;               // Method name for status update events
 		[SerializeField]  private string             statusProperty = "statusText"; // Property name for status update events
+		[SerializeField]  private bool               startActive = true;            // If toggled off, videos won't load or sync until locally set to active
 
 		// Public Callback Variables
 		[HideInInspector] public  int                relayIdentifier;               // Unused value for compatibility.
@@ -94,6 +96,7 @@ namespace SynPhaxe {
 		private bool     hasStatsText;                   // Cached value for whether statisticstext exists
 		private bool     hasCallback;                    // Cached value for whether callback exists
 		private bool     setStatusEnabled;               // Cached value for whether status can be set without error
+		private bool     isActive;                       // Value for whether media player is active or not. Videos will only load/play/sync while the player is active
 
 		// Video Checking
 		private string[] videoHosts        = {
@@ -109,14 +112,20 @@ namespace SynPhaxe {
 		private void Start() {
 			hasCallback = callback != null;
 			hasStatsText = statisticsText != null;
+			isActive = startActive;
 			setStatusEnabled = callback && !string.IsNullOrWhiteSpace(setStatusMethod) && !string.IsNullOrWhiteSpace(statusProperty);
 			if (mediaSelect != null) mediaSelect._SetToggleID(mediaPlayers.GetActiveID());
 			if (Networking.LocalPlayer == null) isEditor = true;
 			if (volumeBar != null) volumeBar.value = mediaPlayers.GetVolume();
 			_SetLoop();
+			if (isActive) return;
+			// Need to set inactive status here since the update method will be disabled
+			SetPlayerStatusText("Inactive");
+			UpdateStatus();
 		}
 
 		private void Update() {
+			if (!isActive) return;
 			UpdateVideoPlayer();
 			UpdateStatus();
 			UpdateSeek();
@@ -125,6 +134,7 @@ namespace SynPhaxe {
 		// ---------------------- UI Methods ----------------------
 
 		public void _Load() {
+			if (!isActive) return;
 			if (urlInputField == null) {
 				LogError("Cannot read URL Input Field if its null!", this);
 				return;
@@ -133,11 +143,13 @@ namespace SynPhaxe {
 		}
 
 		public void _LoadURL(VRCUrl url) {
+			if (!isActive) return;
 			int playerID = mediaSelect == null ? mediaPlayers.GetActiveID() : mediaSelect.GetCurrentID();
 			_LoadURLAs(url, playerID);
 		}
 
 		public int _LoadURLAs(VRCUrl url, int playerID) {
+			if (!isActive) return playerID;
 			Log("_Load", this);
 			// Sanity Check URL
 			string urlStr = url != null ? url.ToString() : "";
@@ -164,6 +176,7 @@ namespace SynPhaxe {
 		}
 
 		public void _LoadQueueURLAs(VRCUrl url, int playerID) {
+			if (!isActive) return;
 			Log("Load Queued", this);
 			string urlStr = url != null ? url.ToString() : "";
 			if (!SanityCheckURL(urlStr)) return;
@@ -173,6 +186,7 @@ namespace SynPhaxe {
 
 		// Attempt to load video again
 		public void _Retry() {
+			if (!isActive) return;
 			Log("_Retry", this);
 			if (!allowRetryWhenLoaded && urlValid) {
 				Log("Video is already successfully loaded", this);
@@ -183,6 +197,7 @@ namespace SynPhaxe {
 
 		// Call _Play if paused and _Pause if playing
 		public void _PlayPause() {
+			if (!isActive) return;
 			bool playing = !isPlaying;
 			Log("_PlayPause: " + (playing ? "True" : "False"), this);
 			if (playing) _Play();
@@ -191,6 +206,7 @@ namespace SynPhaxe {
 
 		// Play a the video if possible.
 		public void _Play() {
+			if (!isActive) return;
 			Log("_Play", this);
 			SetPlaying(true);
 			if (playFromBeginning) { // This variable is set from video stop or video end, reset it when used
@@ -201,12 +217,14 @@ namespace SynPhaxe {
 
 		// Pause a video if possible
 		public void _Pause() {
+			if (!isActive) return;
 			Log("_Pause", this);
 			SetPlaying(false);
 		}
 
 		// Play a video from the beginning if possible
 		public void _Start() {
+			if (!isActive) return;
 			Log("_Start", this);
 			SetPlaying(true);
 			_SeekTo(0);
@@ -214,6 +232,7 @@ namespace SynPhaxe {
 
 		// Stop a currently playing video and unload it
 		public void _Stop() {
+			if (!isActive) return;
 			Log("_Stop", this);
 			SetPlaying(false);
 			SetURL(VRCUrl.Empty);
@@ -221,6 +240,7 @@ namespace SynPhaxe {
 
 		// Reinterpret master time to resync video
 		public void _Resync() {
+			if (!isActive) return;
 			Log("_Resync", this);
 			SoftResync();
 			lastResyncTime += 5.0f; // This is a slight hack to force the video player to lay easy on the resyncs for a few seconds
@@ -238,25 +258,35 @@ namespace SynPhaxe {
 
 		// Seek to a different position in a video if possible
 		public void _Seek() {
+			if (!isActive) return;
 			SeekTo(seekVal * mediaPlayers.GetDuration()); // seekVal is normalized so multiply it by media length
 		}
 
 		// Seek to a different position in a video if possible
 		public void _SeekTo(float time) {
+			if (!isActive) return;
 			seekBar._SetVal(time / mediaPlayers.GetDuration());
 			SeekTo(time);
 		}
 
 		// Set whether the video should loop when it finishes
 		public void _SetLoop() {
+			if (!isActive) return;
 			if (loopToggle != null) mediaPlayers._SetLoop(loopToggle.isOn);
 		}
 
 		public void _SetLooping(bool loop) {
+			if (!isActive) return;
 			if (loopToggle != null) loopToggle.isOn = loop;
 			else mediaPlayers._SetLoop(loop);
 		}
-		
+
+		public void _SetActive(bool active) {
+			isActive = active;
+			if (isActive) CheckDeserializedData(); // Deserialization is paused and flushed while inactive
+			else UnloadMediaAndFlushBuffers(); // Flush buffers and unload media
+		}
+
 		// ---------------------- Accessors -----------------------
 
 		public string GetStatus() { return playerStatus; }
@@ -267,7 +297,11 @@ namespace SynPhaxe {
 		public bool GetIsReady() { return playerReady; }
 		public VRCUrl GetCurrentURL() { return currentURL; }
 		public VRCUrl GetNextURL() { return nextURL; }
-		
+		public float GetVolume() { return mediaPlayers.GetVolume(); }
+		public bool GetIsActive() { return isActive; }
+		public bool GetIsLooping() { return mediaPlayers.GetLoop(); }
+		public int GetMediaType() { return mediaPlayers.GetActiveID(); }
+
 		// ------------------ External Utilities ------------------
 
 		public void SetLastVideoLoadTime(float time) {
@@ -297,10 +331,36 @@ namespace SynPhaxe {
 			seekBar._SetVal(mediaPlayers.GetTime() / Mathf.Max(0.1f, mediaPlayers.GetDuration()));
 		}
 
+		// If anything is playing, unload it, flush buffers
+		private void UnloadMediaAndFlushBuffers() {
+			// These are some values that will trigger the required logic to
+			// execute next time we check the deserialized data
+			localTime = -1;
+			localIsPlaying = false;
+			localPlayerID = 0;
+			localURL = VRCUrl.Empty;
+			localNextURL = VRCUrl.Empty;
+			// Stop and unload all media
+			SetPlayingInternal(false);
+			SetTimeInternal(0);
+			StopInternal();
+			// Ensure there's no queued media
+			nextURL = VRCUrl.Empty;
+			// Set status text one final time before activating again
+			SetPlayerStatusText("Inactive");
+			UpdateStatus();
+		}
+
 		// --------------------- Sync Methods ---------------------
 
 		// Whenever a network sync happens, this method is called to give an opportunity to grab the data ASAP.
 		public override void OnDeserialization() {
+			if (!isActive) return;
+			CheckDeserializedData();
+		}
+
+		// Extension of OnDeserialization to let it be called internally.  This method checks local copies of variables against remote ones.
+		private void CheckDeserializedData() {
 			if (remotePlayerID != localPlayerID) { // Determines whether we swapped media type
 				Log("Deserialization found new Media Player: " + mediaPlayers.GetPlayerName(remotePlayerID), this);
 				localPlayerID = remotePlayerID;
@@ -604,6 +664,7 @@ namespace SynPhaxe {
 		// ------------------- Callback Methods -------------------
 
 		public void _RelayVideoReady() {
+			if (!isActive) return;
 			urlValid = true;
 			SetPlayerStatusText("Ready");
 			playerReady = true;
@@ -613,6 +674,7 @@ namespace SynPhaxe {
 		}
 
 		public void _RelayVideoEnd() {
+			if (!isActive) return;
 			isPlaying = false;
 			if (Networking.IsMaster) SetPlaying(false);
 			SetPlayerStatusText("Stopped");
@@ -624,6 +686,7 @@ namespace SynPhaxe {
 		}
 
 		public void _RelayVideoError() {
+			if (!isActive) return;
 			string errorString = GetErrorString(relayVideoError);
 			SetPlayerStatusText("Error: " + errorString);
 			playerReady = false;
@@ -648,6 +711,7 @@ namespace SynPhaxe {
 		}
 
 		public void _RelayVideoStart() {
+			if (!isActive) return;
 			SetPlayerStatusText("Playing");
 			playerReady = true;
 			playFromBeginning = false;
@@ -656,6 +720,7 @@ namespace SynPhaxe {
 		}
 
 		public void _RelayVideoPlay() {
+			if (!isActive) return;
 			SetPlayerStatusText("Playing");
 			playerReady = true;
 			playFromBeginning = false;
@@ -664,18 +729,21 @@ namespace SynPhaxe {
 		}
 
 		public void _RelayVideoPause() {
+			if (!isActive) return;
 			string urlText = currentURL == null ? "" : currentURL.ToString();
 			SetPlayerStatusText(string.IsNullOrWhiteSpace(urlText) ? "No Video" : playFromBeginning ? "Stopped" : "Paused");
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoPause");
 		}
 
 		public void _RelayVideoLoop() {
+			if (!isActive) return;
 			resyncPauseAt = Time.time;
 			if (Networking.IsMaster) HardResync(mediaPlayers.GetTime());
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoLoop");
 		}
 
 		public void _RelayVideoNext() {
+			if (!isActive) return;
 			// Queued video is starting
 			resyncPauseAt = Time.time;
 			if (Networking.IsMaster) HardResync(mediaPlayers.GetTime());
@@ -686,6 +754,7 @@ namespace SynPhaxe {
 		}
 
 		public void _RelayVideoQueueError() {
+			if (!isActive) return;
 			// Queued video player has thrown an error
 			SetPlayerStatusText("Error: " + GetErrorString(relayVideoError));
 			nextVideoLoading = nextVideoReady = false;
@@ -696,6 +765,7 @@ namespace SynPhaxe {
 		}
 
 		public void _RelayVideoQueueReady() {
+			if (!isActive) return;
 			// Queued video has loaded
 			nextVideoLoading = false;
 			nextVideoReady = true;

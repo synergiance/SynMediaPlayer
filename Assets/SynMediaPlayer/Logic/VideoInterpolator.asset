@@ -62,7 +62,7 @@ MonoBehaviour:
       Data: 4|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: SynPhaxe.VideoPlayerRelay[], Assembly-CSharp
+      Data: Synergiance.MediaPlayer.VideoPlayerRelay[], Assembly-CSharp
     - Name: 
       Entry: 8
       Data: 

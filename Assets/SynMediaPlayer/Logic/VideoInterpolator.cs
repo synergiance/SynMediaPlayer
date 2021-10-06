@@ -7,7 +7,7 @@ using VRC.SDK3.Video.Components.Base;
 using VRC.SDKBase;
 using VRC.Udon;
 
-namespace SynPhaxe {
+namespace Synergiance.MediaPlayer {
 	public class VideoInterpolator : UdonSharpBehaviour {
 		// Settings
 		[SerializeField]  private VideoPlayerRelay[] mediaPlayers;

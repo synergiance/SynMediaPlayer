@@ -4,7 +4,7 @@ using VRC.SDK3.Components.Video;
 using VRC.SDK3.Video.Components.Base;
 using VRC.SDKBase;
 
-namespace SynPhaxe {
+namespace Synergiance.MediaPlayer {
 	/*
 	 * Class to relay video player information to a host class that interacts
 	 * with multiple video players in order to help the host class in

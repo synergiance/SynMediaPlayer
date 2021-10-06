@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using VRC.SDKBase;
 using VRC.Udon;
 
-namespace SynPhaxe {
+namespace Synergiance.MediaPlayer.UI {
 	public class ToggleGroupHelper : UdonSharpBehaviour {
 		[SerializeField] private Toggle[]           toggles;
 		[SerializeField] private UdonSharpBehaviour callback;

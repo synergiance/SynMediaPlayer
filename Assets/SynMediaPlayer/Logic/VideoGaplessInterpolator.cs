@@ -5,7 +5,7 @@ using VRC.SDK3.Components.Video;
 using VRC.SDKBase;
 using VRC.Udon;
 
-namespace SynPhaxe {
+namespace Synergiance.MediaPlayer {
 	public class VideoGaplessInterpolator : UdonSharpBehaviour {
 
 		// Settings

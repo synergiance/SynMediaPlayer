@@ -3,7 +3,7 @@ using UdonSharp;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace SynPhaxe {
+namespace Synergiance.MediaPlayer.UI {
 	public class SeekControl : UdonSharpBehaviour {
 		// Settings
 		[SerializeField]  private UdonSharpBehaviour callback;
