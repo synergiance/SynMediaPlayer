@@ -117,6 +117,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: Button Slider
       objectReference: {fileID: 0}
+    - target: {fileID: 8033722010277793448, guid: 2514ce3882e196b43898d14b960d8d36,
+        type: 3}
+      propertyPath: serializedProgramAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 45cbbff20c8b3a64c9d22ad51eb54903,
+        type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2514ce3882e196b43898d14b960d8d36, type: 3}
 --- !u!224 &4968250026281412049 stripped
@@ -241,6 +247,26 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7905376240232521929, guid: cbe955559c0713745b445be414f82c00,
+        type: 3}
+      propertyPath: m_Colors.m_DisabledColor.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7905376240232521929, guid: cbe955559c0713745b445be414f82c00,
+        type: 3}
+      propertyPath: m_Colors.m_DisabledColor.b
+      value: 0.496
+      objectReference: {fileID: 0}
+    - target: {fileID: 7905376240232521929, guid: cbe955559c0713745b445be414f82c00,
+        type: 3}
+      propertyPath: m_Colors.m_DisabledColor.g
+      value: 0.496
+      objectReference: {fileID: 0}
+    - target: {fileID: 7905376240232521929, guid: cbe955559c0713745b445be414f82c00,
+        type: 3}
+      propertyPath: m_Colors.m_DisabledColor.r
+      value: 0.496
       objectReference: {fileID: 0}
     - target: {fileID: 7905376240232521931, guid: cbe955559c0713745b445be414f82c00,
         type: 3}
