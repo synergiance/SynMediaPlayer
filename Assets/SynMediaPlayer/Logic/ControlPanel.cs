@@ -156,7 +156,7 @@ namespace Synergiance.MediaPlayer.UI {
 			int loadedType = mediaPlayer._LoadURLAs(urlField.GetUrl(), mediaType);
 			if (loadedType == mediaType) return;
 			mediaType = loadedType;
-			//if (selectionSlider) selectionSlider.
+			if (selectionSlider) selectionSlider._SetType(mediaType);
 		}
 
 		private void LogInvalid() {
