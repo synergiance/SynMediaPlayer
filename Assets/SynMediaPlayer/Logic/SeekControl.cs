@@ -16,6 +16,7 @@ namespace Synergiance.MediaPlayer.UI {
 		// Private values
 		private bool  isSeeking;
 		private bool  isEnabled = true;
+		private bool  isLocked;
 		private float seekVal;
 		private float lastSeekTime;
 		private bool  uiNeedsUpdate;
@@ -45,8 +46,18 @@ namespace Synergiance.MediaPlayer.UI {
 
 		public void _SetEnabled(bool val) {
 			Log(val ? "Enabling" : "Disabling");
-			seekBar.interactable = isEnabled = val;
+			isEnabled = val;
+			SetInteractable();
 			seekBar.value = isEnabled ? seekVal : -1;
+		}
+
+		public void _SetLocked(bool val) {
+			if (val == isLocked) return;
+			SetInteractable();
+		}
+
+		private void SetInteractable() {
+			seekBar.interactable = isEnabled && !isLocked;
 		}
 
 		private void Log(string message) { if (enableDebug) Debug.Log(debugPrefix + message, this); }

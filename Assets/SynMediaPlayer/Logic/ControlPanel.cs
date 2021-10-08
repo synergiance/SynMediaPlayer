@@ -36,6 +36,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private void Initialize() {
 			if (initialized) return;
 			Log("Initializing", this);
+			isValid = true;
 			if (!mediaPlayer) {
 				isValid = false;
 				LogWarning("Media Player not set!", this);

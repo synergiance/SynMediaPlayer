@@ -8,6 +8,7 @@ using VRC.SDK3.Components.Video;
 using VRC.SDKBase;
 using VRC.Udon;
 using Synergiance.MediaPlayer.UI;
+using VRC.Udon.Common.Interfaces;
 
 namespace Synergiance.MediaPlayer {
 	[DefaultExecutionOrder(100)]
@@ -58,11 +59,15 @@ namespace Synergiance.MediaPlayer {
 		[UdonSynced]      private VRCUrl             remoteURL = VRCUrl.Empty;      // Network sync URL of a video.
 		[UdonSynced]      private VRCUrl             remoteNextURL = VRCUrl.Empty;  // Network sync URL of next video
 		[UdonSynced]      private int                remotePlayerID;                // Network sync media type.
+		[UdonSynced]      private bool               remoteLock;                    // Network sync player lock.
+		[UdonSynced]      private bool               remoteLooping;                 // Network sync player lock.
 		                  private float              localTime;                     // Local variables are used for local use of network variables.
 		                  private bool               localIsPlaying;                // Before use, they will be checked against for changes.
 		                  private VRCUrl             localURL = VRCUrl.Empty;       // Upon change, the proper methods will be called.
 		                  private VRCUrl             localNextURL = VRCUrl.Empty;   //
 		                  private int                localPlayerID;                 //
+		                  private bool               localLock;                     //
+		                  private bool               localLooping;                  //
 
 		// Player Variables
 		private float    startTime;                      // Local time reference for when video began.
@@ -124,7 +129,7 @@ namespace Synergiance.MediaPlayer {
 			if (mediaSelect != null) mediaSelect._SetToggleID(mediaPlayers.GetActiveID());
 			if (Networking.LocalPlayer == null) isEditor = true;
 			if (volumeBar != null) volumeBar.value = mediaPlayers.GetVolume();
-			_SetLoop();
+			_SetLoop(); // TODO: Deal with sync
 			if (isActive) return;
 			// Need to set inactive status here since the update method will be disabled
 			SetPlayerStatusText("Inactive");
@@ -139,6 +144,8 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		// ---------------------- UI Methods ----------------------
+		
+		// TODO: Master Lock
 
 		public void _Load() {
 			if (!isActive) return;
@@ -249,6 +256,11 @@ namespace Synergiance.MediaPlayer {
 		public void _Resync() {
 			if (!isActive) return;
 			Log("_Resync", this);
+			if (!Networking.IsOwner(gameObject)) {
+				SendCustomNetworkEvent(NetworkEventTarget.Owner, "Resync");
+				return;
+			}
+			Resync();
 			SoftResync();
 			lastResyncTime += 5.0f; // This is a slight hack to force the video player to lay easy on the resyncs for a few seconds
 		}
@@ -277,7 +289,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		// Set whether the video should loop when it finishes
-		public void _SetLoop() {
+		public void _SetLoop() { // TODO: Deal with sync
 			if (!isActive) return;
 			if (loopToggle != null) mediaPlayers._SetLoop(loopToggle.isOn);
 		}
@@ -410,6 +422,11 @@ namespace Synergiance.MediaPlayer {
 				localTime = remoteTime;
 				SoftResync();
 			}
+			if (remoteLock != localLock) {
+				localLock = remoteLock;
+				SetLockStateInternal();
+			}
+			// TODO: Looping Sync
 		}
 
 		private void SetVideoURLFromLocal() {
@@ -505,13 +522,19 @@ namespace Synergiance.MediaPlayer {
 			HardResync(referencePlayhead);
 		}
 
+		public void Resync() {
+			if (Networking.IsOwner(gameObject)) Sync();
+		}
+
 		private void Sync() {
 			remotePlayerID = localPlayerID;
 			remoteURL = localURL;
 			remoteTime = localTime;
 			remoteIsPlaying = localIsPlaying;
 			remoteNextURL = localNextURL;
-			Networking.SetOwner(Networking.LocalPlayer, gameObject);
+			remoteLock = localLock;
+			if (!Networking.IsOwner(gameObject))
+				Networking.SetOwner(Networking.LocalPlayer, gameObject);
 			RequestSerialization();
 		}
 
@@ -920,6 +943,14 @@ namespace Synergiance.MediaPlayer {
 			if (CheckPrivileged(Networking.LocalPlayer)) return;
 			masterLock = lockState;
 			// TODO: Announce lock state to various parts of the player and to callback behaviours
+			SetLockStateInternal();
+			localLock = masterLock;
+			Sync();
+		}
+
+		private void SetLockStateInternal() {
+			if (seekBar) seekBar._SetLocked(masterLock && !CheckPrivileged(Networking.LocalPlayer));
+			if (hasCallback) callback.SendCustomEvent(masterLock ? "_PlayerLocked" : "_PlayerUnlocked");
 		}
 
 		// ----------------- Debug Helper Methods -----------------
