@@ -41,6 +41,11 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField]  private string             setStatusMethod;               // Method name for status update events
 		[SerializeField]  private string             statusProperty = "statusText"; // Property name for status update events
 		[SerializeField]  private bool               startActive = true;            // If toggled off, videos won't load or sync until locally set to active
+		
+		[Header("Security")] // Security
+		[SerializeField]  private bool               masterCanLock = true;          // If toggled on, instance master will be able to lock and unlock the player
+		[SerializeField]  private bool               ownerCanLock = true;           // If toggled on, instance owner will be able to lock and unlock the player
+		[SerializeField]  private string[]           moderators;                    // List of players who are always allowed to unlock and unlock the player
 
 		// Public Callback Variables
 		[HideInInspector] public  int                relayIdentifier;               // Unused value for compatibility.
@@ -92,6 +97,8 @@ namespace Synergiance.MediaPlayer {
 		private int      retryCount;                     // Stores number of automatic retries that have happened
 		private bool     isAutomaticRetry;               // Stores whether this is an automatic retry
 		private bool     urlInvalidUI;                   // Stores whether the input URL is malformed
+
+		private bool     masterLock;                     // Stores state of whether the player is locked
 
 		private bool     hasStatsText;                   // Cached value for whether statisticstext exists
 		private bool     hasCallback;                    // Cached value for whether callback exists
@@ -287,6 +294,14 @@ namespace Synergiance.MediaPlayer {
 			else UnloadMediaAndFlushBuffers(); // Flush buffers and unload media
 		}
 
+		public void _Lock() {
+			SetLockState(true);
+		}
+
+		public void _Unlock() {
+			SetLockState(false);
+		}
+
 		// ---------------------- Accessors -----------------------
 
 		public string GetStatus() { return playerStatus; }
@@ -301,6 +316,7 @@ namespace Synergiance.MediaPlayer {
 		public bool GetIsActive() { return isActive; }
 		public bool GetIsLooping() { return mediaPlayers.GetLoop(); }
 		public int GetMediaType() { return mediaPlayers.GetActiveID(); }
+		public bool GetLockStatus() { return masterLock; }
 
 		// ------------------ External Utilities ------------------
 
@@ -885,6 +901,25 @@ namespace Synergiance.MediaPlayer {
 					break;
 			}
 			return errorString;
+		}
+		
+		// ------------------- Security Methods -------------------
+
+		private bool CheckPrivileged(VRCPlayerApi vrcPlayer) {
+			if (vrcPlayer == null) return true;
+			if (vrcPlayer.isMaster) return true;
+			if (vrcPlayer.isInstanceOwner) return true;
+			string playerName = vrcPlayer.displayName;
+			foreach (string moderator in moderators)
+				if (string.Equals(playerName, moderator))
+					return true;
+			return false;
+		}
+
+		private void SetLockState(bool lockState) {
+			if (CheckPrivileged(Networking.LocalPlayer)) return;
+			masterLock = lockState;
+			// TODO: Announce lock state to various parts of the player and to callback behaviours
 		}
 
 		// ----------------- Debug Helper Methods -----------------
