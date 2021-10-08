@@ -21,7 +21,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private bool initialized;
 		private bool isSettingControl;
 
-		private string debugPrefix = "[<color=#2090B0>Stateful Button</color>] ";
+		private string debugPrefix = "[<color=#2090B0>SMP Slider Select</color>] ";
 
 		void Start() {
 			Initialize();
@@ -37,20 +37,33 @@ namespace Synergiance.MediaPlayer.UI {
 			if (isSettingControl) return;
 			Initialize();
 			int newType = Mathf.FloorToInt(slider.value + 0.5f);
-			if (newType >= typeIcons.Length) {
+			int oldType = currentType;
+			if (!SetTypeInternal(newType)) return;
+			UpdateHandle(oldType, newType);
+			InvokeCallback();
+		}
+
+		public void _SetType(int newType) {
+			Initialize();
+			int oldType = currentType;
+			if (!SetTypeInternal(newType)) return;
+			UpdateSlider();
+			UpdateHandle(oldType, newType);
+		}
+
+		private bool SetTypeInternal(int newType) {
+			if (newType >= typeIcons.Length || newType < 0) {
 				LogError("Type out of bounds!", this);
-				return;
+				return false;
 			}
 			Log("Switching type: " + currentType + " to " + newType, this);
-			if (hasCallback) {
-				callback.SetProgramVariable(callbackVar, newType);
-				callback.SendCustomEvent(callbackMethod);
-			} else {
-				LogWarning("No callback set!", this);
-			}
-			GameObject newIcon = typeIcons[newType];
-			GameObject prevIcon = typeIcons[currentType];
 			currentType = newType;
+			return true;
+		}
+
+		private void UpdateHandle(int oldType, int newType) {
+			GameObject newIcon = typeIcons[newType];
+			GameObject prevIcon = typeIcons[oldType];
 			if (newIcon == null) {
 				LogWarning("No icon set for type!", this);
 				return;
@@ -59,10 +72,19 @@ namespace Synergiance.MediaPlayer.UI {
 			if (prevIcon) prevIcon.SetActive(false);
 		}
 
-		private void SetTypeInternal(int type) {
+		private void UpdateSlider() {
 			isSettingControl = true;
-			slider.value = type;
+			slider.value = currentType;
 			isSettingControl = false;
+		}
+
+		private void InvokeCallback() {
+			if (!hasCallback) {
+				LogWarning("No callback set!", this);
+				return;
+			}
+			callback.SetProgramVariable(callbackVar, currentType);
+			callback.SendCustomEvent(callbackMethod);
 		}
 
 		// ----------------- Debug Helper Methods -----------------

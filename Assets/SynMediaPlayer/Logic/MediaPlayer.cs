@@ -114,7 +114,7 @@ namespace Synergiance.MediaPlayer {
 		private string[] musicHosts        = { "soundcloud.com" };
 		private string[] videoProtocols    = { "http", "https", "rtmp", "rtspt", "file", "ftp", "gopher", "telnet", "data" };
 
-		private string debugPrefix         = "[<color=#DF004F>Media Player</color>] ";
+		private string debugPrefix         = "[<color=#DF004F>SynMediaPlayer</color>] ";
 
 		private void Start() {
 			hasCallback = callback != null;

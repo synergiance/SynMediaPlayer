@@ -156,6 +156,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 21300000, guid: 64167e1b1cc6fa14794eab03634625df,
         type: 3}
+    - target: {fileID: 6268927052545306016, guid: b0250ae4af78aab42a8bfca3ee71d4e0,
+        type: 3}
+      propertyPath: m_Name
+      value: PlayPauseStop Button
+      objectReference: {fileID: 0}
     - target: {fileID: 8246309530027844517, guid: b0250ae4af78aab42a8bfca3ee71d4e0,
         type: 3}
       propertyPath: m_AnchorMax.y

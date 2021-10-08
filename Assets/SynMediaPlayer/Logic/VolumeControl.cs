@@ -1,5 +1,4 @@
 ﻿
-using System;
 using UdonSharp;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,12 +7,17 @@ using VRC.Udon;
 
 namespace Synergiance.MediaPlayer.UI {
 	public class VolumeControl : UdonSharpBehaviour {
+		[Header("Components")] // Components
 		[SerializeField] private Slider volumeSlider;
 		[SerializeField] private StatefulButton muteButton;
 
+		[Header("Callback")] // Callback
 		[SerializeField] private UdonSharpBehaviour callback;
 		[SerializeField] private string callbackMethod;
 		[SerializeField] private string callbackVar;
+		
+		[Header("Settings")] // Settings
+		[SerializeField] private bool enableDebug;
 
 		private bool isMuted;
 		private float nonMutedVolume;
@@ -21,6 +25,8 @@ namespace Synergiance.MediaPlayer.UI {
 		private bool isSettingControl;
 
 		private bool initialized;
+
+		private string debugPrefix = "[<color=#409080>SMP Volume Control</color>] ";
 
 		private void Start() {
 			Initialize();
@@ -56,6 +62,7 @@ namespace Synergiance.MediaPlayer.UI {
 		public void _SetMute(bool mute) {
 			Initialize();
 			isMuted = mute;
+			Log(isMuted ? "Muting" : "Unmuting", this);
 			UpdateCallback();
 			UpdateGraphics();
 			SetVolumeSlider(mute ? 0 : nonMutedVolume);
@@ -88,5 +95,10 @@ namespace Synergiance.MediaPlayer.UI {
 			callback.SetProgramVariable(callbackVar, isMuted ? 0.0f : nonMutedVolume);
 			callback.SendCustomEvent(callbackMethod);
 		}
+
+		// ----------------- Debug Helper Methods -----------------
+		private void Log(string message, Object context) { if (enableDebug) Debug.Log(debugPrefix + message, context); }
+		private void LogWarning(string message, Object context) { Debug.LogWarning(debugPrefix + message, context); }
+		private void LogError(string message, Object context) { Debug.LogError(debugPrefix + message, context); }
 	}
 }

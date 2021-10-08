@@ -280,6 +280,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 21300000, guid: e74ce8564eaea544d8f6d0e047ecddf0,
         type: 3}
+    - target: {fileID: 4966046015851370336, guid: 2514ce3882e196b43898d14b960d8d36,
+        type: 3}
+      propertyPath: m_Name
+      value: Lock Button
+      objectReference: {fileID: 0}
     - target: {fileID: 6139003230429453362, guid: 2514ce3882e196b43898d14b960d8d36,
         type: 3}
       propertyPath: m_Sprite

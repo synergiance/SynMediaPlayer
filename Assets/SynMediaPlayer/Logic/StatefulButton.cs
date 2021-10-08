@@ -38,7 +38,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private bool initialized;
 
-		private string debugPrefix = "[<color=#22AABB>Stateful Button</color>] ";
+		private string debugPrefix = "[<color=#22AABB>SMP Stateful Button</color>] ";
 
 		void Start() {
 			Initialize();
