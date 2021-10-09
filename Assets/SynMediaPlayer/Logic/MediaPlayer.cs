@@ -47,6 +47,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField]  private bool               masterCanLock = true;          // If toggled on, instance master will be able to lock and unlock the player
 		[SerializeField]  private bool               ownerCanLock = true;           // If toggled on, instance owner will be able to lock and unlock the player
 		[SerializeField]  private string[]           moderators;                    // List of players who are always allowed to unlock and unlock the player
+		[SerializeField]  private bool               lockByDefault;                 // If on, video player will be locked by default
 
 		// Public Callback Variables
 		[HideInInspector] public  int                relayIdentifier;               // Unused value for compatibility.
@@ -104,6 +105,7 @@ namespace Synergiance.MediaPlayer {
 		private bool     urlInvalidUI;                   // Stores whether the input URL is malformed
 
 		private bool     masterLock;                     // Stores state of whether the player is locked
+		private bool     hasPermissions;                 // Cached value for whether the local user has permissions
 
 		private bool     hasStatsText;                   // Cached value for whether statisticstext exists
 		private bool     hasCallback;                    // Cached value for whether callback exists
@@ -125,9 +127,12 @@ namespace Synergiance.MediaPlayer {
 			hasCallback = callback != null;
 			hasStatsText = statisticsText != null;
 			isActive = startActive;
+			masterLock = lockByDefault;
 			setStatusEnabled = callback && !string.IsNullOrWhiteSpace(setStatusMethod) && !string.IsNullOrWhiteSpace(statusProperty);
 			if (mediaSelect != null) mediaSelect._SetToggleID(mediaPlayers.GetActiveID());
 			if (Networking.LocalPlayer == null) isEditor = true;
+			hasPermissions = CheckPrivileged(Networking.LocalPlayer);
+			if (Networking.IsOwner(gameObject)) SetLockState(masterLock);
 			if (volumeBar != null) volumeBar.value = mediaPlayers.GetVolume();
 			_SetLoop(); // TODO: Deal with sync
 			if (isActive) return;
@@ -149,6 +154,7 @@ namespace Synergiance.MediaPlayer {
 
 		public void _Load() {
 			if (!isActive) return;
+			if (masterLock && !hasPermissions) return;
 			if (urlInputField == null) {
 				LogError("Cannot read URL Input Field if its null!", this);
 				return;
@@ -158,12 +164,14 @@ namespace Synergiance.MediaPlayer {
 
 		public void _LoadURL(VRCUrl url) {
 			if (!isActive) return;
+			if (masterLock && !hasPermissions) return;
 			int playerID = mediaSelect == null ? mediaPlayers.GetActiveID() : mediaSelect.GetCurrentID();
 			_LoadURLAs(url, playerID);
 		}
 
 		public int _LoadURLAs(VRCUrl url, int playerID) {
 			if (!isActive) return playerID;
+			if (masterLock && !hasPermissions) return playerID;
 			Log("_Load", this);
 			// Sanity Check URL
 			string urlStr = url != null ? url.ToString() : "";
@@ -191,6 +199,7 @@ namespace Synergiance.MediaPlayer {
 
 		public void _LoadQueueURLAs(VRCUrl url, int playerID) {
 			if (!isActive) return;
+			if (masterLock && !hasPermissions) return;
 			Log("Load Queued", this);
 			string urlStr = url != null ? url.ToString() : "";
 			if (!SanityCheckURL(urlStr)) return;
@@ -211,7 +220,6 @@ namespace Synergiance.MediaPlayer {
 
 		// Call _Play if paused and _Pause if playing
 		public void _PlayPause() {
-			if (!isActive) return;
 			bool playing = !isPlaying;
 			Log("_PlayPause: " + (playing ? "True" : "False"), this);
 			if (playing) _Play();
@@ -221,6 +229,7 @@ namespace Synergiance.MediaPlayer {
 		// Play a the video if possible.
 		public void _Play() {
 			if (!isActive) return;
+			if (masterLock && !hasPermissions) return;
 			Log("_Play", this);
 			SetPlaying(true);
 			if (playFromBeginning) { // This variable is set from video stop or video end, reset it when used
@@ -232,6 +241,7 @@ namespace Synergiance.MediaPlayer {
 		// Pause a video if possible
 		public void _Pause() {
 			if (!isActive) return;
+			if (masterLock && !hasPermissions) return;
 			Log("_Pause", this);
 			SetPlaying(false);
 		}
@@ -239,6 +249,7 @@ namespace Synergiance.MediaPlayer {
 		// Play a video from the beginning if possible
 		public void _Start() {
 			if (!isActive) return;
+			if (masterLock && !hasPermissions) return;
 			Log("_Start", this);
 			SetPlaying(true);
 			_SeekTo(0);
@@ -247,6 +258,7 @@ namespace Synergiance.MediaPlayer {
 		// Stop a currently playing video and unload it
 		public void _Stop() {
 			if (!isActive) return;
+			if (masterLock && !hasPermissions) return;
 			Log("_Stop", this);
 			SetPlaying(false);
 			SetURL(VRCUrl.Empty);
@@ -278,26 +290,30 @@ namespace Synergiance.MediaPlayer {
 		// Seek to a different position in a video if possible
 		public void _Seek() {
 			if (!isActive) return;
+			if (masterLock && !hasPermissions) return;
 			SeekTo(seekVal * mediaPlayers.GetDuration()); // seekVal is normalized so multiply it by media length
 		}
 
 		// Seek to a different position in a video if possible
 		public void _SeekTo(float time) {
 			if (!isActive) return;
+			if (masterLock && !hasPermissions) return;
 			seekBar._SetVal(time / mediaPlayers.GetDuration());
 			SeekTo(time);
 		}
 
 		// Set whether the video should loop when it finishes
-		public void _SetLoop() { // TODO: Deal with sync
+		public void _SetLoop() {
 			if (!isActive) return;
-			if (loopToggle != null) mediaPlayers._SetLoop(loopToggle.isOn);
+			if (masterLock && !hasPermissions) return;
+			if (loopToggle != null) SetLooping(loopToggle.isOn);
 		}
 
 		public void _SetLooping(bool loop) {
 			if (!isActive) return;
+			if (masterLock && !hasPermissions) return;
 			if (loopToggle != null) loopToggle.isOn = loop;
-			else mediaPlayers._SetLoop(loop);
+			else SetLooping(loop);
 		}
 
 		public void _SetActive(bool active) {
@@ -423,10 +439,15 @@ namespace Synergiance.MediaPlayer {
 				SoftResync();
 			}
 			if (remoteLock != localLock) {
+				Log("Deserialization found lock status changed! Now " + (remoteLock ? "locked" : "unlocked"), this);
 				localLock = remoteLock;
 				SetLockStateInternal();
 			}
-			// TODO: Looping Sync
+			if (remoteLooping != localLooping) {
+				Log("Deserialization found video is " + (remoteLooping ? "now" : "no longer") + " looping", this);
+				localLooping = remoteLooping;
+				SetLoopingInternal();
+			}
 		}
 
 		private void SetVideoURLFromLocal() {
@@ -458,6 +479,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void SeekTo(float newTime) {
+			if (masterLock && !hasPermissions && !Networking.IsOwner(gameObject)) return;
 			Log("Seek To: " + newTime, this);
 			playerTimeAtSeek = mediaPlayers.GetTime(); // Set a reference value to be able to timeout if seeking takes too long
 			lastSeekTime = Time.time; // Video player will essentially pause on this time until it has finished seeking
@@ -522,17 +544,28 @@ namespace Synergiance.MediaPlayer {
 			HardResync(referencePlayhead);
 		}
 
+		private void SetLooping(bool looping) {
+			if (localLooping == looping) return;
+			Log("Set Looping: " + looping, this);
+			localLooping = looping;
+			Sync();
+			SetLoopingInternal();
+		}
+
 		public void Resync() {
 			if (Networking.IsOwner(gameObject)) Sync();
 		}
 
 		private void Sync() {
+			if (masterLock && !hasPermissions && !Networking.IsOwner(gameObject)) return;
+			Log("Sync", this);
 			remotePlayerID = localPlayerID;
 			remoteURL = localURL;
 			remoteTime = localTime;
 			remoteIsPlaying = localIsPlaying;
 			remoteNextURL = localNextURL;
 			remoteLock = localLock;
+			remoteLooping = localLooping;
 			if (!Networking.IsOwner(gameObject))
 				Networking.SetOwner(Networking.LocalPlayer, gameObject);
 			RequestSerialization();
@@ -604,7 +637,7 @@ namespace Synergiance.MediaPlayer {
 					return;
 				}
 				float overshoot = Mathf.Clamp(-deviation, videoOvershoot * 2, 15);
-				Resync(currentTime, referencePlayhead + overshoot);
+				ResyncTime(currentTime, referencePlayhead + overshoot);
 				Log("Post Resync Compensation: " + overshoot, this);
 				SetPlayerStatusText("Catching Up");
 				return;
@@ -624,14 +657,14 @@ namespace Synergiance.MediaPlayer {
 			lastCheckTime = Time.time;
 			if (mediaPlayers.GetPlaying()) {
 				if (absDeviation > deviationTolerance) {
-					Resync(currentTime, referencePlayhead + videoOvershoot);
+					ResyncTime(currentTime, referencePlayhead + videoOvershoot);
 					SetPlayerStatusText("Syncing");
 				} else if (deviation > videoOvershoot * 2) {
 					mediaPlayers._Pause();
 					SetPlayerStatusText("Waiting For Playhead");
 				}
 			} else {
-				if (absDeviation > deviationTolerance) Resync(currentTime, referencePlayhead + videoOvershoot);
+				if (absDeviation > deviationTolerance) ResyncTime(currentTime, referencePlayhead + videoOvershoot);
 				if (deviation <= videoOvershoot / 2) {
 					mediaPlayers._Play();
 					SetPlayerStatusText("Playing");
@@ -639,7 +672,8 @@ namespace Synergiance.MediaPlayer {
 			}
 		}
 
-		private void Resync(float oldTime, float newTime) {
+		private void ResyncTime(float oldTime, float newTime) {
+			Log("Resync: " + oldTime + " -> " + newTime, this);
 			SetTimeInternal(newTime);
 			isResync = true;
 			lastSoftSyncTime = Time.time;
@@ -666,11 +700,16 @@ namespace Synergiance.MediaPlayer {
 		private void StopInternal() {
 			Log("Stop", this);
 			isPlaying = false;
-			if (Networking.IsMaster) SetPlaying(false);
+			if (Networking.IsOwner(gameObject)) SetPlaying(false);
 			currentURL = VRCUrl.Empty;
 			urlValid = false;
 			SetPlayerStatusText("No Video");
 			playFromBeginning = true;
+		}
+
+		private void SetLoopingInternal() {
+			Log("Set Looping Internal: " + localLooping, this);
+			mediaPlayers._SetLoop(localLooping);
 		}
 
 		private void LoadURLInternal(VRCUrl url) {
@@ -715,7 +754,7 @@ namespace Synergiance.MediaPlayer {
 		public void _RelayVideoEnd() {
 			if (!isActive) return;
 			isPlaying = false;
-			if (Networking.IsMaster) SetPlaying(false);
+			if (Networking.IsOwner(gameObject)) SetPlaying(false);
 			SetPlayerStatusText("Stopped");
 			playFromBeginning = true;
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoEnd");
@@ -777,7 +816,7 @@ namespace Synergiance.MediaPlayer {
 		public void _RelayVideoLoop() {
 			if (!isActive) return;
 			resyncPauseAt = Time.time;
-			if (Networking.IsMaster) HardResync(mediaPlayers.GetTime());
+			if (Networking.IsOwner(gameObject)) HardResync(mediaPlayers.GetTime());
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoLoop");
 		}
 
@@ -785,10 +824,10 @@ namespace Synergiance.MediaPlayer {
 			if (!isActive) return;
 			// Queued video is starting
 			resyncPauseAt = Time.time;
-			if (Networking.IsMaster) HardResync(mediaPlayers.GetTime());
+			if (Networking.IsOwner(gameObject)) HardResync(mediaPlayers.GetTime());
 			// Get new duration!
 			nextVideoLoading = nextVideoReady = false;
-			if (Networking.IsMaster) SetNextURL(VRCUrl.Empty);
+			if (Networking.IsOwner(gameObject)) SetNextURL(VRCUrl.Empty);
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoNext");
 		}
 
@@ -797,7 +836,7 @@ namespace Synergiance.MediaPlayer {
 			// Queued video player has thrown an error
 			SetPlayerStatusText("Error: " + GetErrorString(relayVideoError));
 			nextVideoLoading = nextVideoReady = false;
-			if (Networking.IsMaster) SetNextURL(VRCUrl.Empty);
+			if (Networking.IsOwner(gameObject)) SetNextURL(VRCUrl.Empty);
 			// Get ready to stop?
 			// Possibly skip video?
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoQueueError");
@@ -940,16 +979,15 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void SetLockState(bool lockState) {
-			if (CheckPrivileged(Networking.LocalPlayer)) return;
+			if (!hasPermissions) return;
 			masterLock = lockState;
-			// TODO: Announce lock state to various parts of the player and to callback behaviours
 			SetLockStateInternal();
 			localLock = masterLock;
 			Sync();
 		}
 
 		private void SetLockStateInternal() {
-			if (seekBar) seekBar._SetLocked(masterLock && !CheckPrivileged(Networking.LocalPlayer));
+			if (seekBar) seekBar._SetLocked(masterLock && !hasPermissions);
 			if (hasCallback) callback.SendCustomEvent(masterLock ? "_PlayerLocked" : "_PlayerUnlocked");
 		}
 

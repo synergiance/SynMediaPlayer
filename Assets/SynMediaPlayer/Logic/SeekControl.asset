@@ -43,7 +43,7 @@ MonoBehaviour:
       Data: 
     - Name: 
       Entry: 12
-      Data: 12
+      Data: 13
     - Name: 
       Entry: 7
       Data: 
@@ -571,7 +571,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: seekVal
+      Data: isLocked
     - Name: $v
       Entry: 7
       Data: 37|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -580,7 +580,7 @@ MonoBehaviour:
       Data: 38|UdonSharp.Compiler.SymbolDefinition, UdonSharp.Editor
     - Name: internalType
       Entry: 9
-      Data: 23
+      Data: 28
     - Name: declarationType
       Entry: 3
       Data: 2
@@ -589,13 +589,13 @@ MonoBehaviour:
       Data: 0
     - Name: symbolResolvedTypeName
       Entry: 1
-      Data: SystemSingle
+      Data: SystemBoolean
     - Name: symbolOriginalName
       Entry: 1
-      Data: seekVal
+      Data: isLocked
     - Name: symbolUniqueName
       Entry: 1
-      Data: seekVal
+      Data: isLocked
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -628,7 +628,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: lastSeekTime
+      Data: seekVal
     - Name: $v
       Entry: 7
       Data: 40|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -649,10 +649,10 @@ MonoBehaviour:
       Data: SystemSingle
     - Name: symbolOriginalName
       Entry: 1
-      Data: lastSeekTime
+      Data: seekVal
     - Name: symbolUniqueName
       Entry: 1
-      Data: lastSeekTime
+      Data: seekVal
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -685,7 +685,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: uiNeedsUpdate
+      Data: lastSeekTime
     - Name: $v
       Entry: 7
       Data: 43|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -694,7 +694,7 @@ MonoBehaviour:
       Data: 44|UdonSharp.Compiler.SymbolDefinition, UdonSharp.Editor
     - Name: internalType
       Entry: 9
-      Data: 28
+      Data: 23
     - Name: declarationType
       Entry: 3
       Data: 2
@@ -703,13 +703,13 @@ MonoBehaviour:
       Data: 0
     - Name: symbolResolvedTypeName
       Entry: 1
-      Data: SystemBoolean
+      Data: SystemSingle
     - Name: symbolOriginalName
       Entry: 1
-      Data: uiNeedsUpdate
+      Data: lastSeekTime
     - Name: symbolUniqueName
       Entry: 1
-      Data: uiNeedsUpdate
+      Data: lastSeekTime
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -742,13 +742,70 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: debugPrefix
+      Data: uiNeedsUpdate
     - Name: $v
       Entry: 7
       Data: 46|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: fieldSymbol
       Entry: 7
       Data: 47|UdonSharp.Compiler.SymbolDefinition, UdonSharp.Editor
+    - Name: internalType
+      Entry: 9
+      Data: 28
+    - Name: declarationType
+      Entry: 3
+      Data: 2
+    - Name: syncMode
+      Entry: 3
+      Data: 0
+    - Name: symbolResolvedTypeName
+      Entry: 1
+      Data: SystemBoolean
+    - Name: symbolOriginalName
+      Entry: 1
+      Data: uiNeedsUpdate
+    - Name: symbolUniqueName
+      Entry: 1
+      Data: uiNeedsUpdate
+    - Name: symbolDefaultValue
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: fieldAttributes
+      Entry: 7
+      Data: 48|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: userBehaviourSource
+      Entry: 6
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 1
+      Data: debugPrefix
+    - Name: $v
+      Entry: 7
+      Data: 49|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
+    - Name: fieldSymbol
+      Entry: 7
+      Data: 50|UdonSharp.Compiler.SymbolDefinition, UdonSharp.Editor
     - Name: internalType
       Entry: 9
       Data: 9
@@ -775,7 +832,7 @@ MonoBehaviour:
       Data: 
     - Name: fieldAttributes
       Entry: 7
-      Data: 48|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
+      Data: 51|System.Collections.Generic.List`1[[System.Attribute, mscorlib]], mscorlib
     - Name: 
       Entry: 12
       Data: 0
