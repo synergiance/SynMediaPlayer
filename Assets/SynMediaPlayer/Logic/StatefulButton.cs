@@ -92,6 +92,7 @@ namespace Synergiance.MediaPlayer.UI {
 				return;
 			}
 
+			if (mode == currentMode) return;
 			Log("Switching mode from " + currentMode + " to " + mode, this);
 			currentMode = mode;
 			icon.sprite = sprites[mode];

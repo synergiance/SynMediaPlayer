@@ -65,6 +65,7 @@ namespace Synergiance.MediaPlayer.UI {
 			lastSlowUpdate = Time.time;
 			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
 			UpdateTimeString();
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _ClickPlayPauseStop() {
@@ -189,6 +190,15 @@ namespace Synergiance.MediaPlayer.UI {
 			LogError("Not properly initialized!", this);
 		}
 
+		private void UpdatePlayPauseStopButtons() {
+			if (playPauseButton) playPauseButton._SetMode(mediaPlayer.GetIsPlaying() ? 1 : 0);
+			if (playPauseStopButton) {
+				bool isPlaying = mediaPlayer.GetIsPlaying();
+				bool stream = mediaPlayer.GetMediaType() != 0;
+				playPauseStopButton._SetMode(isPlaying ? stream ? 2 : 1 : 0);
+			}
+		}
+
 		private void UpdateTimeString() {
 			if (displayingStatus) return;
 			string textToDisplay = "00:00:00/00:00:00";
@@ -246,11 +256,13 @@ namespace Synergiance.MediaPlayer.UI {
 			//lcdDisplay.SetURL(currentURL == null ? "" : currentURL.ToString());
 			//HideErrorControls();
 			//ShowLoadingBar();
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _RelayVideoReady() {
 			// Video has finished loading
 			//VideoReady();
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _RelayVideoError() {
@@ -261,40 +273,48 @@ namespace Synergiance.MediaPlayer.UI {
 		public void _RelayVideoStart() {
 			// Video has started playing
 			//VideoStart();
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _RelayVideoPlay() {
 			// Video has resumed playing
 			//VideoPlay();
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _RelayVideoPause() {
 			// Video has paused
 			//VideoPause();
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _RelayVideoEnd() {
 			// Video has finished playing
 			//VideoEnd();
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _RelayVideoLoop() {
 			// Video has looped
 			//VideoLoop();
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _RelayVideoNext() {
 			// Queued video is starting
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _RelayVideoQueueLoading() {
 			// Queued video is beginning to load
 			//ShowLoadingBar();
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _RelayVideoQueueReady() {
 			// Queued video has loaded
 			//HideLoadingBar();
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _RelayVideoQueueError() {
