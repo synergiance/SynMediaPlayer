@@ -1,4 +1,5 @@
 ﻿
+using System;
 using UdonSharp;
 using UnityEngine;
 using VRC.SDK3.Components;
@@ -17,15 +18,23 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private StatefulButton lockUnlockButton;
 		[SerializeField] private StatefulButton powerButton;
 		[SerializeField] private StatefulButton loopButton;
+		[SerializeField] private MultiText statusField;
+		[SerializeField] private MultiText timeField;
+		[SerializeField] private bool combineStatusAndTime;
+		[SerializeField] private float updatesPerSecond;
 		[SerializeField] private bool enableDebug;
 
 		[HideInInspector] public float volumeVal;
 		[HideInInspector] public int mediaTypeVal;
+		[HideInInspector] public string statusText;
 
 		private bool initialized;
 		private bool isValid;
 		private int mediaType;
 		private bool isStream;
+		private bool displayingStatus;
+		private float timeBetweenUpdates;
+		private float lastSlowUpdate = 0;
 
 		private string debugPrefix = "[<color=#20C0A0>SMP Control Panel</color>] ";
 
@@ -41,7 +50,17 @@ namespace Synergiance.MediaPlayer.UI {
 				isValid = false;
 				LogWarning("Media Player not set!", this);
 			}
+			// Keep UPS to between 50 per second to one every 10 seconds
+			timeBetweenUpdates = Mathf.Max(0.02f, 1 / Mathf.Max(0.1f, updatesPerSecond));
+			_SlowUpdate();
 			initialized = true;
+		}
+
+		public void _SlowUpdate() {
+			if (Time.time < lastSlowUpdate + timeBetweenUpdates) return;
+			lastSlowUpdate = Time.time;
+			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
+			UpdateTimeString();
 		}
 
 		public void _ClickPlayPauseStop() {
@@ -100,7 +119,9 @@ namespace Synergiance.MediaPlayer.UI {
 				LogInvalid();
 				return;
 			}
-			mediaPlayer._SetActive(!mediaPlayer.GetIsActive());
+			bool active = !mediaPlayer.GetIsActive();
+			Log("Setting active: " + active, this);
+			mediaPlayer._SetActive(active);
 		}
 
 		public void _ClickLoop() {
@@ -162,6 +183,112 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private void LogInvalid() {
 			LogError("Not properly initialized!", this);
+		}
+
+		private void UpdateTimeString() {
+			if (displayingStatus) return;
+			string textToDisplay = "00:00:00/00:00:00";
+			if (isValid) {
+				float duration = mediaPlayer.GetDuration();
+				float currentTime = mediaPlayer.GetTime();
+				textToDisplay = FormatTime(currentTime) + "/" + FormatTime(duration);
+			}
+			statusField._SetText(textToDisplay);
+		}
+
+		private string FormatTime(float time) {
+			string str = ((int)time % 60).ToString("D2");
+			time /= 60;
+			if (time < 1) {
+				str = "0:" + str;
+				return str;
+			}
+			bool hasHours = time >= 60;
+			str = ((int)time % 60).ToString(hasHours ? "D2" : "D1") + str;
+			time /= 60;
+			if (time < 1) return str;
+			bool hasDays = time >= 24;
+			str = ((int)time % 24).ToString(hasDays ? "D2" : "D1") + str;
+			time /= 24;
+			str = (int)time + str;
+			return str;
+		}
+
+		// ------------------- Callback Methods -------------------
+
+		public void _SetStatusText() {
+			// Status text has been sent to us
+			displayingStatus = !string.Equals("Playing", statusText);
+			if (displayingStatus) statusField._SetText(statusText);
+		}
+
+		public void _PlayerLocked() {
+			// Video player has been unlocked
+		}
+
+		public void _PlayerUnlocked() {
+			// Video player has been unlocked
+		}
+
+		public void _RelayVideoLoading() {
+			// Video is beginning to load
+			VRCUrl currentURL = mediaPlayer.GetCurrentURL();
+			//lcdDisplay.SetURL(currentURL == null ? "" : currentURL.ToString());
+			//HideErrorControls();
+			//ShowLoadingBar();
+		}
+
+		public void _RelayVideoReady() {
+			// Video has finished loading
+			//VideoReady();
+		}
+
+		public void _RelayVideoError() {
+			// Video player has thrown an error
+			//DecodeVideoError(relayVideoError);
+		}
+
+		public void _RelayVideoStart() {
+			// Video has started playing
+			//VideoStart();
+		}
+
+		public void _RelayVideoPlay() {
+			// Video has resumed playing
+			//VideoPlay();
+		}
+
+		public void _RelayVideoPause() {
+			// Video has paused
+			//VideoPause();
+		}
+
+		public void _RelayVideoEnd() {
+			// Video has finished playing
+			//VideoEnd();
+		}
+
+		public void _RelayVideoLoop() {
+			// Video has looped
+			//VideoLoop();
+		}
+
+		public void _RelayVideoNext() {
+			// Queued video is starting
+		}
+
+		public void _RelayVideoQueueLoading() {
+			// Queued video is beginning to load
+			//ShowLoadingBar();
+		}
+
+		public void _RelayVideoQueueReady() {
+			// Queued video has loaded
+			//HideLoadingBar();
+		}
+
+		public void _RelayVideoQueueError() {
+			// Queued video player has thrown an error
 		}
 
 		// ----------------- Debug Helper Methods -----------------

@@ -20,46 +20,69 @@ namespace Synergiance.MediaPlayer.UI {
 		private float seekVal;
 		private float lastSeekTime;
 		private bool  uiNeedsUpdate;
+		private bool  initialized;
+		private bool  isValid;
 
 		private string debugPrefix = "[<color=#0FDF0F>Seek Control</color>] ";
 
 		private void Update() {
+			Initialize();
+		}
+
+		private void Initialize() {
+			if (initialized) return;
+			if (!seekBar) seekBar = transform.GetComponentInChildren<Slider>();
+			isValid = seekBar != null;
 			if (!isSeeking || Time.time < lastSeekTime + seekTimeout) return;
 			isSeeking = false;
-			seekVal = seekBar.value;
+			if (isValid) {
+				seekVal = seekBar.value;
+			} else {
+				seekVal = 0;
+				LogError("Seekbar slider not set!");
+			}
 			Log("Seeking to: " + seekVal);
 			callback.SetProgramVariable(callbackValue, seekVal);
 			callback.SendCustomEvent(callbackMethod);
+			initialized = true;
 		}
 
 		public void _DragSeek() {
-			if (!isEnabled) return;
+			Initialize();
+			if (!isEnabled || !isValid) return;
 			if (Mathf.Abs(seekBar.value - seekVal) < 0.00001f) return;
 			isSeeking = true;
 			lastSeekTime = Time.time;
 		}
 
 		public void _SetVal(float val) {
+			Initialize();
+			if (!isValid) return;
 			if (isEnabled && !isSeeking && val >= 0 && val <= 1) seekBar.value = seekVal = val;
 			else if (!isSeeking) seekBar.value = -1;
 		}
 
 		public void _SetEnabled(bool val) {
+			Initialize();
 			Log(val ? "Enabling" : "Disabling");
 			isEnabled = val;
+			if (!isValid) return;
 			SetInteractable();
 			seekBar.value = isEnabled ? seekVal : -1;
 		}
 
 		public void _SetLocked(bool val) {
+			Initialize();
 			if (val == isLocked) return;
 			SetInteractable();
 		}
 
 		private void SetInteractable() {
+			if (!isValid) return;
 			seekBar.interactable = isEnabled && !isLocked;
 		}
 
 		private void Log(string message) { if (enableDebug) Debug.Log(debugPrefix + message, this); }
+		private void LogError(string message) { Debug.LogError(debugPrefix + message, this); }
 	}
 }
