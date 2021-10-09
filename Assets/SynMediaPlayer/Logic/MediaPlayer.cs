@@ -383,6 +383,7 @@ namespace Synergiance.MediaPlayer {
 		public bool GetIsLooping() { return mediaPlayers.GetLoop(); }
 		public int GetMediaType() { return mediaPlayers.GetActiveID(); }
 		public bool GetLockStatus() { return masterLock; }
+		public bool HasPermissions() { return hasPermissions; }
 
 		// ------------------ External Utilities ------------------
 

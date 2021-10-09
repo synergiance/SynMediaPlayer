@@ -2,6 +2,7 @@
 using System;
 using UdonSharp;
 using UnityEngine;
+using UnityEngine.UI;
 using VRC.SDK3.Components;
 using VRC.SDKBase;
 using VRC.Udon;
@@ -12,6 +13,7 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private VolumeControl volumeControl;
 		[SerializeField] private SliderTypeSelect selectionSlider;
 		[SerializeField] private VRCUrlInputField urlField;
+		[SerializeField] private Text urlPlaceholderField;
 		[SerializeField] private StatefulButton playPauseStopButton;
 		[SerializeField] private StatefulButton playPauseButton;
 		[SerializeField] private StatefulButton stopButton;
@@ -21,7 +23,7 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private MultiText statusField;
 		[SerializeField] private MultiText timeField;
 		[SerializeField] private bool combineStatusAndTime;
-		[SerializeField] private float updatesPerSecond;
+		[SerializeField] private float updatesPerSecond = 10;
 		[SerializeField] private bool enableDebug;
 
 		[HideInInspector] public float volumeVal;
@@ -52,12 +54,14 @@ namespace Synergiance.MediaPlayer.UI {
 			}
 			// Keep UPS to between 50 per second to one every 10 seconds
 			timeBetweenUpdates = Mathf.Max(0.02f, 1 / Mathf.Max(0.1f, updatesPerSecond));
-			_SlowUpdate();
+			if (volumeControl && isValid) volumeControl._SetVolume(mediaPlayer.GetVolume());
+			UpdateTimeString();
+			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
 			initialized = true;
 		}
 
 		public void _SlowUpdate() {
-			if (Time.time < lastSlowUpdate + timeBetweenUpdates) return;
+			if (Time.time < lastSlowUpdate + timeBetweenUpdates * 0.9f) return;
 			lastSlowUpdate = Time.time;
 			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
 			UpdateTimeString();
@@ -204,13 +208,13 @@ namespace Synergiance.MediaPlayer.UI {
 				return str;
 			}
 			bool hasHours = time >= 60;
-			str = ((int)time % 60).ToString(hasHours ? "D2" : "D1") + str;
+			str = ((int)time % 60).ToString(hasHours ? "D2" : "D1") + ":" + str;
 			time /= 60;
 			if (time < 1) return str;
 			bool hasDays = time >= 24;
-			str = ((int)time % 24).ToString(hasDays ? "D2" : "D1") + str;
+			str = ((int)time % 24).ToString(hasDays ? "D2" : "D1") + ":" + str;
 			time /= 24;
-			str = (int)time + str;
+			str = (int)time + ":" + str;
 			return str;
 		}
 
@@ -220,14 +224,20 @@ namespace Synergiance.MediaPlayer.UI {
 			// Status text has been sent to us
 			displayingStatus = !string.Equals("Playing", statusText);
 			if (displayingStatus) statusField._SetText(statusText);
+			else UpdateTimeString();
 		}
 
 		public void _PlayerLocked() {
 			// Video player has been unlocked
+			bool hasPermissions = mediaPlayer.HasPermissions();
+			lockUnlockButton._SetMode(hasPermissions ? 1 : 2);
+			if (urlPlaceholderField) urlPlaceholderField.text = hasPermissions ? "Enter Video URL (Instance Moderators)..." : "Player locked!";
 		}
 
 		public void _PlayerUnlocked() {
 			// Video player has been unlocked
+			lockUnlockButton._SetMode(0);
+			if (urlPlaceholderField) urlPlaceholderField.text = "Enter Video URL (Anyone)...";
 		}
 
 		public void _RelayVideoLoading() {
