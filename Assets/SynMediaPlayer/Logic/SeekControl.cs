@@ -25,7 +25,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private string debugPrefix = "[<color=#0FDF0F>Seek Control</color>] ";
 
-		private void Update() {
+		private void Start() {
 			Initialize();
 		}
 
@@ -33,24 +33,27 @@ namespace Synergiance.MediaPlayer.UI {
 			if (initialized) return;
 			if (!seekBar) seekBar = transform.GetComponentInChildren<Slider>();
 			isValid = seekBar != null;
+			if (!isValid) LogError("Seekbar slider not set!");
+			else Log("Seekbar is set");
+			seekVal = isValid ? seekBar.value : 0;
+			initialized = true;
+		}
+
+		private void Update() {
 			if (!isSeeking || Time.time < lastSeekTime + seekTimeout) return;
+			if (isSeeking) Log("No Longer Seeking");
 			isSeeking = false;
-			if (isValid) {
-				seekVal = seekBar.value;
-			} else {
-				seekVal = 0;
-				LogError("Seekbar slider not set!");
-			}
+			seekVal = isValid ? seekBar.value : 0;
 			Log("Seeking to: " + seekVal);
 			callback.SetProgramVariable(callbackValue, seekVal);
 			callback.SendCustomEvent(callbackMethod);
-			initialized = true;
 		}
 
 		public void _DragSeek() {
 			Initialize();
 			if (!isEnabled || !isValid) return;
 			if (Mathf.Abs(seekBar.value - seekVal) < 0.00001f) return;
+			if (!isSeeking) Log("Now Seeking");
 			isSeeking = true;
 			lastSeekTime = Time.time;
 		}

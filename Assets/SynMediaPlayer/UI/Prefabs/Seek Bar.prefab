@@ -161,6 +161,41 @@ PrefabInstance:
       propertyPath: m_Name
       value: PlayPauseStop Button
       objectReference: {fileID: 0}
+    - target: {fileID: 8246309529720326385, guid: b0250ae4af78aab42a8bfca3ee71d4e0,
+        type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8246309529720326385, guid: b0250ae4af78aab42a8bfca3ee71d4e0,
+        type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8246309529720326385, guid: b0250ae4af78aab42a8bfca3ee71d4e0,
+        type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 7813875209049797486}
+    - target: {fileID: 8246309529720326385, guid: b0250ae4af78aab42a8bfca3ee71d4e0,
+        type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8246309529720326385, guid: b0250ae4af78aab42a8bfca3ee71d4e0,
+        type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: SendCustomEvent
+      objectReference: {fileID: 0}
+    - target: {fileID: 8246309529720326385, guid: b0250ae4af78aab42a8bfca3ee71d4e0,
+        type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_StringArgument
+      value: _DragSeek
+      objectReference: {fileID: 0}
+    - target: {fileID: 8246309529720326385, guid: b0250ae4af78aab42a8bfca3ee71d4e0,
+        type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 8246309530027844517, guid: b0250ae4af78aab42a8bfca3ee71d4e0,
         type: 3}
       propertyPath: m_AnchorMax.y
