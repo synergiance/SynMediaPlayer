@@ -36,7 +36,6 @@ namespace Synergiance.MediaPlayer.UI {
 		private bool isValid;
 		private int mediaType;
 		private bool isStream;
-		//private bool hideStatus;
 		private float timeBetweenUpdates;
 		private float lastSlowUpdate;
 		private float lastResync;
@@ -68,8 +67,7 @@ namespace Synergiance.MediaPlayer.UI {
 			lastSlowUpdate = Time.time;
 			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
 			UpdateTimeString();
-			UpdatePlayPauseStopButtons();
-			UpdateResyncButton();
+			UpdateAllButtons();
 		}
 
 		public void _ClickPlayPauseStop() {
@@ -206,6 +204,12 @@ namespace Synergiance.MediaPlayer.UI {
 			LogError("Not properly initialized!", this);
 		}
 
+		private void UpdateAllButtons() {
+			UpdatePlayPauseStopButtons();
+			UpdateResyncButton();
+			UpdatePowerButton();
+		}
+
 		private void UpdatePlayPauseStopButtons() {
 			if (playPauseButton) playPauseButton._SetMode(mediaPlayer.GetIsPlaying() ? 1 : 0);
 			if (playPauseStopButton) {
@@ -223,6 +227,11 @@ namespace Synergiance.MediaPlayer.UI {
 			refreshButton._SetMode(loaded + syncing);
 		}
 
+		private void UpdatePowerButton() {
+			if (!isValid || !powerButton) return;
+			powerButton._SetMode(mediaPlayer.GetIsActive() ? 0 : 1);
+		}
+
 		private void UpdateTimeString() {
 			string textToDisplay = "00:00:00/00:00:00";
 			if (isValid) {
@@ -231,7 +240,6 @@ namespace Synergiance.MediaPlayer.UI {
 				float currentTime = mediaPlayer.GetTime();
 				textToDisplay = FormatTime(currentTime);
 				if (duration > 0.01f) textToDisplay += "/" + FormatTime(duration);
-				//if (!hideStatus) textToDisplay += " (" + statusText + ")";
 			}
 			statusField._SetText(textToDisplay);
 		}
@@ -263,8 +271,6 @@ namespace Synergiance.MediaPlayer.UI {
 			Initialize();
 			if (isValid) {
 				bool isPlaying = mediaPlayer.GetIsPlaying();
-				//bool isSyncing = mediaPlayer.GetIsSyncing();
-				//hideStatus = isPlaying && !isSyncing;
 				if (isPlaying) UpdateTimeString();
 				else statusField._SetText(statusText);
 				UpdateResyncButton();
@@ -295,15 +301,13 @@ namespace Synergiance.MediaPlayer.UI {
 			//lcdDisplay.SetURL(currentURL == null ? "" : currentURL.ToString());
 			//HideErrorControls();
 			//ShowLoadingBar();
-			UpdatePlayPauseStopButtons();
-			UpdateResyncButton();
+			UpdateAllButtons();
 		}
 
 		public void _RelayVideoReady() {
 			// Video has finished loading
 			Initialize();
-			UpdatePlayPauseStopButtons();
-			UpdateResyncButton();
+			UpdateAllButtons();
 		}
 
 		public void _RelayVideoError() {
@@ -315,59 +319,51 @@ namespace Synergiance.MediaPlayer.UI {
 		public void _RelayVideoStart() {
 			// Video has started playing
 			Initialize();
-			UpdatePlayPauseStopButtons();
-			UpdateResyncButton();
+			UpdateAllButtons();
 		}
 
 		public void _RelayVideoPlay() {
 			// Video has resumed playing
 			Initialize();
-			UpdatePlayPauseStopButtons();
-			UpdateResyncButton();
+			UpdateAllButtons();
 		}
 
 		public void _RelayVideoPause() {
 			// Video has paused
 			Initialize();
-			UpdatePlayPauseStopButtons();
-			UpdateResyncButton();
+			UpdateAllButtons();
 		}
 
 		public void _RelayVideoEnd() {
 			// Video has finished playing
 			Initialize();
-			UpdatePlayPauseStopButtons();
-			UpdateResyncButton();
+			UpdateAllButtons();
 		}
 
 		public void _RelayVideoLoop() {
 			// Video has looped
 			Initialize();
-			UpdatePlayPauseStopButtons();
-			UpdateResyncButton();
+			UpdateAllButtons();
 		}
 
 		public void _RelayVideoNext() {
 			// Queued video is starting
 			Initialize();
-			UpdatePlayPauseStopButtons();
-			UpdateResyncButton();
+			UpdateAllButtons();
 		}
 
 		public void _RelayVideoQueueLoading() {
 			// Queued video is beginning to load
 			Initialize();
 			//ShowLoadingBar();
-			UpdatePlayPauseStopButtons();
-			UpdateResyncButton();
+			UpdateAllButtons();
 		}
 
 		public void _RelayVideoQueueReady() {
 			// Queued video has loaded
 			Initialize();
 			//HideLoadingBar();
-			UpdatePlayPauseStopButtons();
-			UpdateResyncButton();
+			UpdateAllButtons();
 		}
 
 		public void _RelayVideoQueueError() {
