@@ -384,6 +384,7 @@ namespace Synergiance.MediaPlayer {
 		public int GetMediaType() { return mediaPlayers.GetActiveID(); }
 		public bool GetLockStatus() { return masterLock; }
 		public bool HasPermissions() { return hasPermissions; }
+		public bool GetIsSyncing() { return isSeeking || postResync; }
 
 		// ------------------ External Utilities ------------------
 

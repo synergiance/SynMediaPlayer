@@ -20,10 +20,12 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private StatefulButton lockUnlockButton;
 		[SerializeField] private StatefulButton powerButton;
 		[SerializeField] private StatefulButton loopButton;
+		[SerializeField] private StatefulButton refreshButton;
 		[SerializeField] private MultiText statusField;
 		[SerializeField] private MultiText timeField;
 		[SerializeField] private bool combineStatusAndTime;
 		[SerializeField] private float updatesPerSecond = 10;
+		[SerializeField] private float reloadAvailableFor = 5;
 		[SerializeField] private bool enableDebug;
 
 		[HideInInspector] public float volumeVal;
@@ -34,9 +36,10 @@ namespace Synergiance.MediaPlayer.UI {
 		private bool isValid;
 		private int mediaType;
 		private bool isStream;
-		private bool displayingStatus;
+		//private bool hideStatus;
 		private float timeBetweenUpdates;
-		private float lastSlowUpdate = 0;
+		private float lastSlowUpdate;
+		private float lastResync;
 
 		private string debugPrefix = "[<color=#20C0A0>SMP Control Panel</color>] ";
 
@@ -66,6 +69,7 @@ namespace Synergiance.MediaPlayer.UI {
 			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
 			UpdateTimeString();
 			UpdatePlayPauseStopButtons();
+			UpdateResyncButton();
 		}
 
 		public void _ClickPlayPauseStop() {
@@ -157,6 +161,18 @@ namespace Synergiance.MediaPlayer.UI {
 			mediaPlayer._SetVolume(volumeVal);
 		}
 
+		public void _ClickResync() {
+			Initialize();
+			if (!isValid) return;
+			if (mediaPlayer.GetIsReady() && Time.time > lastResync + reloadAvailableFor) {
+				mediaPlayer.Resync();
+				lastResync = Time.time;
+			} else {
+				mediaPlayer._Retry();
+				lastResync = Time.time - reloadAvailableFor;
+			}
+		}
+
 		public void _SetMediaType() {
 			Initialize();
 			if (!isValid) {
@@ -199,46 +215,67 @@ namespace Synergiance.MediaPlayer.UI {
 			}
 		}
 
+		private void UpdateResyncButton() {
+			if (!isValid || !refreshButton) return;
+			int loaded = mediaPlayer.GetIsReady() ? 1 : 0;
+			int syncing = mediaPlayer.GetIsSyncing() ? 2 : 0;
+			if (loaded == 1 && Time.time <= lastResync + reloadAvailableFor) loaded = 0;
+			refreshButton._SetMode(loaded + syncing);
+		}
+
 		private void UpdateTimeString() {
-			if (displayingStatus) return;
 			string textToDisplay = "00:00:00/00:00:00";
 			if (isValid) {
+				if (!mediaPlayer.GetIsPlaying()) return;
 				float duration = mediaPlayer.GetDuration();
 				float currentTime = mediaPlayer.GetTime();
-				textToDisplay = FormatTime(currentTime) + "/" + FormatTime(duration);
+				textToDisplay = FormatTime(currentTime);
+				if (duration > 0.01f) textToDisplay += "/" + FormatTime(duration);
+				//if (!hideStatus) textToDisplay += " (" + statusText + ")";
 			}
 			statusField._SetText(textToDisplay);
 		}
 
 		private string FormatTime(float time) {
-			string str = ((int)time % 60).ToString("D2");
-			time /= 60;
-			if (time < 1) {
+			float wTime = Mathf.Abs(time);
+			bool neg = time < 0;
+			string str = ((int)wTime % 60).ToString("D2");
+			wTime /= 60;
+			if (wTime < 1) {
 				str = "0:" + str;
-				return str;
+				return neg ? "-" + str : str;
 			}
-			bool hasHours = time >= 60;
-			str = ((int)time % 60).ToString(hasHours ? "D2" : "D1") + ":" + str;
-			time /= 60;
-			if (time < 1) return str;
-			bool hasDays = time >= 24;
-			str = ((int)time % 24).ToString(hasDays ? "D2" : "D1") + ":" + str;
-			time /= 24;
-			str = (int)time + ":" + str;
-			return str;
+			bool hasHours = wTime >= 60;
+			str = ((int)wTime % 60).ToString(hasHours ? "D2" : "D1") + ":" + str;
+			wTime /= 60;
+			if (wTime < 1) return neg ? "-" + str : str;
+			bool hasDays = wTime >= 24;
+			str = ((int)wTime % 24).ToString(hasDays ? "D2" : "D1") + ":" + str;
+			wTime /= 24;
+			str = (int)wTime + ":" + str;
+			return neg ? "-" + str : str;
 		}
 
 		// ------------------- Callback Methods -------------------
 
 		public void _SetStatusText() {
 			// Status text has been sent to us
-			displayingStatus = !string.Equals("Playing", statusText);
-			if (displayingStatus) statusField._SetText(statusText);
-			else UpdateTimeString();
+			Initialize();
+			if (isValid) {
+				bool isPlaying = mediaPlayer.GetIsPlaying();
+				//bool isSyncing = mediaPlayer.GetIsSyncing();
+				//hideStatus = isPlaying && !isSyncing;
+				if (isPlaying) UpdateTimeString();
+				else statusField._SetText(statusText);
+				UpdateResyncButton();
+			} else {
+				statusField._SetText(statusText);
+			}
 		}
 
 		public void _PlayerLocked() {
-			// Video player has been unlocked
+			// Video player has been locked
+			Initialize();
 			bool hasPermissions = mediaPlayer.HasPermissions();
 			lockUnlockButton._SetMode(hasPermissions ? 1 : 2);
 			if (urlPlaceholderField) urlPlaceholderField.text = hasPermissions ? "Enter Video URL (Instance Moderators)..." : "Player locked!";
@@ -246,79 +283,96 @@ namespace Synergiance.MediaPlayer.UI {
 
 		public void _PlayerUnlocked() {
 			// Video player has been unlocked
+			Initialize();
 			lockUnlockButton._SetMode(0);
 			if (urlPlaceholderField) urlPlaceholderField.text = "Enter Video URL (Anyone)...";
 		}
 
 		public void _RelayVideoLoading() {
 			// Video is beginning to load
+			Initialize();
 			VRCUrl currentURL = mediaPlayer.GetCurrentURL();
 			//lcdDisplay.SetURL(currentURL == null ? "" : currentURL.ToString());
 			//HideErrorControls();
 			//ShowLoadingBar();
 			UpdatePlayPauseStopButtons();
+			UpdateResyncButton();
 		}
 
 		public void _RelayVideoReady() {
 			// Video has finished loading
-			//VideoReady();
+			Initialize();
 			UpdatePlayPauseStopButtons();
+			UpdateResyncButton();
 		}
 
 		public void _RelayVideoError() {
 			// Video player has thrown an error
+			Initialize();
 			//DecodeVideoError(relayVideoError);
 		}
 
 		public void _RelayVideoStart() {
 			// Video has started playing
-			//VideoStart();
+			Initialize();
 			UpdatePlayPauseStopButtons();
+			UpdateResyncButton();
 		}
 
 		public void _RelayVideoPlay() {
 			// Video has resumed playing
-			//VideoPlay();
+			Initialize();
 			UpdatePlayPauseStopButtons();
+			UpdateResyncButton();
 		}
 
 		public void _RelayVideoPause() {
 			// Video has paused
-			//VideoPause();
+			Initialize();
 			UpdatePlayPauseStopButtons();
+			UpdateResyncButton();
 		}
 
 		public void _RelayVideoEnd() {
 			// Video has finished playing
-			//VideoEnd();
+			Initialize();
 			UpdatePlayPauseStopButtons();
+			UpdateResyncButton();
 		}
 
 		public void _RelayVideoLoop() {
 			// Video has looped
-			//VideoLoop();
+			Initialize();
 			UpdatePlayPauseStopButtons();
+			UpdateResyncButton();
 		}
 
 		public void _RelayVideoNext() {
 			// Queued video is starting
+			Initialize();
 			UpdatePlayPauseStopButtons();
+			UpdateResyncButton();
 		}
 
 		public void _RelayVideoQueueLoading() {
 			// Queued video is beginning to load
+			Initialize();
 			//ShowLoadingBar();
 			UpdatePlayPauseStopButtons();
+			UpdateResyncButton();
 		}
 
 		public void _RelayVideoQueueReady() {
 			// Queued video has loaded
+			Initialize();
 			//HideLoadingBar();
 			UpdatePlayPauseStopButtons();
+			UpdateResyncButton();
 		}
 
 		public void _RelayVideoQueueError() {
 			// Queued video player has thrown an error
+			Initialize();
 		}
 
 		// ----------------- Debug Helper Methods -----------------
