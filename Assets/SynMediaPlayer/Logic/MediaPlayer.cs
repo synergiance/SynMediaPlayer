@@ -507,8 +507,7 @@ namespace Synergiance.MediaPlayer {
 			}
 			else {
 				localTime = localIsPlaying ? CalcWithTime(-loadTime) : 0;
-				if (localPlayerID == 0) SeekInternal(-loadTime);
-				else SeekInternal(0);
+				SeekInternal(localPlayerID == 0 ? isReloadingVideo ? referencePlayhead : -loadTime : 0);
 				LoadURLInternal(localURL);
 			}
 		}
@@ -688,6 +687,7 @@ namespace Synergiance.MediaPlayer {
 				ResyncTime(currentTime, referencePlayhead + overshoot);
 				Log("Post Resync Compensation: " + overshoot, this);
 				SetPlayerStatusText("Catching Up");
+				if (!mediaPlayers.GetPlaying()) mediaPlayers._Play();
 				return;
 			}
 			if (isResync) {
@@ -696,6 +696,7 @@ namespace Synergiance.MediaPlayer {
 					postResync = true;
 					postResyncEndsAt = Time.time + (timeMinusLastSoftSync + checkSyncEvery * 0.5f);
 					SetPlayerStatusText("Stabilizing");
+					if (!mediaPlayers.GetPlaying()) mediaPlayers._Play();
 				}
 			}
 			if (isResync) return;
@@ -871,7 +872,8 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			resyncPauseAt = Time.time;
-			if (Networking.IsOwner(gameObject)) HardResync(mediaPlayers.GetTime());
+			SetTimeInternal(0);
+			if (Networking.IsOwner(gameObject)) HardResync(0);
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoLoop");
 		}
 
@@ -1005,33 +1007,37 @@ namespace Synergiance.MediaPlayer {
 		private void UpdateDiagnostics() {
 			if (!diagnosticsText) return;
 			if (Time.time - lastDiagnosticsUpdate < diagnosticsUpdatePeriod) return;
-			string str = "Time: " + Time.time.ToString("N3");;
+			string str = "Time: " + Time.time.ToString("N3");
 			str += ", Player Status: " + playerStatus;
 			str += ", Start Time: " + startTime.ToString("N3");
-			str += ", Paused Time: " + pausedTime.ToString("N3");;
-			str += ", Reference Playhead: " + referencePlayhead.ToString("N3");;
+			str += ", Paused Time: " + pausedTime.ToString("N3");
+			str += ", Reference Playhead: " + referencePlayhead.ToString("N3");
 			str += ", Is Playing: " + isPlaying;
 			str += "\nURL Valid: " + urlValid;
 			str += ", Player Ready: " + playerReady;
 			str += ", Is Loading: " + isLoading;
-			str += ", Last Video Load Time: " + lastVideoLoadTime.ToString("N3");;
+			str += ", Last Video Load Time: " + lastVideoLoadTime.ToString("N3");
 			str += "\nIs Automatic Retry: " + isAutomaticRetry;
 			str += ", Retry Count: " + retryCount;
 			str += ", Is Reloading Video: " + isReloadingVideo;
 			str += "\nIs Seeking: " + isSeeking;
-			str += ", Last Seek Time: " + lastSeekTime.ToString("N3");;
-			str += ", Player Time At Seek: " + playerTimeAtSeek.ToString("N3");;
+			str += ", Last Seek Time: " + lastSeekTime.ToString("N3");
+			str += ", Player Time At Seek: " + playerTimeAtSeek.ToString("N3");
 			str += ", Is Low Latency: " + isLowLatency;
 			str += ", Play From Beginning: " + playFromBeginning;
 			str += "\nIs Resync: " + isResync;
 			str += ", Post Resync: " + postResync;
-			str += ", Deviation: " + deviation.ToString("N3");;
-			str += ", Last Check Time: " + lastCheckTime.ToString("N3");;
-			str += "\nLast Resync Time: " + lastResyncTime.ToString("N3");;
-			str += ", Post Resync Ends At: " + postResyncEndsAt.ToString("N3");;
-			str += ", Resync Pause At: " + resyncPauseAt.ToString("N3");;
-			str += ", Player Time At Resync: " + playerTimeAtResync.ToString("N3");;
-			str += ", Last Soft Sync Time: " + lastSoftSyncTime.ToString("N3");;
+			str += ", Deviation: " + deviation.ToString("N3");
+			str += ", Last Check Time: " + lastCheckTime.ToString("N3");
+			str += "\nLast Resync Time: " + lastResyncTime.ToString("N3");
+			str += ", Post Resync Ends At: " + postResyncEndsAt.ToString("N3");
+			str += ", Resync Pause At: " + resyncPauseAt.ToString("N3");
+			str += ", Player Time At Resync: " + playerTimeAtResync.ToString("N3");
+			str += ", Last Soft Sync Time: " + lastSoftSyncTime.ToString("N3");
+			str += "\nPlayer Time: " + mediaPlayers.GetTime().ToString("N3");
+			str += ", Player Duration: " + mediaPlayers.GetDuration().ToString("N3");
+			str += ", Player Playing: " + mediaPlayers.GetPlaying();
+			str += ", Player Ready: " + mediaPlayers.GetReady();
 			diagnosticsText.text = str;
 		}
 
