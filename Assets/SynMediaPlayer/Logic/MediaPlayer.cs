@@ -434,6 +434,7 @@ namespace Synergiance.MediaPlayer {
 			SetPlayingInternal(false);
 			SetTimeInternal(0);
 			StopInternal();
+			mediaPlayers._Pause();
 			// Ensure there's no queued media
 			nextURL = VRCUrl.Empty;
 			// Set status text one final time before activating again
