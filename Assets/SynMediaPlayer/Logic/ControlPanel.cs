@@ -82,6 +82,7 @@ namespace Synergiance.MediaPlayer.UI {
 				if (mediaPlayer.GetIsPlaying()) mediaPlayer._Stop();
 				else mediaPlayer._Play();
 			}
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _ClickPlayPause() {
@@ -91,6 +92,7 @@ namespace Synergiance.MediaPlayer.UI {
 				return;
 			}
 			mediaPlayer._PlayPause();
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _ClickPlay() {
@@ -100,6 +102,7 @@ namespace Synergiance.MediaPlayer.UI {
 				return;
 			}
 			mediaPlayer._Play();
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _ClickPause() {
@@ -109,6 +112,7 @@ namespace Synergiance.MediaPlayer.UI {
 				return;
 			}
 			mediaPlayer._Pause();
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _ClickStop() {
@@ -118,6 +122,7 @@ namespace Synergiance.MediaPlayer.UI {
 				return;
 			}
 			mediaPlayer._Stop();
+			UpdatePlayPauseStopButtons();
 		}
 
 		public void _ClickPower() {
@@ -129,6 +134,7 @@ namespace Synergiance.MediaPlayer.UI {
 			bool active = !mediaPlayer.GetIsActive();
 			Log("Setting active: " + active, this);
 			mediaPlayer._SetActive(active);
+			UpdatePowerButton();
 		}
 
 		public void _ClickLoop() {
@@ -138,6 +144,7 @@ namespace Synergiance.MediaPlayer.UI {
 				return;
 			}
 			mediaPlayer._SetLooping(!mediaPlayer.GetIsLooping());
+			UpdateLoopButton();
 		}
 
 		public void _ClickLock() {
@@ -194,10 +201,15 @@ namespace Synergiance.MediaPlayer.UI {
 				LogError("Url Field not set!", this);
 				return;
 			}
+			if (string.IsNullOrWhiteSpace(urlField.GetUrl().ToString())) {
+				UpdateMediaTypeSlider();
+				return;
+			}
 			int loadedType = mediaPlayer._LoadURLAs(urlField.GetUrl(), mediaType);
 			if (loadedType == mediaType) return;
 			mediaType = loadedType;
-			if (selectionSlider) selectionSlider._SetType(mediaType);
+			UpdateMediaTypeSlider();
+			urlField.SetUrl(VRCUrl.Empty);
 		}
 
 		private void LogInvalid() {
@@ -208,6 +220,7 @@ namespace Synergiance.MediaPlayer.UI {
 			UpdatePlayPauseStopButtons();
 			UpdateResyncButton();
 			UpdatePowerButton();
+			UpdateLoopButton();
 		}
 
 		private void UpdatePlayPauseStopButtons() {
@@ -232,6 +245,15 @@ namespace Synergiance.MediaPlayer.UI {
 			powerButton._SetMode(mediaPlayer.GetIsActive() ? 0 : 1);
 		}
 
+		private void UpdateLoopButton() {
+			if (!isValid || !loopButton) return;
+			loopButton._SetMode(mediaPlayer.GetIsLooping() ? 1 : 0);
+		}
+
+		private void UpdateMediaTypeSlider() {
+			if (selectionSlider) selectionSlider._SetType(mediaType);
+		}
+
 		private void UpdateTimeString() {
 			string textToDisplay = "00:00:00/00:00:00";
 			if (isValid) {
@@ -239,12 +261,14 @@ namespace Synergiance.MediaPlayer.UI {
 				float duration = mediaPlayer.GetDuration();
 				float currentTime = mediaPlayer.GetTime();
 				textToDisplay = FormatTime(currentTime);
+				if (Single.IsNaN(duration) || Single.IsInfinity(duration)) return;
 				if (duration > 0.01f) textToDisplay += "/" + FormatTime(duration);
 			}
 			statusField._SetText(textToDisplay);
 		}
 
 		private string FormatTime(float time) {
+			if (Single.IsInfinity(time) || Single.IsNaN(time)) return time.ToString();
 			float wTime = Mathf.Abs(time);
 			bool neg = time < 0;
 			string str = ((int)wTime % 60).ToString("D2");
@@ -277,6 +301,13 @@ namespace Synergiance.MediaPlayer.UI {
 			} else {
 				statusField._SetText(statusText);
 			}
+		}
+
+		public void _RecheckVideoPlayer() {
+			UpdateAllButtons();
+			if (urlField && !string.IsNullOrWhiteSpace(urlField.GetUrl().ToString())) return;
+			mediaType = mediaPlayer.GetMediaType();
+			UpdateMediaTypeSlider();
 		}
 
 		public void _PlayerLocked() {

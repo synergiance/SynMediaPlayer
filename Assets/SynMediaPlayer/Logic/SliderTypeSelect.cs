@@ -51,6 +51,10 @@ namespace Synergiance.MediaPlayer.UI {
 			UpdateHandle(oldType, newType);
 		}
 
+		public void _VerifyHandle() {
+			for (int i = 0; i < typeIcons.Length; i++) typeIcons[i].SetActive(i == currentType);
+		}
+
 		private bool SetTypeInternal(int newType) {
 			if (newType >= typeIcons.Length || newType < 0) {
 				LogError("Type out of bounds!", this);
@@ -70,6 +74,7 @@ namespace Synergiance.MediaPlayer.UI {
 			}
 			newIcon.SetActive(true);
 			if (prevIcon) prevIcon.SetActive(false);
+			SendCustomEventDelayedFrames("_VerifyHandle", 2);
 		}
 
 		private void UpdateSlider() {
