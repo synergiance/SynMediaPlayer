@@ -20,6 +20,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField]  private SeekControl        seekBar;                       // Seek bar object.  Needs to be normalized
 		[SerializeField]  private Slider             volumeBar;                     // Volume bar object.  Range is 0-1
 		[SerializeField]  private Text               statisticsText;                // Text for video stats, will read out video player status
+		[SerializeField]  private Text               diagnosticsText;               // Text field for diagnosing video player
 		[SerializeField]  private Toggle             loopToggle;                    // Toggle for whether video should loop
 
 		[Header("Timings")] // Timings
@@ -35,6 +36,7 @@ namespace Synergiance.MediaPlayer {
 
 		[Header("Settings")] // Settings
 		[SerializeField]  private bool               enableDebug;                   // If toggled off, all info level messages are disabled
+		[SerializeField]  private bool               verboseDebug;                  // If toggled on, low level verbose log messages are shown
 		[SerializeField]  private bool               automaticRetry = true;         // If toggled on, video player will automatically retry on failed load
 		[SerializeField]  private int                numberOfRetries = 3;           // Number of automatic retries to attempt
 		[SerializeField]  private bool               allowRetryWhenLoaded;          // If toggled off, retry won't do anything if the video is successfully loaded
@@ -124,6 +126,9 @@ namespace Synergiance.MediaPlayer {
 
 		private string debugPrefix         = "[<color=#DF004F>SynMediaPlayer</color>] ";
 
+		private float diagnosticsUpdatePeriod = 0.1f;
+		private float lastDiagnosticsUpdate;
+
 		private void Start() {
 			Initialize();
 		}
@@ -158,6 +163,7 @@ namespace Synergiance.MediaPlayer {
 			UpdateVideoPlayer();
 			UpdateStatus();
 			UpdateSeek();
+			UpdateDiagnostics();
 		}
 
 		// ---------------------- UI Methods ----------------------
@@ -678,14 +684,14 @@ namespace Synergiance.MediaPlayer {
 					SetPlayerStatusText("Playing");
 					return;
 				}
-				float overshoot = Mathf.Clamp(-deviation, videoOvershoot * 2, 15);
+				float overshoot = Mathf.Clamp(-deviation, videoOvershoot * 2, 5.0f);
 				ResyncTime(currentTime, referencePlayhead + overshoot);
 				Log("Post Resync Compensation: " + overshoot, this);
 				SetPlayerStatusText("Catching Up");
 				return;
 			}
 			if (isResync) {
-				isResync = (Mathf.Abs(currentTime - playerTimeAtResync) < 2.0f || timeMinusLastSoftSync < checkSyncEvery) && timeMinusLastSoftSync < 15.0f;
+				isResync = (Mathf.Abs(currentTime - playerTimeAtResync) < 2.0f || timeMinusLastSoftSync < checkSyncEvery) && timeMinusLastSoftSync < 5.0f;
 				if (!isResync) {
 					postResync = true;
 					postResyncEndsAt = Time.time + (timeMinusLastSoftSync + checkSyncEvery * 0.5f);
@@ -956,6 +962,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void SetPlayerStatusText(string status) {
 			if (string.Equals(status, playerStatus)) return;
+			LogVerbose("Setting Player Status Text: " + status, this);
 			playerStatus = status;
 			SendStatusCallback();
 		}
@@ -993,6 +1000,39 @@ namespace Synergiance.MediaPlayer {
 			}
 			SetPlayerStatusText("Reloading Video");
 			SetVideoURLFromLocal();
+		}
+
+		private void UpdateDiagnostics() {
+			if (!diagnosticsText) return;
+			if (Time.time - lastDiagnosticsUpdate < diagnosticsUpdatePeriod) return;
+			string str = "Time: " + Time.time.ToString("N3");;
+			str += ", Player Status: " + playerStatus;
+			str += ", Start Time: " + startTime.ToString("N3");
+			str += ", Paused Time: " + pausedTime.ToString("N3");;
+			str += ", Reference Playhead: " + referencePlayhead.ToString("N3");;
+			str += ", Is Playing: " + isPlaying;
+			str += "\nURL Valid: " + urlValid;
+			str += ", Player Ready: " + playerReady;
+			str += ", Is Loading: " + isLoading;
+			str += ", Last Video Load Time: " + lastVideoLoadTime.ToString("N3");;
+			str += "\nIs Automatic Retry: " + isAutomaticRetry;
+			str += ", Retry Count: " + retryCount;
+			str += ", Is Reloading Video: " + isReloadingVideo;
+			str += "\nIs Seeking: " + isSeeking;
+			str += ", Last Seek Time: " + lastSeekTime.ToString("N3");;
+			str += ", Player Time At Seek: " + playerTimeAtSeek.ToString("N3");;
+			str += ", Is Low Latency: " + isLowLatency;
+			str += ", Play From Beginning: " + playFromBeginning;
+			str += "\nIs Resync: " + isResync;
+			str += ", Post Resync: " + postResync;
+			str += ", Deviation: " + deviation.ToString("N3");;
+			str += ", Last Check Time: " + lastCheckTime.ToString("N3");;
+			str += "\nLast Resync Time: " + lastResyncTime.ToString("N3");;
+			str += ", Post Resync Ends At: " + postResyncEndsAt.ToString("N3");;
+			str += ", Resync Pause At: " + resyncPauseAt.ToString("N3");;
+			str += ", Player Time At Resync: " + playerTimeAtResync.ToString("N3");;
+			str += ", Last Soft Sync Time: " + lastSoftSyncTime.ToString("N3");;
+			diagnosticsText.text = str;
 		}
 
 		// Takes a VideoError Object and returns a string describing the error.
@@ -1049,6 +1089,7 @@ namespace Synergiance.MediaPlayer {
 
 		// ----------------- Debug Helper Methods -----------------
 		private void Log(string message, UnityEngine.Object context) { if (enableDebug) Debug.Log(debugPrefix + message, context); }
+		private void LogVerbose(string message, UnityEngine.Object context) { if (verboseDebug) Log("(+v) " + message, context); }
 		private void LogWarning(string message, UnityEngine.Object context) { Debug.LogWarning(debugPrefix + message, context); }
 		private void LogError(string message, UnityEngine.Object context) { Debug.LogError(debugPrefix + message, context); }
 	}
