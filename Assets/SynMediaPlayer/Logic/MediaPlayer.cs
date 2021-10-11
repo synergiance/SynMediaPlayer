@@ -96,6 +96,7 @@ namespace Synergiance.MediaPlayer {
 		private float    resyncPauseAt;                  // Stores time of last event that needs to disable resync.
 		private float    playerTimeAtResync;             // Stores video player time at time of resync to determine whether resync has occurred.
 		private float    lastSoftSyncTime;               // Last time the video player has compared network time constant to local time constant.
+		private bool     waitForNextNetworkSync;         // Stores whether the resync routine should wait for the next network sync before adjusting.
 		private bool     isResync;                       // Stores whether player is in the process of a resync.
 		private bool     postResync;                     // Stores whether we're in the post resync state
 		private bool     nextVideoReady;                 // Stores state of queued video
@@ -167,8 +168,6 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		// ---------------------- UI Methods ----------------------
-		
-		// TODO: Master Lock
 
 		public void _Load() {
 			Initialize();
@@ -452,6 +451,7 @@ namespace Synergiance.MediaPlayer {
 
 		// Extension of OnDeserialization to let it be called internally.  This method checks local copies of variables against remote ones.
 		private void CheckDeserializedData() {
+			waitForNextNetworkSync = false; // Cancel any waiting, this will 99.9% of the time be the correct value
 			if (remotePlayerID != localPlayerID) { // Determines whether we swapped media type
 				Log("Deserialization found new Media Player: " + mediaPlayers.GetPlayerName(remotePlayerID), this);
 				localPlayerID = remotePlayerID;
@@ -535,6 +535,10 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void SoftResync() {
+			if (waitForNextNetworkSync) {
+				lastResyncTime += resyncEvery * 0.25f;
+				return;
+			}
 			// Make sure local time is in agreement with remote time, since it can change in certain conditions
 			if (Mathf.Abs(remoteTime - localTime) > 0.1f) localTime = remoteTime;
 			// Read local values and calculate local reference point
