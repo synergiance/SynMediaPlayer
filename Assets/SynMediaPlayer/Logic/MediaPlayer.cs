@@ -687,7 +687,10 @@ namespace Synergiance.MediaPlayer {
 				ResyncTime(currentTime, referencePlayhead + overshoot);
 				Log("Post Resync Compensation: " + overshoot, this);
 				SetPlayerStatusText("Catching Up");
-				if (!mediaPlayers.GetPlaying()) mediaPlayers._Play();
+				if (!mediaPlayers.GetPlaying()) {
+					LogVerbose("Resuming internal player on Post Resync", this);
+					mediaPlayers._Play();
+				}
 				return;
 			}
 			if (isResync) {
@@ -696,7 +699,10 @@ namespace Synergiance.MediaPlayer {
 					postResync = true;
 					postResyncEndsAt = Time.time + (timeMinusLastSoftSync + checkSyncEvery * 0.5f);
 					SetPlayerStatusText("Stabilizing");
-					if (!mediaPlayers.GetPlaying()) mediaPlayers._Play();
+					if (!mediaPlayers.GetPlaying()) {
+						LogVerbose("Resuming internal player on Resync", this);
+						mediaPlayers._Play();
+					}
 				}
 			}
 			if (isResync) return;
@@ -709,12 +715,14 @@ namespace Synergiance.MediaPlayer {
 					ResyncTime(currentTime, referencePlayhead + videoOvershoot);
 					SetPlayerStatusText("Syncing");
 				} else if (deviation > videoOvershoot * 2) {
+					LogVerbose("Pausing internal player", this);
 					mediaPlayers._Pause();
 					SetPlayerStatusText("Waiting For Playhead");
 				}
 			} else {
 				if (absDeviation > deviationTolerance) ResyncTime(currentTime, referencePlayhead + videoOvershoot);
 				if (deviation <= videoOvershoot / 2) {
+					LogVerbose("Resuming internal player on Soft Sync", this);
 					mediaPlayers._Play();
 					SetPlayerStatusText("Playing");
 				}
