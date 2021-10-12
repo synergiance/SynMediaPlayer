@@ -18,9 +18,28 @@ namespace Synergiance.MediaPlayer {
 		private bool initialized;
 		private bool isValid;
 
-		private string debugPrefix         = "[<color=#27C048>SynMediaPlayer</color>] ";
-		
-		void Start() {}
+		private string debugPrefix = "[<color=#27C048>SpeakerArray</color>] ";
+
+		void Start() {
+			Initialize();
+		}
+
+		private void Initialize() {
+			if (initialized) return;
+			initialized = true;
+			if (speakers.Length != speakerZones.Length) return;
+			zoneArrays = new int[zoneNames.Length][];
+			zoneVolumes = new float[zoneNames.Length];
+			int i;
+			int[] zoneLengths = new int[zoneNames.Length];
+			for (i = 0; i < zoneArrays.Length; i++) zoneArrays[i] = new int[speakers.Length];
+			for (i = 0; i < speakerZones.Length; i++) {
+				int zone = speakerZones[i];
+				if (zone >= zoneArrays.Length || zone < 0) zone = 0;
+				zoneArrays[zone][zoneLengths[zone]++] = i;
+			}
+			for (i = 0; i < zoneArrays.Length; i++) {} // TODO: Temp array
+		}
 
 		public void _SetVolume(float volume) {
 			if (!isValid) return;
@@ -32,7 +51,7 @@ namespace Synergiance.MediaPlayer {
 			if (!isValid) return;
 			int index = Array.IndexOf(zoneNames, zone);
 			if (index < 0) {
-				// TODO: Log error of Zone Name Not Found
+				LogError("Zone with name " + zone + " does not exist!");
 				return;
 			}
 			_SetZoneVolume(index, volume);
@@ -41,7 +60,7 @@ namespace Synergiance.MediaPlayer {
 		public void _SetZoneVolume(int zone, float volume) {
 			if (!isValid) return;
 			if (zone < 0 || zone >= zoneVolumes.Length) {
-				// TODO: Log index out of bounds error
+				LogError("Volume index " + zone + " out of bounds!");
 				return;
 			}
 			zoneVolumes[zone] = volume;
@@ -58,8 +77,8 @@ namespace Synergiance.MediaPlayer {
 		public int GetNumZones() { return isValid ? zoneNames.Length : 0; }
 		public float GetZoneVolume(int zone) { return isValid && zone >= 0 && zone < zoneVolumes.Length ? zoneVolumes[zone] : 0; }
 		public int GetZoneIndex(string zoneName) { return Array.IndexOf(zoneNames, zoneName); }
-		
-		private void LogWarning(string message, UnityEngine.Object context) { Debug.LogWarning(debugPrefix + message, context); }
-		private void LogError(string message, UnityEngine.Object context) { Debug.LogError(debugPrefix + message, context); }
+
+		private void LogWarning(string message) { Debug.LogWarning(debugPrefix + message, this); }
+		private void LogError(string message) { Debug.LogError(debugPrefix + message, this); }
 	}
 }
