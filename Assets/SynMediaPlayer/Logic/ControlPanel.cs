@@ -208,8 +208,8 @@ namespace Synergiance.MediaPlayer.UI {
 			int loadedType = mediaPlayer._LoadURLAs(urlField.GetUrl(), mediaType);
 			if (loadedType == mediaType) return;
 			mediaType = loadedType;
-			UpdateMediaTypeSlider();
 			urlField.SetUrl(VRCUrl.Empty);
+			UpdateMediaTypeSlider();
 		}
 
 		private void LogInvalid() {
@@ -261,8 +261,8 @@ namespace Synergiance.MediaPlayer.UI {
 				float duration = mediaPlayer.GetDuration();
 				float currentTime = mediaPlayer.GetTime();
 				textToDisplay = FormatTime(currentTime);
-				if (Single.IsNaN(duration) || Single.IsInfinity(duration)) return;
-				if (duration > 0.01f) textToDisplay += "/" + FormatTime(duration);
+				if (Single.IsNaN(duration) || Single.IsInfinity(duration)) textToDisplay = "Live";
+				else if (duration > 0.01f) textToDisplay += "/" + FormatTime(duration);
 			}
 			statusField._SetText(textToDisplay);
 		}
@@ -273,16 +273,13 @@ namespace Synergiance.MediaPlayer.UI {
 			bool neg = time < 0;
 			string str = ((int)wTime % 60).ToString("D2");
 			wTime /= 60;
-			if (wTime < 1) {
-				str = "0:" + str;
-				return neg ? "-" + str : str;
-			}
 			bool hasHours = wTime >= 60;
 			str = ((int)wTime % 60).ToString(hasHours ? "D2" : "D1") + ":" + str;
+			if (!hasHours) return neg ? "-" + str : str;
 			wTime /= 60;
-			if (wTime < 1) return neg ? "-" + str : str;
 			bool hasDays = wTime >= 24;
 			str = ((int)wTime % 24).ToString(hasDays ? "D2" : "D1") + ":" + str;
+			if (!hasDays) return neg ? "-" + str : str;
 			wTime /= 24;
 			str = (int)wTime + ":" + str;
 			return neg ? "-" + str : str;

@@ -204,7 +204,6 @@ namespace Synergiance.MediaPlayer {
 			SwitchPlayer(correctedID);
 			SetURL(url);
 			isStream = mediaPlayers.GetIsStream();
-			if (isStream) SetPlaying(true);
 			return correctedID;
 		}
 
@@ -290,8 +289,10 @@ namespace Synergiance.MediaPlayer {
 			if (!isActive) return;
 			if (masterLock && !hasPermissions) return;
 			Log("_Stop", this);
+			SeekTo(0);
 			SetPlaying(false);
-			SetURL(VRCUrl.Empty);
+			playFromBeginning = true;
+			//SetURL(VRCUrl.Empty);
 		}
 
 		// Reinterpret master time to resync video
@@ -459,7 +460,7 @@ namespace Synergiance.MediaPlayer {
 				Log("Deserialization found new Media Player: " + mediaPlayers.GetPlayerName(remotePlayerID), this);
 				localPlayerID = remotePlayerID;
 				SetPlayerID(localPlayerID);
-				SetPlayingInternal(true);
+				SetPlayingInternal(localIsPlaying);
 			}
 			// Cache local and remote strings so ToString() doesn't get called multiple times
 			string localStr = localURL != null ? localURL.ToString() : "";
@@ -665,7 +666,8 @@ namespace Synergiance.MediaPlayer {
 					SetPlayerStatusText("Loading Stream");
 					string urlStr = currentURL != null ? currentURL.ToString() : "";
 					Log("Loading Stream URL: " + urlStr, this);
-					mediaPlayers._PlayURL(currentURL);
+					if (isPlaying) mediaPlayers._PlayURL(currentURL);
+					else mediaPlayers._LoadURL(currentURL);
 					if (hasCallback && !isLoading) callback.SendCustomEvent("_RelayVideoLoading");
 					isLoading = true;
 				}
@@ -823,7 +825,6 @@ namespace Synergiance.MediaPlayer {
 				if (Networking.IsOwner(gameObject)) SwitchPlayer(newPlayerId);
 				else SetPlayerID(newPlayerId);
 			}
-			if (isStream) mediaPlayers._Play();
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoReady");
 		}
 
