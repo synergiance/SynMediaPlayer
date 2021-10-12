@@ -19,6 +19,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private AudioSource speaker;
 		[SerializeField] private string playerName = "Video Player";
 		[SerializeField] private bool isStream;
+		[SerializeField] private SpeakerArray speakers;
 
 		[Header("Callback Settings")]
 		[SerializeField] private UdonSharpBehaviour relayPoint;
