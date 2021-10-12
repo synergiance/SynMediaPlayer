@@ -492,7 +492,7 @@ namespace Synergiance.MediaPlayer {
 			if (remoteLock != localLock) {
 				Log("Deserialization found lock status changed! Now " + (remoteLock ? "locked" : "unlocked"), this);
 				localLock = remoteLock;
-				SetLockStateInternal();
+				SetLockStateInternal(localLock);
 			}
 			if (remoteLooping != localLooping) {
 				Log("Deserialization found video is " + (remoteLooping ? "now" : "no longer") + " looping", this);
@@ -1116,13 +1116,13 @@ namespace Synergiance.MediaPlayer {
 
 		private void SetLockState(bool lockState) {
 			if (!hasPermissions) return;
-			masterLock = lockState;
-			SetLockStateInternal();
-			localLock = masterLock;
+			SetLockStateInternal(lockState);
+			localLock = lockState;
 			Sync();
 		}
 
-		private void SetLockStateInternal() {
+		private void SetLockStateInternal(bool lockState) {
+			masterLock = lockState;
 			if (seekBar) seekBar._SetLocked(masterLock && !hasPermissions);
 			if (hasCallback) callback.SendCustomEvent(masterLock ? "_PlayerLocked" : "_PlayerUnlocked");
 		}
