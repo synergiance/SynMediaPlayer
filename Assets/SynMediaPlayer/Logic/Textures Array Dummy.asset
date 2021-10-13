@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: Textures Array Dummy
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 774a0feeebebcee42bb06981617ea78c,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 736f5c26ce82a374696175db29aec125,
     type: 2}
   udonAssembly: 
   assemblyError: 

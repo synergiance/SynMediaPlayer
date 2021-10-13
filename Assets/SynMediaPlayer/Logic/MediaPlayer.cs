@@ -1105,8 +1105,8 @@ namespace Synergiance.MediaPlayer {
 
 		private bool CheckPrivileged(VRCPlayerApi vrcPlayer) {
 			if (vrcPlayer == null) return true;
-			if (vrcPlayer.isMaster) return true;
-			if (vrcPlayer.isInstanceOwner) return true;
+			if (vrcPlayer.isMaster && masterCanLock) return true;
+			if (vrcPlayer.isInstanceOwner && ownerCanLock) return true;
 			string playerName = vrcPlayer.displayName;
 			foreach (string moderator in moderators)
 				if (string.Equals(playerName, moderator))
