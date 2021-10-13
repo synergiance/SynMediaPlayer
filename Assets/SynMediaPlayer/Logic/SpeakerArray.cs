@@ -14,6 +14,7 @@ namespace Synergiance.MediaPlayer {
 		private float masterVolume;
 		private float[] zoneVolumes;
 		private int[][] zoneArrays;
+		private bool singleZoneMode;
 
 		private bool initialized;
 		private bool isValid;
@@ -27,6 +28,11 @@ namespace Synergiance.MediaPlayer {
 		private void Initialize() {
 			if (initialized) return;
 			initialized = true;
+			if (zoneNames.Length == 0) {
+				singleZoneMode = true;
+				isValid = true;
+				return;
+			}
 			if (speakers.Length != speakerZones.Length) {
 				LogError("Malformed data!");
 				return;
@@ -53,12 +59,15 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isValid) return;
 			masterVolume = volume;
-			for (int i = 0; i < zoneNames.Length; i++) ReadjustZoneVolume(i);
+			int i;
+			if (singleZoneMode) for (i = 0; i < speakers.Length; i++) speakers[i].volume = masterVolume;
+			else for (i = 0; i < zoneNames.Length; i++) ReadjustZoneVolume(i);
 		}
 
 		public void _SetZoneVolumeByName(string zone, float volume) {
 			Initialize();
 			if (!isValid) return;
+			if (singleZoneMode) return;
 			int index = Array.IndexOf(zoneNames, zone);
 			if (index < 0) {
 				LogError("Zone with name " + zone + " does not exist!");
@@ -70,6 +79,7 @@ namespace Synergiance.MediaPlayer {
 		public void _SetZoneVolume(int zone, float volume) {
 			Initialize();
 			if (!isValid) return;
+			if (singleZoneMode) return;
 			if (zone < 0 || zone >= zoneVolumes.Length) {
 				LogError("Volume index " + zone + " out of bounds!");
 				return;
@@ -87,7 +97,7 @@ namespace Synergiance.MediaPlayer {
 
 		public int GetNumZones() { return isValid ? zoneNames.Length : 0; }
 		public float GetVolume() { return isValid ? masterVolume : 0; }
-		public float GetZoneVolume(int zone) { return isValid && zone >= 0 && zone < zoneVolumes.Length ? zoneVolumes[zone] : 0; }
+		public float GetZoneVolume(int zone) { return isValid ? !singleZoneMode ? zone >= 0 && zone < zoneVolumes.Length ? zoneVolumes[zone] : 0 : 1 : 0; }
 		public int GetZoneIndex(string zoneName) { return Array.IndexOf(zoneNames, zoneName); }
 
 		private void LogWarning(string message) { Debug.LogWarning(debugPrefix + message, this); }
