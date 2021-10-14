@@ -911,12 +911,12 @@ PrefabInstance:
     - target: {fileID: 5013995919473724660, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
       propertyPath: m_RootOrder
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5277246912267904198, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
       propertyPath: m_RootOrder
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 5632309053297106625, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}

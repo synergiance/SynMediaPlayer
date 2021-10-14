@@ -688,7 +688,18 @@ namespace Synergiance.MediaPlayer {
 			float absDeviation = Mathf.Abs(deviation);
 			float timeMinusLastSoftSync = Time.time - lastSoftSyncTime;
 			if (postResync) {
-				if (Time.time < postResyncEndsAt) return;
+				if (Time.time < postResyncEndsAt) {
+					if (!mediaPlayers.GetPlaying()) {
+						if (currentTime > referencePlayhead + deviationTolerance) {
+							LogVerbose("Ending Post Resync early", this);
+							postResyncEndsAt = Time.time;
+						} else {
+							LogVerbose("Resuming internal player during Post Resync period", this);
+							mediaPlayers._Play();
+						}
+					}
+					return;
+				}
 				postResync = false;
 				if (absDeviation <= deviationTolerance) {
 					SetPlayerStatusText("Playing");
@@ -699,7 +710,7 @@ namespace Synergiance.MediaPlayer {
 				Log("Post Resync Compensation: " + overshoot, this);
 				SetPlayerStatusText("Catching Up");
 				if (!mediaPlayers.GetPlaying()) {
-					LogVerbose("Resuming internal player on Post Resync", this);
+					LogVerbose("Resuming internal player at end of Post Resync period", this);
 					mediaPlayers._Play();
 				}
 				return;
@@ -711,7 +722,12 @@ namespace Synergiance.MediaPlayer {
 					postResyncEndsAt = Time.time + (timeMinusLastSoftSync + checkSyncEvery * 0.5f);
 					SetPlayerStatusText("Stabilizing");
 					if (!mediaPlayers.GetPlaying()) {
-						LogVerbose("Resuming internal player on Resync", this);
+						LogVerbose("Resuming internal player on end of Resync", this);
+						mediaPlayers._Play();
+					}
+				} else if (!mediaPlayers.GetPlaying()) {
+					if (currentTime < referencePlayhead + deviationTolerance) {
+						LogVerbose("Resuming internal player during Resync", this);
 						mediaPlayers._Play();
 					}
 				}
@@ -746,6 +762,10 @@ namespace Synergiance.MediaPlayer {
 			isResync = true;
 			lastSoftSyncTime = Time.time;
 			playerTimeAtResync = oldTime;
+			if (mediaPlayers.GetReady() && !mediaPlayers.GetPlaying()) {
+				LogVerbose("Resuming internal player on Resync Time", this);
+				mediaPlayers._Play();
+			}
 		}
 
 		private void SetPlayingInternal(bool playing) {
