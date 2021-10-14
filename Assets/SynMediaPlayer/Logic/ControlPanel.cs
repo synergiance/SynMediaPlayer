@@ -76,7 +76,7 @@ namespace Synergiance.MediaPlayer.UI {
 				LogInvalid();
 				return;
 			}
-			if (mediaType == 0) { // Media Type 0 is video
+			if (mediaPlayer.GetMediaType() == 0) { // Media Type 0 is video
 				mediaPlayer._PlayPause();
 			} else { // Media Type 1-2 is stream
 				if (mediaPlayer.GetIsPlaying()) mediaPlayer._Stop();
