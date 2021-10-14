@@ -1,4 +1,5 @@
-﻿using UdonSharp;
+﻿using System;
+using UdonSharp;
 using UnityEngine;
 using VRC.SDK3.Components.Video;
 using VRC.SDK3.Video.Components.Base;
@@ -24,20 +25,26 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private UdonSharpBehaviour relayPoint;
 		[SerializeField] private int identifier;
 
-		public void _Play() { videoPlayer.Play(); }
-		public void _Pause() { videoPlayer.Pause(); }
-		public void _Stop() { videoPlayer.Stop(); }
-		public void _LoadURL(VRCUrl url) { videoPlayer.LoadURL(url); }
-		public void _PlayURL(VRCUrl url) { videoPlayer.PlayURL(url); }
-		public void _SetLoop(bool loop) { videoPlayer.Loop = loop; }
-		public void _SetTime(float time) { videoPlayer.SetTime(time); }
-		public void _SetVolume(float volume) { speaker.volume = volume; }
-		public bool GetLoop() { return videoPlayer.Loop; }
-		public float GetTime() { return videoPlayer.GetTime(); }
-		public float GetDuration() { return videoPlayer.GetDuration(); }
-		public float GetVolume() { return speaker.volume; }
-		public bool GetReady() { return videoPlayer.IsReady; }
-		public bool GetPlaying() { return videoPlayer.IsPlaying; }
+		private bool isValid;
+
+		private void Start() {
+			isValid = videoPlayer;
+		}
+
+		public void _Play() { if (isValid) videoPlayer.Play(); }
+		public void _Pause() { if (isValid) videoPlayer.Pause(); }
+		public void _Stop() { if (isValid) videoPlayer.Stop(); }
+		public void _LoadURL(VRCUrl url) { if (isValid) videoPlayer.LoadURL(url); }
+		public void _PlayURL(VRCUrl url) { if (isValid) videoPlayer.PlayURL(url); }
+		public void _SetLoop(bool loop) { if (isValid) videoPlayer.Loop = loop; }
+		public void _SetTime(float time) { if (isValid) videoPlayer.SetTime(time); }
+		public void _SetVolume(float volume) { if (isValid) speaker.volume = volume; }
+		public bool GetLoop() { return isValid && videoPlayer.Loop; }
+		public float GetTime() { return isValid ? videoPlayer.GetTime() : 0; }
+		public float GetDuration() { return isValid ? videoPlayer.GetDuration() : 0; }
+		public float GetVolume() { return isValid ? speaker.volume : 0; }
+		public bool GetReady() { return isValid && videoPlayer.IsReady; }
+		public bool GetPlaying() { return isValid && videoPlayer.IsPlaying; }
 		public bool GetStream() { return isStream; }
 		public string GetName() { return playerName; }
 		public AudioSource GetSpeaker() { return speaker; }
