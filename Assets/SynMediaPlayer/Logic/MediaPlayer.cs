@@ -1059,8 +1059,9 @@ namespace Synergiance.MediaPlayer {
 
 		private void UpdateDiagnostics() {
 			if (!diagnosticsText) return;
-			if (Time.time - lastDiagnosticsUpdate < diagnosticsUpdatePeriod) return;
-			string str = "Time: " + Time.time.ToString("N3");
+			float uTime = Time.time;
+			if (uTime - lastDiagnosticsUpdate < diagnosticsUpdatePeriod) return;
+			string str = "Time: " + uTime.ToString("N3");
 			str += ", Player Status: " + playerStatus;
 			str += ", Start Time: " + startTime.ToString("N3");
 			str += ", Paused Time: " + pausedTime.ToString("N3");
@@ -1069,12 +1070,12 @@ namespace Synergiance.MediaPlayer {
 			str += "\nURL Valid: " + urlValid;
 			str += ", Player Ready: " + playerReady;
 			str += ", Is Loading: " + isLoading;
-			str += ", Last Video Load Time: " + lastVideoLoadTime.ToString("N3");
+			str += ", Time Since Last Video Load: " + (uTime - lastVideoLoadTime).ToString("N3");
 			str += "\nIs Automatic Retry: " + isAutomaticRetry;
 			str += ", Retry Count: " + retryCount;
 			str += ", Is Reloading Video: " + isReloadingVideo;
 			str += "\nIs Seeking: " + isSeeking;
-			str += ", Last Seek Time: " + lastSeekTime.ToString("N3");
+			str += ", Time Since Last Seek: " + (uTime - lastSeekTime).ToString("N3");
 			str += ", Player Time At Seek: " + playerTimeAtSeek.ToString("N3");
 			str += ", Is Low Latency: " + isLowLatency;
 			str += ", Is Stream: " + isStream;
@@ -1082,12 +1083,12 @@ namespace Synergiance.MediaPlayer {
 			str += "\nIs Resync: " + isResync;
 			str += ", Post Resync: " + postResync;
 			str += ", Deviation: " + deviation.ToString("N3");
-			str += ", Last Check Time: " + lastCheckTime.ToString("N3");
-			str += "\nLast Resync Time: " + lastResyncTime.ToString("N3");
-			str += ", Post Resync Ends At: " + postResyncEndsAt.ToString("N3");
-			str += ", Resync Pause At: " + resyncPauseAt.ToString("N3");
+			str += ", Time Since Last Check: " + (uTime - lastCheckTime).ToString("N3");
+			str += "\nTime Since Last Resync: " + (uTime - lastResyncTime).ToString("N3");
+			str += ", Post Resync Ends In: " + Mathf.Max(postResyncEndsAt - uTime, 0).ToString("N3");
+			str += ", Resync Pauses In: " + Mathf.Max(resyncPauseAt - uTime, 0).ToString("N3");
 			str += ", Player Time At Resync: " + playerTimeAtResync.ToString("N3");
-			str += ", Last Soft Sync Time: " + lastSoftSyncTime.ToString("N3");
+			str += ", Time Since Last Soft Sync: " + (uTime - lastSoftSyncTime).ToString("N3");
 			str += "\nPlayer Time: " + mediaPlayers.GetTime().ToString("N3");
 			str += ", Player Duration: " + mediaPlayers.GetDuration().ToString("N3");
 			str += ", Player Playing: " + mediaPlayers.GetPlaying();
