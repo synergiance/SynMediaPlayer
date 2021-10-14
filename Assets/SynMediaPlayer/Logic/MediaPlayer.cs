@@ -199,7 +199,7 @@ namespace Synergiance.MediaPlayer {
 			string urlStr = url != null ? url.ToString() : "";
 			if (!SanityCheckURL(urlStr)) return mediaPlayers.GetActiveID(); 
 			// Sync new values over the network
-			int correctedID = CheckURL(urlStr, playerID);
+			int correctedID = isEditor ? 0 : CheckURL(urlStr, playerID);
 			if (correctedID < 0) return mediaPlayers.GetActiveID();
 			SwitchPlayer(correctedID);
 			SetURL(url);
