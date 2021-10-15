@@ -260,7 +260,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2784612165201296540}
   m_Layer: 0
-  m_Name: Syn Media Player
+  m_Name: SMP UI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2476,6 +2476,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6000819255595568626, guid: d9b90be995eced045ae78052edf19504,
         type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6000819255595568626, guid: d9b90be995eced045ae78052edf19504,
+        type: 3}
       propertyPath: m_OnEndEdit.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
       value: 5
       objectReference: {fileID: 0}
@@ -2491,7 +2496,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6000819255595568626, guid: d9b90be995eced045ae78052edf19504,
         type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6000819255595568626, guid: d9b90be995eced045ae78052edf19504,
+        type: 3}
       propertyPath: m_OnEndEdit.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: SendCustomEvent
+      objectReference: {fileID: 0}
+    - target: {fileID: 6000819255595568626, guid: d9b90be995eced045ae78052edf19504,
+        type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 2784612164406905078}
+    - target: {fileID: 6000819255595568626, guid: d9b90be995eced045ae78052edf19504,
+        type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6000819255595568626, guid: d9b90be995eced045ae78052edf19504,
+        type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
       value: SendCustomEvent
       objectReference: {fileID: 0}
     - target: {fileID: 6000819255595568626, guid: d9b90be995eced045ae78052edf19504,
@@ -2501,7 +2526,17 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6000819255595568626, guid: d9b90be995eced045ae78052edf19504,
         type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_StringArgument
+      value: _CheckURL
+      objectReference: {fileID: 0}
+    - target: {fileID: 6000819255595568626, guid: d9b90be995eced045ae78052edf19504,
+        type: 3}
       propertyPath: m_OnEndEdit.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
+    - target: {fileID: 6000819255595568626, guid: d9b90be995eced045ae78052edf19504,
+        type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 6490615637048757361, guid: d9b90be995eced045ae78052edf19504,
