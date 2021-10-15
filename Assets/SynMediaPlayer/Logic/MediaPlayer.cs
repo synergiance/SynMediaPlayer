@@ -171,6 +171,10 @@ namespace Synergiance.MediaPlayer {
 
 		// ---------------------- UI Methods ----------------------
 
+		public int GetUrlId(string url, int currentID) {
+			return CheckURL(url, currentID);
+		}
+
 		public void _Load() {
 			Initialize();
 			if (!isActive) return;
@@ -205,18 +209,6 @@ namespace Synergiance.MediaPlayer {
 			SetURL(url);
 			isStream = mediaPlayers.GetIsStream();
 			return correctedID;
-		}
-
-		private bool SanityCheckURL(string url) {
-			if (string.IsNullOrWhiteSpace(url)) {
-				LogError("URL cannot be blank!", this);
-				return false;
-			}
-			if (!string.Equals(url.Trim(), url)) {
-				LogError("URL cannot have whitespace at the beginning or end!", this);
-				return false;
-			}
-			return true;
 		}
 
 		public void _LoadQueueURLAs(VRCUrl url, int playerID) {
@@ -1008,6 +1000,18 @@ namespace Synergiance.MediaPlayer {
 					           mediaPlayers.GetPlayerName(playerID) + " to " + mediaPlayers.GetPlayerName(newPlayerID), this);
 				}
 			return newPlayerID;
+		}
+
+		private bool SanityCheckURL(string url) {
+			if (string.IsNullOrWhiteSpace(url)) {
+				LogError("URL cannot be blank!", this);
+				return false;
+			}
+			if (!string.Equals(url.Trim(), url)) {
+				LogError("URL cannot have whitespace at the beginning or end!", this);
+				return false;
+			}
+			return true;
 		}
 
 		private void SetPlayerStatusText(string status) {

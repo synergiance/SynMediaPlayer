@@ -212,6 +212,17 @@ namespace Synergiance.MediaPlayer.UI {
 			UpdateMediaTypeSlider();
 		}
 
+		public void _CheckURL() {
+			if (!urlField) return;
+			VRCUrl url = urlField.GetUrl();
+			if (url == null) return;
+			string urlStr = url.ToString();
+			if (string.IsNullOrWhiteSpace(urlStr)) return;
+			int newType = mediaPlayer.GetUrlId(urlStr, mediaType);
+			if (newType < 0 || newType > 2) return;
+			UpdateMediaTypeSlider();
+		}
+
 		private void LogInvalid() {
 			LogError("Not properly initialized!", this);
 		}
