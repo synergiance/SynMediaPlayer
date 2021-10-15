@@ -986,19 +986,18 @@ namespace Synergiance.MediaPlayer {
 				Log("URL Parameters: " + parameters, this);
 				foreach (string verb in new string[] { "playlist", "watch" })
 					if (parameters.IndexOf(verb, StringComparison.Ordinal) == 0) newPlayerID = 1;
-				if (string.Equals(parameters.Substring(parameters.Length - 4, 4), "live")) newPlayerID = 1;
+				if (parameters.Length >= 4 && string.Equals(parameters.Substring(parameters.Length - 4, 4), "live")) newPlayerID = 1;
 			}
 			if (urlStr.Substring(urlStr.Length - 5, 5).Equals(".m3u8")) newPlayerID = 1;
 			if (string.Equals(urlProtocol, "rtmp")) newPlayerID = 1;
 			if (string.Equals(urlProtocol, "rtspt")) newPlayerID = 2;
-			if (newPlayerID != playerID)
-				if (isEditor) {
-					Log("Cannot play stream in editor! Current Player: " + mediaPlayers.GetPlayerName(0), this);
-					newPlayerID = 0;
-				} else {
-					LogWarning("URL not appropriate for specified player, switching from " +
-					           mediaPlayers.GetPlayerName(playerID) + " to " + mediaPlayers.GetPlayerName(newPlayerID), this);
-				}
+			if (isEditor && newPlayerID != 0) {
+				Log("Cannot play stream in editor! Current Player: " + mediaPlayers.GetPlayerName(0) + ", Desired Player: " + mediaPlayers.GetPlayerName(newPlayerID), this);
+				newPlayerID = 0;
+			} else if (newPlayerID != playerID) {
+				LogWarning("URL not appropriate for specified player, switching from " +
+				           mediaPlayers.GetPlayerName(playerID) + " to " + mediaPlayers.GetPlayerName(newPlayerID), this);
+			}
 			return newPlayerID;
 		}
 
