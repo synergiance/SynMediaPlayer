@@ -60,6 +60,8 @@ namespace Synergiance.MediaPlayer {
 			if (id == activeID) return;
 			mediaPlayers[activeID]._SetTime(0);
 			mediaPlayers[activeID]._Pause();
+			mediaPlayers[activeID]._Stop();
+			mediaPlayers[activeID]._LoadURL(VRCUrl.Empty);
 			mediaPlayers[id]._SetLoop(isLooping);
 			mediaPlayers[id]._SetVolume(volume);
 			interpolatorMaterial.SetFloat(interpolationProps[activeID], 0);
