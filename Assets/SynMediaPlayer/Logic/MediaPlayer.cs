@@ -816,6 +816,9 @@ namespace Synergiance.MediaPlayer {
 		private void SeekInternal(float time) {
 			startTime = Time.time - time;
 			referencePlayhead = pausedTime = urlValid || isPlaying ? time : 0;
+			// Terminate Resync and Post Resync periods
+			postResync = false;
+			isResync = false;
 		}
 
 		// ------------------- Callback Methods -------------------
