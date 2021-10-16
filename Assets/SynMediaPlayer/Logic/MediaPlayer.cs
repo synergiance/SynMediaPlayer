@@ -130,7 +130,7 @@ namespace Synergiance.MediaPlayer {
 		private string debugPrefix         = "[<color=#DF004F>SynMediaPlayer</color>] ";
 
 		private float diagnosticsUpdatePeriod = 0.1f;
-		private float lastDiagnosticsUpdate;
+		private float lastDiagnosticsUpdate = 0;
 
 		private void Start() {
 			Initialize();
@@ -649,25 +649,24 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void StreamLogic() {
-			if (isPlaying && !mediaPlayers.GetPlaying()) {
-				if (mediaPlayers.GetReady()) {
-					SetPlayerStatusText("Playing Stream");
-					Log("Playing Stream", this);
-					mediaPlayers._Play();
-				} else if (!isLoading) {
-					SetPlayerStatusText("Loading Stream");
-					string urlStr = currentURL != null ? currentURL.ToString() : "";
-					Log("Loading Stream URL: " + urlStr, this);
-					if (isPlaying) mediaPlayers._PlayURL(currentURL);
-					else mediaPlayers._LoadURL(currentURL);
-					if (hasCallback && !isLoading) callback.SendCustomEvent("_RelayVideoLoading");
-					isLoading = true;
-				}
+			if (!isPlaying || mediaPlayers.GetPlaying()) return;
+			if (mediaPlayers.GetReady()) {
+				SetPlayerStatusText("Playing Stream");
+				Log("Playing Stream", this);
+				mediaPlayers._Play();
+			} else if (!isLoading) {
+				SetPlayerStatusText("Loading Stream");
+				string urlStr = currentURL != null ? currentURL.ToString() : "";
+				Log("Loading Stream URL: " + urlStr, this);
+				if (isPlaying) mediaPlayers._PlayURL(currentURL);
+				else mediaPlayers._LoadURL(currentURL);
+				if (hasCallback && !isLoading) callback.SendCustomEvent("_RelayVideoLoading");
+				isLoading = true;
 			}
 		}
 
 		private void PreloadLogic() {
-			if (nextURL == null || nextURL == VRCUrl.Empty) return;
+			if (nextURL == null || nextURL.Equals(VRCUrl.Empty)) return;
 			if (mediaPlayers.GetDuration() - mediaPlayers.GetTime() > preloadNextVideoTime) return;
 			mediaPlayers._LoadNextURL(nextURL);
 			nextVideoLoading = true;
@@ -1029,8 +1028,7 @@ namespace Synergiance.MediaPlayer {
 		// Returns time in video, conditionally pulling it from the player or
 		// from the paused time.
 		private float GetTimeInternal() {
-			if (isPlaying) return mediaPlayers.GetTime();
-			return pausedTime;
+			return isPlaying ? mediaPlayers.GetTime() : pausedTime;
 		}
 
 		private void SetTimeInternal(float time) {
