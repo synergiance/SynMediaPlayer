@@ -1086,7 +1086,7 @@ namespace Synergiance.MediaPlayer {
 			str += ", Time Since Last Check: " + (uTime - lastCheckTime).ToString("N3");
 			str += "\nTime Since Last Resync: " + (uTime - lastResyncTime).ToString("N3");
 			str += ", Post Resync Ends In: " + Mathf.Max(postResyncEndsAt - uTime, 0).ToString("N3");
-			str += ", Resync Pauses In: " + Mathf.Max(resyncPauseAt - uTime, 0).ToString("N3");
+			str += ", Time Since Resync Pause: " + (uTime - resyncPauseAt).ToString("N3");
 			str += ", Player Time At Resync: " + playerTimeAtResync.ToString("N3");
 			str += ", Time Since Last Soft Sync: " + (uTime - lastSoftSyncTime).ToString("N3");
 			str += "\nPlayer Time: " + mediaPlayers.GetTime().ToString("N3");
