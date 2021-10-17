@@ -28,13 +28,31 @@ namespace Synergiance.MediaPlayer {
 		[HideInInspector] public  int                relayIdentifier;
 		[HideInInspector] public  VideoError         relayVideoError;
 
+		public bool BlackOutPlayer {
+			set {
+				blackOutPlayer = value;
+				float visibility = blackOutPlayer ? 0 : 1;
+				interpolatorMaterial.SetFloat(interpolationProps[activeID], visibility);
+				mediaPlayers[activeID]._SetVolume(volume * visibility);
+			}
+			get => blackOutPlayer;
+		}
+
 		private bool   isLooping;
 		private int    nextID = -1;
 		private bool   hasAudioCallback;
+		private bool   initialized;
+		private bool   blackOutPlayer;
 
 		private string debugPrefix = "[<color=#1FAF5F>Video Interpolator</color>] ";
 
 		private void Start() {
+			Initialize();
+		}
+
+		private void Initialize() {
+			if (initialized) return;
+			initialized = true;
 			for (int c = 0; c < mediaPlayers.Length; c++) {
 				interpolatorMaterial.SetFloat(interpolationProps[c], 0);
 			}
@@ -46,8 +64,9 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _SwitchPlayer(int id) {
+			Initialize();
 			if (id == activeID) return;
-			if (id >= (gaplessSupport ? mediaPlayers.Length - 1 : mediaPlayers.Length)) {
+			if (id >= (gaplessSupport ? mediaPlayers.Length - 1 : mediaPlayers.Length) || id < 0) {
 				Error("Switching Players: Identifier (" + id + ") out of range! (" + mediaPlayers.Length + ")");
 				return;
 			}
@@ -58,19 +77,26 @@ namespace Synergiance.MediaPlayer {
 
 		private void SwitchPlayerInternal(int id) {
 			if (id == activeID) return;
-			mediaPlayers[activeID]._SetTime(0);
-			mediaPlayers[activeID]._Pause();
-			mediaPlayers[activeID]._Stop();
-			mediaPlayers[activeID]._LoadURL(VRCUrl.Empty);
-			mediaPlayers[id]._SetLoop(isLooping);
-			mediaPlayers[id]._SetVolume(volume);
-			interpolatorMaterial.SetFloat(interpolationProps[activeID], 0);
-			interpolatorMaterial.SetFloat(interpolationProps[id], 1);
-			if (hasAudioCallback) audioCallback.SetProgramVariable(audioFieldName, mediaPlayers[id].GetSpeaker());
+			if (activeID >= 0) {
+				mediaPlayers[activeID]._SetTime(0);
+				mediaPlayers[activeID]._Pause();
+				mediaPlayers[activeID]._Stop();
+				mediaPlayers[activeID]._LoadURL(VRCUrl.Empty);
+				mediaPlayers[activeID]._SetVolume(0);
+				interpolatorMaterial.SetFloat(interpolationProps[activeID], 0);
+			}
+			if (id >= 0) {
+				mediaPlayers[id]._SetLoop(isLooping);
+				float visibility = blackOutPlayer ? 0 : 1;
+				mediaPlayers[id]._SetVolume(volume * visibility);
+				interpolatorMaterial.SetFloat(interpolationProps[id], visibility);
+				if (hasAudioCallback) audioCallback.SetProgramVariable(audioFieldName, mediaPlayers[id].GetSpeaker());
+			}
 			activeID = id;
 		}
 
 		public void _PlayNext() {
+			Initialize();
 			if (!mediaPlayers[nextID].GetReady()) return;
 			Log("Stopping " + PlayerNameAndIDString(activeID) + " and playing " + PlayerNameAndIDString(nextID));
 			int tradesies = activeID;
@@ -80,48 +106,58 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _Play() {
+			Initialize();
 			LogPlayer("Playing", activeID);
 			mediaPlayers[activeID]._Play();
 		}
 
 		public void _Pause() {
+			Initialize();
 			LogPlayer("Pausing", activeID);
 			mediaPlayers[activeID]._Pause();
 		}
 
 		public void _Stop() {
+			Initialize();
 			LogPlayer("Stopping", activeID);
 			mediaPlayers[activeID]._Stop();
 		}
 
 		public void _PlayURL(VRCUrl url) {
+			Initialize();
 			LogPlayer("Playing URL: " + (url != null ? url.ToString() : "<NULL>"), activeID);
 			mediaPlayers[activeID]._PlayURL(url);
 		}
 
 		public void _LoadURL(VRCUrl url) {
+			Initialize();
 			LogPlayer("Loading URL: " + (url != null ? url.ToString() : "<NULL>"), activeID);
 			mediaPlayers[activeID]._LoadURL(url);
 		}
 
 		public void _LoadNextURL(VRCUrl url) {
+			Initialize();
 			if (!gaplessSupport) return;
 			if (GetPublicActiveID() != 0) return;
 			mediaPlayers[nextID]._LoadURL(url);
 		}
 
 		public void _SetTime(float time) {
+			Initialize();
 			LogPlayer("Setting Time: " + time, activeID);
 			mediaPlayers[activeID]._SetTime(time);
 		}
 
 		public void _SetLoop(bool loop) {
+			Initialize();
 			LogPlayer("Setting Looping: " + loop, activeID);
 			mediaPlayers[activeID]._SetLoop(isLooping = loop);
 		}
 
 		public void _SetVolume(float volume) {
-			mediaPlayers[activeID]._SetVolume(this.volume = volume);
+			Initialize();
+			this.volume = volume;
+			mediaPlayers[activeID]._SetVolume(blackOutPlayer ? 0f : volume);
 		}
 
 		public bool GetReady() { return mediaPlayers[activeID].GetReady(); }
