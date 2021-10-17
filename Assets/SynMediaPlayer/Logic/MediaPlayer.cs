@@ -728,6 +728,7 @@ namespace Synergiance.MediaPlayer {
 			if (Time.time - lastCheckTime < checkSyncEvery) return;
 			if (Time.time - resyncPauseAt < pauseResyncFor) return;
 			lastCheckTime = Time.time;
+			mediaPlayers.BlackOutPlayer = absDeviation > deviationTolerance * 2;
 			if (mediaPlayers.GetPlaying()) {
 				if (absDeviation > deviationTolerance) {
 					ResyncTime(currentTime, referencePlayhead + videoOvershoot);
@@ -768,6 +769,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void PauseInternal() {
 			if (!mediaPlayers.GetReady()) return;
+			mediaPlayers.BlackOutPlayer = false;
 			if (!mediaPlayers.GetPlaying()) return;
 			Log("Pause Internal", this);
 			mediaPlayers._Pause();
@@ -779,6 +781,7 @@ namespace Synergiance.MediaPlayer {
 		private void StopInternal() {
 			Log("Stop", this);
 			isPlaying = false;
+			mediaPlayers.BlackOutPlayer = true;
 			if (Networking.IsOwner(gameObject)) SetPlaying(false);
 			currentURL = VRCUrl.Empty;
 			urlValid = false;
@@ -832,6 +835,7 @@ namespace Synergiance.MediaPlayer {
 			isLoading = false;
 			float duration = mediaPlayers.GetDuration();
 			bool isReallyStream = Single.IsNaN(duration) || Single.IsInfinity(duration) || duration <= 0.01f;
+			mediaPlayers.BlackOutPlayer = !isReallyStream;
 			if (isStream != isReallyStream) {
 				isStream = isReallyStream;
 				UpdateUICallback();

@@ -94,7 +94,7 @@ Material:
     - _SrcBlend: 1
     - _StreamContrib: 0
     - _UVSec: 0
-    - _UnityContrib: 0
+    - _UnityContrib: 1
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}

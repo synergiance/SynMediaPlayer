@@ -30,6 +30,7 @@ namespace Synergiance.MediaPlayer {
 
 		public bool BlackOutPlayer {
 			set {
+				if (blackOutPlayer == value) return;
 				blackOutPlayer = value;
 				float visibility = blackOutPlayer ? 0 : 1;
 				interpolatorMaterial.SetFloat(interpolationProps[activeID], visibility);
