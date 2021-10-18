@@ -385,7 +385,7 @@ namespace Synergiance.MediaPlayer {
 		public int GetMediaType() { return isStream ? isLowLatency ? 2 : 1 : 0; }
 		public bool GetLockStatus() { return masterLock; }
 		public bool HasPermissions() { return hasPermissions; }
-		public bool GetIsSyncing() { return isSeeking || postResync; }
+		public bool GetIsSyncing() { return isSeeking || isResync || postResync; }
 
 		// ------------------ External Utilities ------------------
 
@@ -687,6 +687,7 @@ namespace Synergiance.MediaPlayer {
 						} else {
 							LogVerbose("Resuming internal player during Post Resync period", this);
 							mediaPlayers._Play();
+							SetPlayerStatusText("Playing");
 						}
 					}
 					return;
@@ -703,6 +704,7 @@ namespace Synergiance.MediaPlayer {
 				if (!mediaPlayers.GetPlaying()) {
 					LogVerbose("Resuming internal player at end of Post Resync period", this);
 					mediaPlayers._Play();
+					SetPlayerStatusText("Playing");
 				}
 				return;
 			}
@@ -715,11 +717,13 @@ namespace Synergiance.MediaPlayer {
 					if (!mediaPlayers.GetPlaying()) {
 						LogVerbose("Resuming internal player on end of Resync", this);
 						mediaPlayers._Play();
+						SetPlayerStatusText("Playing");
 					}
 				} else if (!mediaPlayers.GetPlaying()) {
 					if (currentTime < referencePlayhead + deviationTolerance) {
 						LogVerbose("Resuming internal player during Resync", this);
 						mediaPlayers._Play();
+						SetPlayerStatusText("Playing");
 					}
 				}
 			}
@@ -817,11 +821,14 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void SeekInternal(float time) {
+			LogVerbose("Seek Internal: " + time, this);
 			startTime = Time.time - time;
 			referencePlayhead = pausedTime = urlValid || isPlaying ? time : 0;
 			// Terminate Resync and Post Resync periods
 			postResync = false;
 			isResync = false;
+			// Since we cancel out the resync booleans, this is the last chance we get to normalize the status text
+			SetPlayerStatusText(isPlaying ? "Playing" : "Paused");
 		}
 
 		// ------------------- Callback Methods -------------------
@@ -1078,12 +1085,12 @@ namespace Synergiance.MediaPlayer {
 			str += "\nURL Valid: " + urlValid;
 			str += ", Player Ready: " + playerReady;
 			str += ", Is Loading: " + isLoading;
-			str += ", Time Since Last Video Load: " + (uTime - lastVideoLoadTime).ToString("N3");
+			str += ", Time Since Video Load: " + (uTime - lastVideoLoadTime).ToString("N3");
 			str += "\nIs Automatic Retry: " + isAutomaticRetry;
 			str += ", Retry Count: " + retryCount;
 			str += ", Is Reloading Video: " + isReloadingVideo;
 			str += "\nIs Seeking: " + isSeeking;
-			str += ", Time Since Last Seek: " + (uTime - lastSeekTime).ToString("N3");
+			str += ", Time Since Seek: " + (uTime - lastSeekTime).ToString("N3");
 			str += ", Player Time At Seek: " + playerTimeAtSeek.ToString("N3");
 			str += ", Is Low Latency: " + isLowLatency;
 			str += ", Is Stream: " + isStream;
@@ -1092,11 +1099,11 @@ namespace Synergiance.MediaPlayer {
 			str += ", Post Resync: " + postResync;
 			str += ", Deviation: " + deviation.ToString("N3");
 			str += ", Time Since Last Check: " + (uTime - lastCheckTime).ToString("N3");
-			str += "\nTime Since Last Resync: " + (uTime - lastResyncTime).ToString("N3");
+			str += "\nTime Since Resync: " + (uTime - lastResyncTime).ToString("N3");
 			str += ", Post Resync Ends In: " + Mathf.Max(postResyncEndsAt - uTime, 0).ToString("N3");
 			str += ", Time Since Resync Pause: " + (uTime - resyncPauseAt).ToString("N3");
 			str += ", Player Time At Resync: " + playerTimeAtResync.ToString("N3");
-			str += ", Time Since Last Soft Sync: " + (uTime - lastSoftSyncTime).ToString("N3");
+			str += ", Time Since Soft Sync: " + (uTime - lastSoftSyncTime).ToString("N3");
 			str += "\nPlayer Time: " + mediaPlayers.GetTime().ToString("N3");
 			str += ", Player Duration: " + mediaPlayers.GetDuration().ToString("N3");
 			str += ", Player Playing: " + mediaPlayers.GetPlaying();

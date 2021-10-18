@@ -39,6 +39,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private float timeBetweenUpdates;
 		private float lastSlowUpdate;
 		private float lastResync;
+		private bool hideTime;
 
 		private string debugPrefix = "[<color=#20C0A0>SMP Control Panel</color>] ";
 
@@ -268,7 +269,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private void UpdateTimeString() {
 			string textToDisplay = "00:00:00/00:00:00";
 			if (isValid) {
-				if (!mediaPlayer.GetIsPlaying()) return;
+				if (hideTime) return;
 				float duration = mediaPlayer.GetDuration();
 				float currentTime = mediaPlayer.GetTime();
 				textToDisplay = FormatTime(currentTime);
@@ -303,7 +304,10 @@ namespace Synergiance.MediaPlayer.UI {
 			Initialize();
 			if (isValid) {
 				bool isPlaying = mediaPlayer.GetIsPlaying();
-				if (isPlaying) UpdateTimeString();
+				hideTime = !string.Equals(statusText, "Playing") &&
+				           !string.Equals(statusText, "Stabilizing") &&
+				           mediaPlayer.GetMediaType() == 0;
+				if (!hideTime) UpdateTimeString();
 				else statusField._SetText(statusText);
 				UpdateResyncButton();
 			} else {
@@ -337,9 +341,6 @@ namespace Synergiance.MediaPlayer.UI {
 			// Video is beginning to load
 			Initialize();
 			VRCUrl currentURL = mediaPlayer.GetCurrentURL();
-			//lcdDisplay.SetURL(currentURL == null ? "" : currentURL.ToString());
-			//HideErrorControls();
-			//ShowLoadingBar();
 			UpdateAllButtons();
 		}
 
@@ -352,7 +353,6 @@ namespace Synergiance.MediaPlayer.UI {
 		public void _RelayVideoError() {
 			// Video player has thrown an error
 			Initialize();
-			//DecodeVideoError(relayVideoError);
 		}
 
 		public void _RelayVideoStart() {
@@ -401,7 +401,6 @@ namespace Synergiance.MediaPlayer.UI {
 		public void _RelayVideoQueueReady() {
 			// Queued video has loaded
 			Initialize();
-			//HideLoadingBar();
 			UpdateAllButtons();
 		}
 

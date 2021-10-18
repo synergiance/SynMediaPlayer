@@ -890,8 +890,8 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2784612165574273528, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
-      propertyPath: m_FontData.m_FontSize
-      value: 40
+      propertyPath: m_FontData.m_HorizontalOverflow
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2784612166199625643, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
