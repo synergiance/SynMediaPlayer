@@ -112,11 +112,13 @@ namespace Synergiance.MediaPlayer {
 		private bool     hasPermissions;                 // Cached value for whether the local user has permissions
 
 		private bool     isLoggingDiagnostics;           // Stores whether we're taking diagnostic data
-		private string   diagnosticLog;                  // String to catch all our diagnostic data and output to the user
+		private string[] diagnosticLog;                  // String to catch all our diagnostic data and output to the user
 		private float    diagnosticEnd;                  // Time at which diagnostics will end
 		private string   diagnosticStr;                  // String to contain diagnostic variables each capture
 		private float    lastDiagnosticsUpdate;          // Stores time of last diagnostics display update
 		private float    lastDiagnosticsLog;             // Stores time of last diagnostics log
+		private int      currentDiagLog;                 // Stores index of current log
+		private int      currentDiagUpdate;              // Stores how many updates we've added to the current log
 
 		private bool     hasStatsText;                   // Cached value for whether statisticstext exists
 		private bool     hasCallback;                    // Cached value for whether callback exists
@@ -138,6 +140,7 @@ namespace Synergiance.MediaPlayer {
 
 		private float diagnosticsUpdatePeriod = 0.1f; // Update period of diagnostic display
 		private float diagnosticPeriod = 10;          // Period of diagnostic log
+		private int   diagnosticUpdatesPerLog = 5;
 		private float diagnosticDelay = 0.25f;        // Delay between diagnostic logs
 
 		private void Start() {
@@ -170,10 +173,11 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void Update() {
-			if (!isActive) return;
-			UpdateVideoPlayer();
+			if (isActive) {
+				UpdateVideoPlayer();
+				UpdateSeek();
+			}
 			UpdateStatus();
-			UpdateSeek();
 			UpdateDiagnostics();
 		}
 
@@ -402,6 +406,7 @@ namespace Synergiance.MediaPlayer {
 		public bool GetLockStatus() { return masterLock; }
 		public bool HasPermissions() { return hasPermissions; }
 		public bool GetIsSyncing() { return isSeeking || isResync || postResync; }
+		public bool GetIsLoggingDiagnostics() { return isLoggingDiagnostics; }
 
 		// ------------------ External Utilities ------------------
 
@@ -1133,14 +1138,21 @@ namespace Synergiance.MediaPlayer {
 		private void UpdateDiagnosticLog() {
 			if (!isLoggingDiagnostics) return;
 			float uTime = Time.time;
-			if (uTime > diagnosticEnd) isLoggingDiagnostics = false;
 			if (uTime - lastDiagnosticsLog < diagnosticDelay) return;
+			if (uTime > diagnosticEnd) isLoggingDiagnostics = false;
 			UpdateDiagnosticString();
-			diagnosticLog += "\n" + diagnosticStr + "\n";
+			if (++currentDiagUpdate > diagnosticUpdatesPerLog) {
+				currentDiagUpdate = 0;
+				currentDiagLog++;
+				diagnosticLog[currentDiagLog] = diagnosticStr + "\n";
+			} else {
+				diagnosticLog[currentDiagLog] += "\n" + diagnosticStr + "\n";
+			}
 			lastDiagnosticsLog = Time.time;
 			if (isLoggingDiagnostics) return;
-			diagnosticLog += "\n--- End SMP Diagnostic Log ---";
-			Debug.Log(diagnosticLog);
+			diagnosticLog[currentDiagLog] += "\n--- End SMP Diagnostic Log ---";
+			Log("Diagnostics finished", this);
+			for (int i = 0; i <= currentDiagLog; i++) Debug.Log(diagnosticLog[i], this);
 		}
 
 		private void UpdateDiagnosticString() {
@@ -1183,7 +1195,10 @@ namespace Synergiance.MediaPlayer {
 
 		private void StartDiagnostics() {
 			if (isLoggingDiagnostics) return;
-			diagnosticLog = "--- Begin SMP Diagnostic Log ---\n";
+			Log("Diagnostics starting", this);
+			diagnosticLog = new string[(int)(diagnosticPeriod / diagnosticDelay)];
+			currentDiagLog = 0;
+			diagnosticLog[currentDiagLog] = "--- Begin SMP Diagnostic Log ---\n";
 			isLoggingDiagnostics = true;
 			diagnosticEnd = Time.time + diagnosticPeriod;
 		}
@@ -1192,6 +1207,11 @@ namespace Synergiance.MediaPlayer {
 			if (!isLoggingDiagnostics) return;
 			isLoggingDiagnostics = false;
 			diagnosticLog = null;
+			Log("Diagnostics canceled", this);
+		}
+
+		private void AddToDiagnosticLog(string str) {
+			diagnosticLog[currentDiagLog] += "\n[" + Time.time + "] " + str + "\n";
 		}
 
 		// ------------------- Security Methods -------------------
@@ -1222,22 +1242,22 @@ namespace Synergiance.MediaPlayer {
 
 		// ----------------- Debug Helper Methods -----------------
 		private void Log(string message, UnityEngine.Object context) {
-			if (isLoggingDiagnostics) diagnosticLog += "\nSMP: " + message + "\n" + context + "\n";
+			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP: " + message + "\n" + context);
 			if (enableDebug) Debug.Log(debugPrefix + message, context);
 		}
 
 		private void LogVerbose(string message, UnityEngine.Object context) {
-			if (isLoggingDiagnostics) diagnosticLog += "\nSMP Verbose: " + message + "\n" + context + "\n";
+			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Verbose: " + message + "\n" + context);
 			if (verboseDebug) Log("(+v) " + message, context);
 		}
 
 		private void LogWarning(string message, UnityEngine.Object context) {
-			if (isLoggingDiagnostics) diagnosticLog += "\nSMP Warning: " + message + "\n" + context + "\n";
+			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Warning: " + message + "\n" + context);
 			Debug.LogWarning(debugPrefix + message, context);
 		}
 
 		private void LogError(string message, UnityEngine.Object context) {
-			if (isLoggingDiagnostics) diagnosticLog += "\nSMP Error: " + message + "\n" + context + "\n";
+			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Error: " + message + "\n" + context);
 			Debug.LogError(debugPrefix + message, context);
 		}
 	}

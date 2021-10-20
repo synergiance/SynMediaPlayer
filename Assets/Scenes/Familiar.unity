@@ -1028,6 +1028,12 @@ PrefabInstance:
       propertyPath: publicVariablesUnityEngineObjects.Array.data[3]
       value: 
       objectReference: {fileID: 402803150}
+    - target: {fileID: 3397122272782829727, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
+      propertyPath: publicVariablesUnityEngineObjects.Array.data[3]
+      value: 
+      objectReference: {fileID: 21300000, guid: c2a7a8042255b7a4d82e27f0f64ad13b,
+        type: 3}
     - target: {fileID: 3521737934820845916, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
       propertyPath: m_Name
