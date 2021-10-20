@@ -146,7 +146,7 @@ namespace Synergiance.MediaPlayer {
 			setStatusEnabled = callback && !string.IsNullOrWhiteSpace(setStatusMethod) && !string.IsNullOrWhiteSpace(statusProperty);
 			if (mediaSelect != null) mediaSelect._SetToggleID(mediaPlayers.GetActiveID());
 			if (Networking.LocalPlayer == null) isEditor = true;
-			hasPermissions = CheckPrivileged(Networking.LocalPlayer);
+			hasPermissions = CheckPrivilegedInternal(Networking.LocalPlayer);
 			if (Networking.IsOwner(gameObject)) SetLockState(masterLock);
 			if (volumeBar != null) volumeBar.value = mediaPlayers.GetVolume();
 			if (loopToggle != null) SetLooping(loopToggle.isOn);
@@ -386,6 +386,7 @@ namespace Synergiance.MediaPlayer {
 		public bool GetLockStatus() { return masterLock; }
 		public bool HasPermissions() { return hasPermissions; }
 		public bool GetIsSyncing() { return isSeeking || isResync || postResync; }
+		public bool CheckPrivileged(VRCPlayerApi vrcPlayer) { Initialize(); return CheckPrivilegedInternal(vrcPlayer); }
 
 		// ------------------ External Utilities ------------------
 
@@ -1139,7 +1140,7 @@ namespace Synergiance.MediaPlayer {
 		
 		// ------------------- Security Methods -------------------
 
-		private bool CheckPrivileged(VRCPlayerApi vrcPlayer) {
+		private bool CheckPrivilegedInternal(VRCPlayerApi vrcPlayer) {
 			if (vrcPlayer == null) return true;
 			if (vrcPlayer.isMaster && masterCanLock) return true;
 			if (vrcPlayer.isInstanceOwner && ownerCanLock) return true;

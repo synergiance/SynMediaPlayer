@@ -41,6 +41,9 @@ namespace Synergiance.MediaPlayer.UI {
 		private float lastResync;
 		private bool hideTime;
 
+		private string[] playerList;
+		private int[] playerIdList;
+
 		private string debugPrefix = "[<color=#20C0A0>SMP Control Panel</color>] ";
 
 		void Start() {
@@ -295,6 +298,35 @@ namespace Synergiance.MediaPlayer.UI {
 			wTime /= 24;
 			str = (int)wTime + ":" + str;
 			return neg ? "-" + str : str;
+		}
+		
+		// --------------- Player Detection Methods ---------------
+
+		private void RebuildModList() {
+			if (Networking.LocalPlayer == null) {
+				playerList = new[] { "Debug User" };
+				playerIdList = new[] { 0 };
+				return;
+			}
+			int numPlayers = VRCPlayerApi.GetPlayerCount();
+			playerList = new string[numPlayers];
+			playerIdList = new int[numPlayers];
+			int numMods = 0;
+			VRCPlayerApi player;
+			for (int i = 0; i < numPlayers; i++) {
+				player = VRCPlayerApi.GetPlayerById(i);
+				if (player == null || !player.IsValid()) continue;
+				if (!mediaPlayer.CheckPrivileged(player)) continue;
+				playerList[numMods] = player.displayName;
+				playerIdList[numMods] = i;
+				numMods++;
+			}
+			string[] tempPlayers = playerList;
+			int[] tempIds = playerIdList;
+			playerList = new string[numMods];
+			playerIdList = new int[numMods];
+			Array.Copy(tempPlayers, playerList, numMods);
+			Array.Copy(tempIds, playerIdList, numMods);
 		}
 
 		// ------------------- Callback Methods -------------------
