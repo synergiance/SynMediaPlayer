@@ -23,6 +23,9 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private StatefulButton refreshButton;
 		[SerializeField] private MultiText statusField;
 		[SerializeField] private MultiText timeField;
+		[SerializeField] private InputField prevUrlField;
+		[SerializeField] private InputField currentUrlField;
+		[SerializeField] private Text moderatorListField;
 		[SerializeField] private bool combineStatusAndTime;
 		[SerializeField] private float updatesPerSecond = 10;
 		[SerializeField] private float reloadAvailableFor = 5;
@@ -63,6 +66,8 @@ namespace Synergiance.MediaPlayer.UI {
 			if (volumeControl && isValid) volumeControl._SetVolume(mediaPlayer.GetVolume());
 			UpdateTimeString();
 			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
+			RebuildModList();
+			UpdateModList();
 			initialized = true;
 		}
 
@@ -299,7 +304,33 @@ namespace Synergiance.MediaPlayer.UI {
 			str = (int)wTime + ":" + str;
 			return neg ? "-" + str : str;
 		}
-		
+
+		private void UpdateModList() {
+			if (!moderatorListField) return;
+			string str;
+			if (Networking.LocalPlayer == null) {
+				str = "Debug User";
+			} else {
+				if (modList == null || modList.Length == 0) RebuildModList();
+				if (modList.Length <= 0) {
+					str = "No Moderators Present!";
+				} else {
+					str = modList[0];
+					for (int i = 1; i < modList.Length; i++) str += ", " + modList[i];
+				}
+			}
+			moderatorListField.text = str;
+		}
+
+		private void UpdateUrls() {
+			if (!isValid) return;
+			VRCUrl url = mediaPlayer.GetCurrentURL();
+			if (url == null || string.IsNullOrWhiteSpace(url.ToString())) return;
+			if (!currentUrlField) return;
+			if (prevUrlField) prevUrlField.text = currentUrlField.text;
+			currentUrlField.text = url.ToString();
+		}
+
 		// --------------- Player Detection Methods ---------------
 
 		private void RebuildModList() {
@@ -345,12 +376,14 @@ namespace Synergiance.MediaPlayer.UI {
 			Array.Copy(tempIds, modIdList, numMods);
 			modList[numMods] = player.displayName;
 			modIdList[numMods] = player.playerId;
+			UpdateModList();
 		}
 
 		public override void OnPlayerLeft(VRCPlayerApi player) {
 			if (player == null || !player.IsValid()) return;
 			if (Array.IndexOf(modIdList, player.playerId) < 0) return;
 			RebuildModList();
+			UpdateModList();
 		}
 
 		public void _SetStatusText() {
@@ -402,6 +435,7 @@ namespace Synergiance.MediaPlayer.UI {
 			// Video has finished loading
 			Initialize();
 			UpdateAllButtons();
+			UpdateUrls();
 		}
 
 		public void _RelayVideoError() {
