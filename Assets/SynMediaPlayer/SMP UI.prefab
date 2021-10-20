@@ -3184,6 +3184,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 52b44b70a441a8c4caeaec8f59849738,
         type: 2}
+    - target: {fileID: 4150636548903120168, guid: 49bfe63af05df1f4e9faf9f5f0801c0b,
+        type: 3}
+      propertyPath: publicVariablesUnityEngineObjects.Array.data[3]
+      value: 
+      objectReference: {fileID: 21300000, guid: 18b8937ea57ead24e876f3658d752a4d,
+        type: 3}
     - target: {fileID: 7302982118879682765, guid: 49bfe63af05df1f4e9faf9f5f0801c0b,
         type: 3}
       propertyPath: m_Sprite
