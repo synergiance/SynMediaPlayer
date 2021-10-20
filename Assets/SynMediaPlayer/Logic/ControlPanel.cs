@@ -41,8 +41,8 @@ namespace Synergiance.MediaPlayer.UI {
 		private float lastResync;
 		private bool hideTime;
 
-		private string[] playerList;
-		private int[] playerIdList;
+		private string[] modList;
+		private int[] modIdList;
 
 		private string debugPrefix = "[<color=#20C0A0>SMP Control Panel</color>] ";
 
@@ -304,32 +304,53 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private void RebuildModList() {
 			if (Networking.LocalPlayer == null) {
-				playerList = new[] { "Debug User" };
-				playerIdList = new[] { 0 };
+				modList = new[] { "Debug User" };
+				modIdList = new[] { 0 };
 				return;
 			}
 			int numPlayers = VRCPlayerApi.GetPlayerCount();
-			playerList = new string[numPlayers];
-			playerIdList = new int[numPlayers];
+			modList = new string[numPlayers];
+			modIdList = new int[numPlayers];
 			int numMods = 0;
-			VRCPlayerApi player;
+			VRCPlayerApi[] players = new VRCPlayerApi[numPlayers];
+			VRCPlayerApi.GetPlayers(players);
 			for (int i = 0; i < numPlayers; i++) {
-				player = VRCPlayerApi.GetPlayerById(i);
+				VRCPlayerApi player = players[i];
 				if (player == null || !player.IsValid()) continue;
 				if (!mediaPlayer.CheckPrivileged(player)) continue;
-				playerList[numMods] = player.displayName;
-				playerIdList[numMods] = i;
+				modList[numMods] = player.displayName;
+				modIdList[numMods] = player.playerId;
 				numMods++;
 			}
-			string[] tempPlayers = playerList;
-			int[] tempIds = playerIdList;
-			playerList = new string[numMods];
-			playerIdList = new int[numMods];
-			Array.Copy(tempPlayers, playerList, numMods);
-			Array.Copy(tempIds, playerIdList, numMods);
+			string[] tempMods = modList;
+			int[] tempIds = modIdList;
+			modList = new string[numMods];
+			modIdList = new int[numMods];
+			Array.Copy(tempMods, modList, numMods);
+			Array.Copy(tempIds, modIdList, numMods);
 		}
 
 		// ------------------- Callback Methods -------------------
+
+		public override void OnPlayerJoined(VRCPlayerApi player) {
+			if (player == null || !player.IsValid()) return;
+			int numMods = modList.Length + 1;
+			string[] tempMods = modList;
+			int[] tempIds = modIdList;
+			modList = new string[numMods];
+			modIdList = new int[numMods];
+			numMods -= 1;
+			Array.Copy(tempMods, modList, numMods);
+			Array.Copy(tempIds, modIdList, numMods);
+			modList[numMods] = player.displayName;
+			modIdList[numMods] = player.playerId;
+		}
+
+		public override void OnPlayerLeft(VRCPlayerApi player) {
+			if (player == null || !player.IsValid()) return;
+			if (Array.IndexOf(modIdList, player.playerId) < 0) return;
+			RebuildModList();
+		}
 
 		public void _SetStatusText() {
 			// Status text has been sent to us

@@ -1906,7 +1906,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: playerList
+      Data: modList
     - Name: $v
       Entry: 7
       Data: 121|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -1933,10 +1933,10 @@ MonoBehaviour:
       Data: SystemStringArray
     - Name: symbolOriginalName
       Entry: 1
-      Data: playerList
+      Data: modList
     - Name: symbolUniqueName
       Entry: 1
-      Data: playerList
+      Data: modList
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -1970,7 +1970,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: playerIdList
+      Data: modIdList
     - Name: $v
       Entry: 7
       Data: 125|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -1997,10 +1997,10 @@ MonoBehaviour:
       Data: SystemInt32Array
     - Name: symbolOriginalName
       Entry: 1
-      Data: playerIdList
+      Data: modIdList
     - Name: symbolUniqueName
       Entry: 1
-      Data: playerIdList
+      Data: modIdList
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
