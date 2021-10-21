@@ -111,6 +111,15 @@ namespace Synergiance.MediaPlayer {
 		private bool     masterLock;                     // Stores state of whether the player is locked
 		private bool     hasPermissions;                 // Cached value for whether the local user has permissions
 
+		private bool     isLoggingDiagnostics;           // Stores whether we're taking diagnostic data
+		private string[] diagnosticLog;                  // String to catch all our diagnostic data and output to the user
+		private float    diagnosticEnd;                  // Time at which diagnostics will end
+		private string   diagnosticStr;                  // String to contain diagnostic variables each capture
+		private float    lastDiagnosticsUpdate;          // Stores time of last diagnostics display update
+		private float    lastDiagnosticsLog;             // Stores time of last diagnostics log
+		private int      currentDiagLog;                 // Stores index of current log
+		private int      currentDiagUpdate;              // Stores how many updates we've added to the current log
+
 		private bool     hasStatsText;                   // Cached value for whether statisticstext exists
 		private bool     hasCallback;                    // Cached value for whether callback exists
 		private bool     setStatusEnabled;               // Cached value for whether status can be set without error
@@ -129,8 +138,10 @@ namespace Synergiance.MediaPlayer {
 
 		private string debugPrefix         = "[<color=#DF004F>SynMediaPlayer</color>] ";
 
-		private float diagnosticsUpdatePeriod = 0.1f;
-		private float lastDiagnosticsUpdate = 0;
+		private float diagnosticsUpdatePeriod = 0.1f; // Update period of diagnostic display
+		private float diagnosticPeriod = 10;          // Period of diagnostic log
+		private int   diagnosticUpdatesPerLog = 5;
+		private float diagnosticDelay = 0.25f;        // Delay between diagnostic logs
 
 		private void Start() {
 			Initialize();
@@ -162,10 +173,11 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void Update() {
-			if (!isActive) return;
-			UpdateVideoPlayer();
+			if (isActive) {
+				UpdateVideoPlayer();
+				UpdateSeek();
+			}
 			UpdateStatus();
-			UpdateSeek();
 			UpdateDiagnostics();
 		}
 
@@ -369,6 +381,14 @@ namespace Synergiance.MediaPlayer {
 			SetLockState(false);
 		}
 
+		public void _StartDiagnostics() {
+			StartDiagnostics();
+		}
+
+		public void _CancelDiagnostics() {
+			CancelDiagnostics();
+		}
+
 		// ---------------------- Accessors -----------------------
 
 		public string GetStatus() { return playerStatus; }
@@ -386,6 +406,7 @@ namespace Synergiance.MediaPlayer {
 		public bool GetLockStatus() { return masterLock; }
 		public bool HasPermissions() { return hasPermissions; }
 		public bool GetIsSyncing() { return isSeeking || isResync || postResync; }
+		public bool GetIsLoggingDiagnostics() { return isLoggingDiagnostics; }
 		public bool CheckPrivileged(VRCPlayerApi vrcPlayer) { Initialize(); return CheckPrivilegedInternal(vrcPlayer); }
 
 		// ------------------ External Utilities ------------------
@@ -1073,10 +1094,71 @@ namespace Synergiance.MediaPlayer {
 			if (hasCallback) callback.SendCustomEvent("_RecheckVideoPlayer");
 		}
 
+		// Takes a VideoError Object and returns a string describing the error.
+		private string GetErrorString(VideoError error) {
+			string errorString;
+			switch (error) {
+				case VideoError.Unknown:
+					errorString = "Unknown";
+					break;
+				case VideoError.AccessDenied:
+					errorString = "Unsafe URLs Disallowed";
+					break;
+				case VideoError.PlayerError:
+					errorString = "Player Error";
+					break;
+				case VideoError.RateLimited:
+					errorString = "Rate Limited";
+					break;
+				case VideoError.InvalidURL:
+					errorString = "Invalid URL";
+					break;
+				default:
+					errorString = "Invalid Error";
+					break;
+			}
+			return errorString;
+		}
+		
+		// ------------------ Diagnostic Methods ------------------
+
 		private void UpdateDiagnostics() {
+			diagnosticStr = "";
+			UpdateDiagnosticLog();
+			UpdateDiagnosticsDisplay();
+		}
+
+		private void UpdateDiagnosticsDisplay() {
 			if (!diagnosticsText) return;
+			if (Time.time - lastDiagnosticsUpdate < diagnosticsUpdatePeriod) return;
+			lastDiagnosticsUpdate = Time.time;
+			UpdateDiagnosticString();
+			diagnosticsText.text = diagnosticStr;
+		}
+
+		private void UpdateDiagnosticLog() {
+			if (!isLoggingDiagnostics) return;
 			float uTime = Time.time;
-			if (uTime - lastDiagnosticsUpdate < diagnosticsUpdatePeriod) return;
+			if (uTime - lastDiagnosticsLog < diagnosticDelay) return;
+			if (uTime > diagnosticEnd) isLoggingDiagnostics = false;
+			UpdateDiagnosticString();
+			if (++currentDiagUpdate > diagnosticUpdatesPerLog) {
+				currentDiagUpdate = 0;
+				currentDiagLog++;
+				diagnosticLog[currentDiagLog] = diagnosticStr + "\n";
+			} else {
+				diagnosticLog[currentDiagLog] += "\n" + diagnosticStr + "\n";
+			}
+			lastDiagnosticsLog = Time.time;
+			if (isLoggingDiagnostics) return;
+			diagnosticLog[currentDiagLog] += "\n--- End SMP Diagnostic Log ---";
+			Log("Diagnostics finished", this);
+			for (int i = 0; i <= currentDiagLog; i++) Debug.Log(diagnosticLog[i], this);
+		}
+
+		private void UpdateDiagnosticString() {
+			if (!string.IsNullOrWhiteSpace(diagnosticStr)) return;
+			float uTime = Time.time;
 			string str = "Time: " + uTime.ToString("N3");
 			str += ", Player Status: " + playerStatus;
 			str += ", Start Time: " + startTime.ToString("N3");
@@ -1109,35 +1191,30 @@ namespace Synergiance.MediaPlayer {
 			str += ", Player Duration: " + mediaPlayers.GetDuration().ToString("N3");
 			str += ", Player Playing: " + mediaPlayers.GetPlaying();
 			str += ", Player Ready: " + mediaPlayers.GetReady();
-			diagnosticsText.text = str;
+			diagnosticStr = str;
 		}
 
-		// Takes a VideoError Object and returns a string describing the error.
-		private string GetErrorString(VideoError error) {
-			string errorString;
-			switch (error) {
-				case VideoError.Unknown:
-					errorString = "Unknown";
-					break;
-				case VideoError.AccessDenied:
-					errorString = "Unsafe URLs Disallowed";
-					break;
-				case VideoError.PlayerError:
-					errorString = "Player Error";
-					break;
-				case VideoError.RateLimited:
-					errorString = "Rate Limited";
-					break;
-				case VideoError.InvalidURL:
-					errorString = "Invalid URL";
-					break;
-				default:
-					errorString = "Invalid Error";
-					break;
-			}
-			return errorString;
+		private void StartDiagnostics() {
+			if (isLoggingDiagnostics) return;
+			Log("Diagnostics starting", this);
+			diagnosticLog = new string[(int)(diagnosticPeriod / diagnosticDelay)];
+			currentDiagLog = 0;
+			diagnosticLog[currentDiagLog] = "--- Begin SMP Diagnostic Log ---\n";
+			isLoggingDiagnostics = true;
+			diagnosticEnd = Time.time + diagnosticPeriod;
 		}
-		
+
+		private void CancelDiagnostics() {
+			if (!isLoggingDiagnostics) return;
+			isLoggingDiagnostics = false;
+			diagnosticLog = null;
+			Log("Diagnostics canceled", this);
+		}
+
+		private void AddToDiagnosticLog(string str) {
+			diagnosticLog[currentDiagLog] += "\n[" + Time.time + "] " + str + "\n";
+		}
+
 		// ------------------- Security Methods -------------------
 
 		private bool CheckPrivilegedInternal(VRCPlayerApi vrcPlayer) {
@@ -1165,9 +1242,24 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		// ----------------- Debug Helper Methods -----------------
-		private void Log(string message, UnityEngine.Object context) { if (enableDebug) Debug.Log(debugPrefix + message, context); }
-		private void LogVerbose(string message, UnityEngine.Object context) { if (verboseDebug) Log("(+v) " + message, context); }
-		private void LogWarning(string message, UnityEngine.Object context) { Debug.LogWarning(debugPrefix + message, context); }
-		private void LogError(string message, UnityEngine.Object context) { Debug.LogError(debugPrefix + message, context); }
+		private void Log(string message, UnityEngine.Object context) {
+			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP: " + message + "\n" + context);
+			if (enableDebug) Debug.Log(debugPrefix + message, context);
+		}
+
+		private void LogVerbose(string message, UnityEngine.Object context) {
+			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Verbose: " + message + "\n" + context);
+			if (verboseDebug) Log("(+v) " + message, context);
+		}
+
+		private void LogWarning(string message, UnityEngine.Object context) {
+			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Warning: " + message + "\n" + context);
+			Debug.LogWarning(debugPrefix + message, context);
+		}
+
+		private void LogError(string message, UnityEngine.Object context) {
+			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Error: " + message + "\n" + context);
+			Debug.LogError(debugPrefix + message, context);
+		}
 	}
 }

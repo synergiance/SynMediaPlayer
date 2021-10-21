@@ -187,6 +187,14 @@ namespace Synergiance.MediaPlayer.UI {
 			}
 		}
 
+		public void _ClickDiagnostics() {
+			if (!isValid) return;
+			if (mediaPlayer.GetIsLoggingDiagnostics())
+				mediaPlayer._CancelDiagnostics();
+			else
+				mediaPlayer._StartDiagnostics();
+		}
+
 		public void _SetMediaType() {
 			Initialize();
 			if (!isValid) {
