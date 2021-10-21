@@ -407,7 +407,7 @@ namespace Synergiance.MediaPlayer {
 		public bool HasPermissions() { return hasPermissions; }
 		public bool GetIsSyncing() { return isSeeking || isResync || postResync; }
 		public bool GetIsLoggingDiagnostics() { return isLoggingDiagnostics; }
-		public bool CheckPrivileged(VRCPlayerApi vrcPlayer) { Initialize(); return CheckPrivilegedInternal(vrcPlayer); }
+		public bool CheckPrivileged(VRCPlayerApi vrcPlayer) { return CheckPrivilegedInternal(vrcPlayer); }
 
 		// ------------------ External Utilities ------------------
 

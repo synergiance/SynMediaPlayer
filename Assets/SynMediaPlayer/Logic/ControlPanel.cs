@@ -374,6 +374,7 @@ namespace Synergiance.MediaPlayer.UI {
 		public override void OnPlayerJoined(VRCPlayerApi player) {
 			if (player == null || !player.IsValid()) return;
 			if (!mediaPlayer.CheckPrivileged(player)) return;
+			if (Array.IndexOf(modIdList, player.playerId) >= 0) return;
 			int numMods = modList.Length + 1;
 			string[] tempMods = modList;
 			int[] tempIds = modIdList;
