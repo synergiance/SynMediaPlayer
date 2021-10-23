@@ -139,7 +139,7 @@ namespace Synergiance.MediaPlayer {
 		private string debugPrefix         = "[<color=#DF004F>SynMediaPlayer</color>] ";
 
 		private float diagnosticsUpdatePeriod = 0.1f; // Update period of diagnostic display
-		private float diagnosticPeriod = 10;          // Period of diagnostic log
+		private float diagnosticPeriod = 20;          // Period of diagnostic log
 		private int   diagnosticUpdatesPerLog = 5;
 		private float diagnosticDelay = 0.25f;        // Delay between diagnostic logs
 
