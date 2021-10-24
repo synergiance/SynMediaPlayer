@@ -1249,7 +1249,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void LogVerbose(string message, UnityEngine.Object context) {
 			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Verbose: " + message + "\n" + context);
-			if (verboseDebug) Log("(+v) " + message, context);
+			if (verboseDebug) Debug.Log(debugPrefix + "(+v) " + message, context);
 		}
 
 		private void LogWarning(string message, UnityEngine.Object context) {
