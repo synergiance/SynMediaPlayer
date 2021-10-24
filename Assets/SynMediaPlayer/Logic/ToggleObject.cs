@@ -8,10 +8,11 @@ using VRC.Udon;
 namespace Synergiance.MediaPlayer.Helpers {
 	public class ToggleObject : UdonSharpBehaviour {
 		public GameObject toggleObject;
+		public Canvas toggleCanvas;
 
 		public void _Toggle() {
-			if (toggleObject == null) return;
-			toggleObject.SetActive(!toggleObject.activeSelf);
+			if (toggleObject) toggleObject.SetActive(!toggleObject.activeSelf);
+			if (toggleCanvas) toggleCanvas.enabled = !toggleCanvas.enabled;
 		}
 	}
 }
