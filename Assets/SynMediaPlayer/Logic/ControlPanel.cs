@@ -43,6 +43,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private float lastSlowUpdate;
 		private float lastResync;
 		private bool hideTime;
+		private bool queueCheckURL;
 
 		private string[] modList;
 		private int[] modIdList;
@@ -230,6 +231,13 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		public void _CheckURL() {
+			if (queueCheckURL) return;
+			queueCheckURL = true;
+			SendCustomEventDelayedFrames("QueueCheckURL", 0);
+		}
+
+		public void QueueCheckURL() {
+			queueCheckURL = false;
 			if (!urlField) return;
 			VRCUrl url = urlField.GetUrl();
 			if (url == null) return;
