@@ -14,7 +14,7 @@ An advanced Udon based media player for VRChat.
 - Interactive seek bar
 
 # How to set up
-1. Download the unity package from the releases page (This currently doesn't exist, so follow the how to set up this git repo and use step 6 to make one)
+1. Download the unity package from the releases page (Currently in pre-release)
 2. Before dragging anything into your scene, add a TextureWorkaround component to a gameobject high in your scene hierarchy (above where you'll be placing the screen)
 3. Add the 5 render textures to the TextureWorkaround component's texture array, and disable the gameobject.
 4. Drag in the SMP Video Players prefab (any one) anywhere
