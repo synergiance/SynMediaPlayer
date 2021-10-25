@@ -44,6 +44,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField]  private string             setStatusMethod;               // Method name for status update events
 		[SerializeField]  private string             statusProperty = "statusText"; // Property name for status update events
 		[SerializeField]  private bool               startActive = true;            // If toggled off, videos won't load or sync until locally set to active
+		[SerializeField]  private bool               playOnNewVideo;                // Determines whether a new video will start playing when it loads
 		
 		[Header("Security")] // Security
 		[SerializeField]  private bool               masterCanLock = true;          // If toggled on, instance master will be able to lock and unlock the player
@@ -140,7 +141,7 @@ namespace Synergiance.MediaPlayer {
 
 		private float diagnosticsUpdatePeriod = 0.1f; // Update period of diagnostic display
 		private float diagnosticPeriod = 20;          // Period of diagnostic log
-		private int   diagnosticUpdatesPerLog = 5;
+		private int   diagnosticUpdatesPerLog = 5;    // Number of logs per message output
 		private float diagnosticDelay = 0.25f;        // Delay between diagnostic logs
 
 		private void Start() {
@@ -591,6 +592,7 @@ namespace Synergiance.MediaPlayer {
 			string urlStr = url != null ? url.ToString() : "";
 			Log("Set URL: " + urlStr, this);
 			if (string.Equals(localStr, urlStr)) return;
+			if (Networking.IsOwner(gameObject)) _Stop();
 			localURL = url;
 			SetVideoURLFromLocal();
 			Sync();
@@ -860,8 +862,6 @@ namespace Synergiance.MediaPlayer {
 			if (!isActive) return;
 			urlValid = true;
 			SetPlayerStatusText("Ready");
-			playerReady = true;
-			isLoading = false;
 			float duration = mediaPlayers.GetDuration();
 			bool isReallyStream = Single.IsNaN(duration) || Single.IsInfinity(duration) || duration <= 0.01f;
 			mediaPlayers.BlackOutPlayer = !isReallyStream;
@@ -871,7 +871,11 @@ namespace Synergiance.MediaPlayer {
 				int newPlayerId = isStream ? isLowLatency ? 2 : 1 : 0;
 				if (Networking.IsOwner(gameObject)) SwitchPlayer(newPlayerId);
 				else SetPlayerID(newPlayerId);
+				return;
 			}
+			if (isLoading && playOnNewVideo && Networking.IsOwner(gameObject)) _Start(); 
+			isLoading = false;
+			playerReady = true;
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoReady");
 		}
 
