@@ -411,6 +411,7 @@ namespace Synergiance.MediaPlayer {
 		public bool GetIsSyncing() { return isSeeking || isResync || postResync; }
 		public bool GetIsLoggingDiagnostics() { return isLoggingDiagnostics; }
 		public bool CheckPrivileged(VRCPlayerApi vrcPlayer) { return CheckPrivilegedInternal(vrcPlayer); }
+		public bool GetAllowRetry() { return allowRetryWhenLoaded; }
 
 		// ------------------ External Utilities ------------------
 
@@ -868,6 +869,7 @@ namespace Synergiance.MediaPlayer {
 			if (duration <= 0.01f) { // Video loaded incorrectly, retry
 				Log("Video loaded incorrectly, retrying...", this);
 				ReloadVideoInternal();
+				SetPlayerStatusText("Reloading Video");
 				return;
 			}
 			bool isReallyStream = Single.IsNaN(duration) || Single.IsInfinity(duration) || duration <= 0.01f;
