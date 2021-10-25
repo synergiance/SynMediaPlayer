@@ -108,6 +108,7 @@ namespace Synergiance.MediaPlayer {
 		private int      retryCount;                     // Stores number of automatic retries that have happened
 		private bool     isAutomaticRetry;               // Stores whether this is an automatic retry
 		private bool     urlInvalidUI;                   // Stores whether the input URL is malformed
+		private bool     isPreparingForLoad;             // Stores whether we're preparing to enter a URL and to suppress other video loads
 
 		private bool     masterLock;                     // Stores state of whether the player is locked
 		private bool     hasPermissions;                 // Cached value for whether the local user has permissions
@@ -218,6 +219,7 @@ namespace Synergiance.MediaPlayer {
 			// Sync new values over the network
 			int correctedID = isEditor ? 0 : CheckURL(urlStr, playerID);
 			if (correctedID < 0) return mediaPlayers.GetActiveID();
+			isPreparingForLoad = true; // Suppress reloads
 			SwitchPlayer(correctedID);
 			SetURL(url);
 			isStream = mediaPlayers.GetIsStream();
@@ -645,6 +647,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private float GetServerTime() {
+			LogVerbose("Get Server Time", this);
 			return (Networking.GetServerTimeInMilliseconds() & 0xFFFFFFF) * 0.001f;
 		}
 
@@ -826,6 +829,7 @@ namespace Synergiance.MediaPlayer {
 			string urlStr = url != null ? url.ToString() : "";
 			Log("Load URL: " + urlStr, this);
 			string thisStr = currentURL != null ? currentURL.ToString() : "";
+			isPreparingForLoad = false;
 			if (!isReloadingVideo && string.Equals(urlStr, thisStr)) {
 				LogWarning("URL already loaded! Ignoring.", this);
 				return;
@@ -860,9 +864,12 @@ namespace Synergiance.MediaPlayer {
 		public void _RelayVideoReady() {
 			Initialize();
 			if (!isActive) return;
-			urlValid = true;
-			SetPlayerStatusText("Ready");
 			float duration = mediaPlayers.GetDuration();
+			if (duration <= 0.01f) { // Video loaded incorrectly, retry
+				Log("Video loaded incorrectly, retrying...", this);
+				ReloadVideoInternal();
+				return;
+			}
 			bool isReallyStream = Single.IsNaN(duration) || Single.IsInfinity(duration) || duration <= 0.01f;
 			mediaPlayers.BlackOutPlayer = !isReallyStream;
 			if (isStream != isReallyStream) {
@@ -876,6 +883,8 @@ namespace Synergiance.MediaPlayer {
 			if (isLoading && playOnNewVideo && Networking.IsOwner(gameObject)) _Start(); 
 			isLoading = false;
 			playerReady = true;
+			urlValid = true;
+			SetPlayerStatusText("Ready");
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoReady");
 		}
 
@@ -899,7 +908,9 @@ namespace Synergiance.MediaPlayer {
 			SetPlayerStatusText("Error: " + errorString);
 			playerReady = false;
 			if (automaticRetry) {
-				if (relayVideoError == VideoError.AccessDenied) {
+				if (isPreparingForLoad) {
+					LogVerbose("Suppressing retry since we're preparing a new URL", this);
+				} else if (relayVideoError == VideoError.AccessDenied) {
 					Log("Not retrying, user needs to allow untrusted URLs", this);
 				} else if (retryCount < numberOfRetries) {
 					retryCount++;
@@ -1068,15 +1079,18 @@ namespace Synergiance.MediaPlayer {
 		// Returns time in video, conditionally pulling it from the player or
 		// from the paused time.
 		private float GetTimeInternal() {
+			LogVerbose("GetTimeInternal", this);
 			return isPlaying ? mediaPlayers.GetTime() : pausedTime;
 		}
 
 		private void SetTimeInternal(float time) {
+			LogVerbose("Set Time Internal: " + time, this);
 			if (isStream) return;
 			mediaPlayers._SetTime(time > 0 ? time : 0);
 		}
 
 		private void SwitchVideoPlayerInternal(int id) {
+			LogVerbose("Switch Video Player Internal: " + id, this);
 			mediaPlayers._SwitchPlayer(id);
 			if (isPlaying) ReloadVideoInternal();
 			isStream = mediaPlayers.GetIsStream();
@@ -1085,6 +1099,7 @@ namespace Synergiance.MediaPlayer {
 
 		// Reload video properly
 		private void ReloadVideoInternal() {
+			if (isPreparingForLoad) return; // We're trying to load a URL, so don't do anything with reloads
 			isReloadingVideo = true; // Set this so the player doesn't reject our request to reload the video
 			if (Time.time < lastVideoLoadTime + 5.0f) { // Cancel video load if we recently attempted to load a video
 				SetPlayerStatusText("Waiting to Retry Load");
@@ -1176,6 +1191,7 @@ namespace Synergiance.MediaPlayer {
 			str += "\nIs Automatic Retry: " + isAutomaticRetry;
 			str += ", Retry Count: " + retryCount;
 			str += ", Is Reloading Video: " + isReloadingVideo;
+			str += ", Is Preparing For Load: " + isPreparingForLoad;
 			str += "\nIs Seeking: " + isSeeking;
 			str += ", Time Since Seek: " + (uTime - lastSeekTime).ToString("N3");
 			str += ", Player Time At Seek: " + playerTimeAtSeek.ToString("N3");
@@ -1247,22 +1263,22 @@ namespace Synergiance.MediaPlayer {
 
 		// ----------------- Debug Helper Methods -----------------
 		private void Log(string message, UnityEngine.Object context) {
-			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP: " + message + "\n" + context);
+			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP: " + message);
 			if (enableDebug) Debug.Log(debugPrefix + message, context);
 		}
 
 		private void LogVerbose(string message, UnityEngine.Object context) {
-			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Verbose: " + message + "\n" + context);
+			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Verbose: " + message);
 			if (verboseDebug) Debug.Log(debugPrefix + "(+v) " + message, context);
 		}
 
 		private void LogWarning(string message, UnityEngine.Object context) {
-			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Warning: " + message + "\n" + context);
+			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Warning: " + message);
 			Debug.LogWarning(debugPrefix + message, context);
 		}
 
 		private void LogError(string message, UnityEngine.Object context) {
-			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Error: " + message + "\n" + context);
+			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Error: " + message);
 			Debug.LogError(debugPrefix + message, context);
 		}
 	}
