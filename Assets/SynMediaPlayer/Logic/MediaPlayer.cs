@@ -129,14 +129,15 @@ namespace Synergiance.MediaPlayer {
 		private bool     initialized;                    // Value indicating whether this component has initialized or not.
 
 		// Video Checking
-		private string[] videoHosts        = {
+		private string[] videoHosts          = {
 			"drive.google.com", "twitter.com", "vimeo.com",
 			"youku.com", "tiktok.com", "nicovideo.jp", "facebook.com"
 		};
-		private string[] videoStreamHosts  = { "youtu.be", "youtube.com", "www.youtube.com" };
-		private string[] streamHosts       = { "twitch.tv" };
-		private string[] musicHosts        = { "soundcloud.com" };
-		private string[] videoProtocols    = { "http", "https", "rtmp", "rtspt", "file", "ftp", "gopher", "telnet", "data" };
+		private string[] videoStreamHosts    = { "youtu.be", "youtube.com", "www.youtube.com" };
+		private string[] streamHosts         = { "twitch.tv" };
+		private string[] musicHosts          = { "soundcloud.com" };
+		private string[] videoProtocols      = { "http", "https", "rtmp", "rtsp", "rtspt", "rtspu", "file", "ftp", "gopher", "telnet", "data" };
+		private string[] lowLatencyProtocols = { "rtsp", "rtspt", "rtspu" };
 
 		private string debugPrefix         = "[<color=#DF004F>SynMediaPlayer</color>] ";
 
@@ -1042,7 +1043,9 @@ namespace Synergiance.MediaPlayer {
 			}
 			if (urlStr.Substring(urlStr.Length - 5, 5).Equals(".m3u8")) newPlayerID = 1;
 			if (string.Equals(urlProtocol, "rtmp")) newPlayerID = 1;
-			if (string.Equals(urlProtocol, "rtspt")) newPlayerID = 2;
+			foreach (string llProtocol in lowLatencyProtocols) {
+				if (string.Equals(urlProtocol, llProtocol)) newPlayerID = 2;
+			}
 			if (isEditor && newPlayerID != 0) {
 				Log("Cannot play stream in editor! Current Player: " + mediaPlayers.GetPlayerName(0) + ", Desired Player: " + mediaPlayers.GetPlayerName(newPlayerID), this);
 				newPlayerID = 0;
