@@ -134,7 +134,6 @@ namespace Synergiance.MediaPlayer {
 		private int      numActivePlayers;               // Number of active players
 		private int      numActivePlayersTmp;            // Number of replies to ping so far
 		private int      numReadyPlayers;                // Number of players who have the video loaded
-		private int      numReadyPlayersTmp;             // Number of players who've responded ready so far
 
 		// Video Checking
 		private string[] videoHosts          = {
@@ -678,23 +677,54 @@ namespace Synergiance.MediaPlayer {
 		
 		// ----------------- Player Stats Methods -----------------
 
+		private void PingActive() {
+			if (!Networking.IsOwner(gameObject)) return;
+			SendCustomNetworkEvent(NetworkEventTarget.All, "PingForActive");
+			lastActivePing = Time.time;
+			numActivePlayersTmp = 1;
+			SendCustomEventDelayedSeconds("PingActive", pingActiveEvery);
+		}
+
 		public void PingForActive() {
 			if (Networking.IsOwner(gameObject)) return;
 			lastActivePing = Time.time;
-			numActivePlayersTmp = 2;
-			SendCustomNetworkEvent(NetworkEventTarget.All, "PingForActiveReply");
+			SendCustomNetworkEvent(NetworkEventTarget.Owner, "ActivePing");
 		}
 
-		public void PingForActiveReply() {
+		public void ActivePing() {
+			if (!Networking.IsOwner(gameObject)) return;
 			if (Time.time - lastActivePing < holdPingOpenFor) {
 				numActivePlayersTmp++;
 			} else {
+				if (numActivePlayersTmp > 0) {
+					numActivePlayers = numActivePlayersTmp;
+					numActivePlayersTmp = 0;
+				}
 				numActivePlayers++;
 			}
 		}
 
-		public void ReplyVideoReady() {
-			//if (Time.time - lastv)
+		public void InactivePing() {
+			if (!Networking.IsOwner(gameObject)) return;
+			if (Time.time - lastActivePing < holdPingOpenFor) {
+				numActivePlayersTmp--;
+			} else {
+				if (numActivePlayersTmp > 0) {
+					numActivePlayers = numActivePlayersTmp;
+					numActivePlayersTmp = 0;
+				}
+				numActivePlayers--;
+			}
+		}
+
+		public void VideoReadyPing() {
+			if (!Networking.IsOwner(gameObject)) return;
+			numReadyPlayers++;
+		}
+
+		public void VideoNotReadyPing() {
+			if (!Networking.IsOwner(gameObject)) return;
+			numReadyPlayers--;
 		}
 
 		// ------------------ Video Sync Methods ------------------
@@ -708,7 +738,7 @@ namespace Synergiance.MediaPlayer {
 				ResyncLogic();
 			}
 			if (isPlaying && !isStream) PreloadLogic();
-			if (isReloadingVideo && Time.time > lastVideoLoadTime + 5.0f) {
+			if (isReloadingVideo && Time.time > lastVideoLoadTime + 5.5f) {
 				SetPlayerStatusText("Reloading Video");
 				SetVideoURLFromLocal();
 			}
