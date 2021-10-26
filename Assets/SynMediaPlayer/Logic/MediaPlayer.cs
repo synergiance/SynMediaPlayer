@@ -109,6 +109,8 @@ namespace Synergiance.MediaPlayer {
 		private bool     isAutomaticRetry;               // Stores whether this is an automatic retry
 		private bool     urlInvalidUI;                   // Stores whether the input URL is malformed
 		private bool     isPreparingForLoad;             // Stores whether we're preparing to enter a URL and to suppress other video loads
+		private bool     newVideoLoading;                // Stores whether the video we're loading is a new video
+		private bool     isWakingUp;                     // Stores whether the video player is initializing or coming out of inactive state
 
 		private bool     masterLock;                     // Stores state of whether the player is locked
 		private bool     hasPermissions;                 // Cached value for whether the local user has permissions
@@ -127,6 +129,12 @@ namespace Synergiance.MediaPlayer {
 		private bool     setStatusEnabled;               // Cached value for whether status can be set without error
 		private bool     isActive;                       // Value for whether media player is active or not. Videos will only load/play/sync while the player is active
 		private bool     initialized;                    // Value indicating whether this component has initialized or not.
+		
+		private float    lastActivePing;                 // Time of last ping for who's active
+		private int      numActivePlayers;               // Number of active players
+		private int      numActivePlayersTmp;            // Number of replies to ping so far
+		private int      numReadyPlayers;                // Number of players who have the video loaded
+		private int      numReadyPlayersTmp;             // Number of players who've responded ready so far
 
 		// Video Checking
 		private string[] videoHosts          = {
@@ -146,12 +154,16 @@ namespace Synergiance.MediaPlayer {
 		private int   diagnosticUpdatesPerLog = 5;    // Number of logs per message output
 		private float diagnosticDelay = 0.25f;        // Delay between diagnostic logs
 
+		private float pingActiveEvery = 120.0f;       // How often to ping for who's active
+		private float holdPingOpenFor = 5.0f;         // How long to wait after pinging to update player activity data
+
 		private void Start() {
 			Initialize();
 		}
 
 		private void Initialize() {
 			if (initialized) return;
+			isWakingUp = true;
 			Log("Initializing", this);
 			hasCallback = callback != null;
 			hasStatsText = statisticsText != null;
@@ -368,6 +380,7 @@ namespace Synergiance.MediaPlayer {
 			isActive = active;
 			Log(isActive ? "Activating" : "Deactivating", this);
 			if (isActive) {
+				isWakingUp = true;
 				SetPlayerStatusText("No Video"); // Catch all for if nothing sets the status text
 				CheckDeserializedData(); // Deserialization is paused and flushed while inactive
 			} else {
@@ -494,6 +507,7 @@ namespace Synergiance.MediaPlayer {
 			localStr = localNextURL != null ? localNextURL.ToString() : "";
 			remoteStr = remoteNextURL != null ? remoteNextURL.ToString() : "";
 			if (!string.Equals(localStr, remoteStr)) { // Load the new video if it has changed
+				newVideoLoading = !isWakingUp;
 				Log("Deserialization found next URL: " + remoteStr, this);
 				Log("Old URL: " + localStr, this);
 				localNextURL = remoteNextURL;
@@ -518,6 +532,7 @@ namespace Synergiance.MediaPlayer {
 				localLooping = remoteLooping;
 				SetLoopingInternal();
 			}
+			isWakingUp = false;
 		}
 
 		private void SetVideoURLFromLocal() {
@@ -636,6 +651,7 @@ namespace Synergiance.MediaPlayer {
 		private void Sync() {
 			if (masterLock && !hasPermissions && !Networking.IsOwner(gameObject)) return;
 			Log("Sync", this);
+			isWakingUp = false;
 			remotePlayerID = localPlayerID;
 			remoteURL = localURL;
 			remoteTime = localTime;
@@ -658,6 +674,27 @@ namespace Synergiance.MediaPlayer {
 			if (estimate < syncPeriod * -2) estimate += 0xFFFFFFF * 0.001f;
 			if (estimate > 86400 * 2) estimate -= 0xFFFFFFF * 0.001f;
 			return estimate;
+		}
+		
+		// ----------------- Player Stats Methods -----------------
+
+		public void PingForActive() {
+			if (Networking.IsOwner(gameObject)) return;
+			lastActivePing = Time.time;
+			numActivePlayersTmp = 2;
+			SendCustomNetworkEvent(NetworkEventTarget.All, "PingForActiveReply");
+		}
+
+		public void PingForActiveReply() {
+			if (Time.time - lastActivePing < holdPingOpenFor) {
+				numActivePlayersTmp++;
+			} else {
+				numActivePlayers++;
+			}
+		}
+
+		public void ReplyVideoReady() {
+			//if (Time.time - lastv)
 		}
 
 		// ------------------ Video Sync Methods ------------------
@@ -831,9 +868,11 @@ namespace Synergiance.MediaPlayer {
 			string urlStr = url != null ? url.ToString() : "";
 			Log("Load URL: " + urlStr, this);
 			string thisStr = currentURL != null ? currentURL.ToString() : "";
+			if (isPreparingForLoad) newVideoLoading = true;
 			isPreparingForLoad = false;
 			if (!isReloadingVideo && string.Equals(urlStr, thisStr)) {
 				LogWarning("URL already loaded! Ignoring.", this);
+				newVideoLoading = false; // We don't want to leave this set on abort
 				return;
 			}
 			string suffix = "";
@@ -873,7 +912,7 @@ namespace Synergiance.MediaPlayer {
 				SetPlayerStatusText("Reloading Video");
 				return;
 			}
-			bool isReallyStream = Single.IsNaN(duration) || Single.IsInfinity(duration) || duration <= 0.01f;
+			bool isReallyStream = Single.IsNaN(duration) || Single.IsInfinity(duration);
 			mediaPlayers.BlackOutPlayer = !isReallyStream;
 			if (isStream != isReallyStream) {
 				isStream = isReallyStream;
@@ -883,10 +922,11 @@ namespace Synergiance.MediaPlayer {
 				else SetPlayerID(newPlayerId);
 				return;
 			}
-			if (isLoading && playOnNewVideo && Networking.IsOwner(gameObject)) _Start(); 
+			if (isLoading && playOnNewVideo && newVideoLoading && Networking.IsOwner(gameObject)) _Start(); 
 			isLoading = false;
 			playerReady = true;
 			urlValid = true;
+			newVideoLoading = false;
 			SetPlayerStatusText("Ready");
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoReady");
 		}
@@ -939,6 +979,7 @@ namespace Synergiance.MediaPlayer {
 			playerReady = true;
 			playFromBeginning = false;
 			isLoading = false;
+			newVideoLoading = false;
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoStart");
 		}
 
@@ -1197,6 +1238,7 @@ namespace Synergiance.MediaPlayer {
 			str += ", Retry Count: " + retryCount;
 			str += ", Is Reloading Video: " + isReloadingVideo;
 			str += ", Is Preparing For Load: " + isPreparingForLoad;
+			str += ", New Video Loading: " + newVideoLoading;
 			str += "\nIs Seeking: " + isSeeking;
 			str += ", Time Since Seek: " + (uTime - lastSeekTime).ToString("N3");
 			str += ", Player Time At Seek: " + playerTimeAtSeek.ToString("N3");
