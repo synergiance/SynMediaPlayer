@@ -166,7 +166,7 @@ namespace Synergiance.MediaPlayer {
 			Log("Initializing", this);
 			hasCallback = callback != null;
 			hasStatsText = statisticsText != null;
-			isActive = startActive;
+			SetActiveInternal(startActive);
 			masterLock = lockByDefault;
 			setStatusEnabled = callback && !string.IsNullOrWhiteSpace(setStatusMethod) && !string.IsNullOrWhiteSpace(statusProperty);
 			if (mediaSelect != null) mediaSelect._SetToggleID(mediaPlayers.GetActiveID());
@@ -377,7 +377,7 @@ namespace Synergiance.MediaPlayer {
 		public void _SetActive(bool active) {
 			Initialize();
 			if (isActive == active) return;
-			isActive = active;
+			SetActiveInternal(active);
 			Log(isActive ? "Activating" : "Deactivating", this);
 			if (isActive) {
 				isWakingUp = true;
@@ -1175,6 +1175,13 @@ namespace Synergiance.MediaPlayer {
 			playerReady = ready;
 			if (Networking.IsOwner(gameObject)) numReadyPlayers += playerReady ? 1 : -1;
 			else SendCustomNetworkEvent(NetworkEventTarget.Owner, ready ? "VideoReadyPing" : "VideoNotReadyPing");
+		}
+
+		private void SetActiveInternal(bool active) {
+			if (active == isActive) return;
+			isActive = active;
+			if (Networking.IsOwner(gameObject)) return;
+			SendCustomNetworkEvent(NetworkEventTarget.Owner, active ? "ActivePing" : "InactivePing");
 		}
 
 		// Returns time in video, conditionally pulling it from the player or
