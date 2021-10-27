@@ -1355,6 +1355,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void ChooseNewOwner() {
+			if (isEditor) return;
 			int numPlayers = VRCPlayerApi.GetPlayerCount();
 			VRCPlayerApi[] players = new VRCPlayerApi[numPlayers];
 			VRCPlayerApi newOwner = Networking.LocalPlayer;
@@ -1371,6 +1372,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void VerifyProperOwnership() {
+			if (isEditor) return;
 			if (!CheckPrivileged(Networking.GetOwner(gameObject)))
 				Networking.SetOwner(Networking.LocalPlayer, gameObject);
 		}
