@@ -183,6 +183,7 @@ namespace Synergiance.MediaPlayer {
 				// Make sure initial status is shown
 				SendStatusCallback();
 			}
+			if (masterLock && !isEditor && CheckPrivileged(Networking.LocalPlayer)) VerifyProperOwnership();
 			initialized = true;
 		}
 
@@ -382,8 +383,11 @@ namespace Synergiance.MediaPlayer {
 				isWakingUp = true;
 				SetPlayerStatusText("No Video"); // Catch all for if nothing sets the status text
 				CheckDeserializedData(); // Deserialization is paused and flushed while inactive
+				// Unprivileged player should not retain ownership of player if player is locked
+				if (masterLock && !isEditor && CheckPrivileged(Networking.LocalPlayer)) VerifyProperOwnership();
 			} else {
 				UnloadMediaAndFlushBuffers(); // Flush buffers and unload media
+				if (Networking.IsOwner(gameObject)) ChooseNewOwner(); // We don't want ownership if inactive
 			}
 		}
 
@@ -677,18 +681,28 @@ namespace Synergiance.MediaPlayer {
 		
 		// ----------------- Player Stats Methods -----------------
 
+		public override void OnOwnershipTransferred(VRCPlayerApi player) {
+			Initialize();
+			if (isEditor) return;
+			if (!player.isLocal) return;
+			PingActive();
+		}
+
 		private void PingActive() {
 			if (!Networking.IsOwner(gameObject)) return;
 			SendCustomNetworkEvent(NetworkEventTarget.All, "PingForActive");
 			lastActivePing = Time.time;
 			numActivePlayersTmp = 1;
+			numReadyPlayers = 0;
 			SendCustomEventDelayedSeconds("PingActive", pingActiveEvery);
+			if (playerReady) numReadyPlayers++;
 		}
 
 		public void PingForActive() {
 			if (Networking.IsOwner(gameObject)) return;
 			lastActivePing = Time.time;
 			SendCustomNetworkEvent(NetworkEventTarget.Owner, "ActivePing");
+			if (playerReady) SendCustomNetworkEvent(NetworkEventTarget.Owner, "VideoReadyPing");
 		}
 
 		public void ActivePing() {
@@ -714,6 +728,7 @@ namespace Synergiance.MediaPlayer {
 					numActivePlayersTmp = 0;
 				}
 				numActivePlayers--;
+				if (numActivePlayers < 1) numActivePlayers = 1;
 			}
 		}
 
@@ -725,6 +740,8 @@ namespace Synergiance.MediaPlayer {
 		public void VideoNotReadyPing() {
 			if (!Networking.IsOwner(gameObject)) return;
 			numReadyPlayers--;
+			int lowReadyCount = playerReady ? 1 : 0;
+			if (numReadyPlayers < lowReadyCount) numReadyPlayers = lowReadyCount;
 		}
 
 		// ------------------ Video Sync Methods ------------------
@@ -913,6 +930,7 @@ namespace Synergiance.MediaPlayer {
 			urlValid = false;
 			currentURL = url;
 			mediaPlayers._LoadURL(url);
+			SetReadyInternal(false);
 			lastVideoLoadTime = Time.time + UnityEngine.Random.value; // Adds a random value to the last video load time to randomize the time interval between loads
 			if (hasCallback && !isLoading) callback.SendCustomEvent("_RelayVideoLoading");
 			isLoading = true;
@@ -954,7 +972,7 @@ namespace Synergiance.MediaPlayer {
 			}
 			if (isLoading && playOnNewVideo && newVideoLoading && Networking.IsOwner(gameObject)) _Start(); 
 			isLoading = false;
-			playerReady = true;
+			SetReadyInternal(true);
 			urlValid = true;
 			newVideoLoading = false;
 			SetPlayerStatusText("Ready");
@@ -979,7 +997,7 @@ namespace Synergiance.MediaPlayer {
 			if (!isActive) return;
 			string errorString = GetErrorString(relayVideoError);
 			SetPlayerStatusText("Error: " + errorString);
-			playerReady = false;
+			SetReadyInternal(false);
 			if (automaticRetry) {
 				if (isPreparingForLoad) {
 					LogVerbose("Suppressing retry since we're preparing a new URL", this);
@@ -1006,7 +1024,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			SetPlayerStatusText("Playing");
-			playerReady = true;
+			SetReadyInternal(true);
 			playFromBeginning = false;
 			isLoading = false;
 			newVideoLoading = false;
@@ -1017,7 +1035,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			SetPlayerStatusText("Playing");
-			playerReady = true;
+			SetReadyInternal(true);
 			playFromBeginning = false;
 			isLoading = false;
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoPlay");
@@ -1150,6 +1168,13 @@ namespace Synergiance.MediaPlayer {
 			if (!setStatusEnabled) return;
 			callback.SetProgramVariable(statusProperty, playerStatus);
 			callback.SendCustomEvent(setStatusMethod);
+		}
+
+		private void SetReadyInternal(bool ready) {
+			if (ready == playerReady) return;
+			playerReady = ready;
+			if (Networking.IsOwner(gameObject)) numReadyPlayers += playerReady ? 1 : -1;
+			else SendCustomNetworkEvent(NetworkEventTarget.Owner, ready ? "VideoReadyPing" : "VideoNotReadyPing");
 		}
 
 		// Returns time in video, conditionally pulling it from the player or
@@ -1312,7 +1337,36 @@ namespace Synergiance.MediaPlayer {
 			diagnosticLog[currentDiagLog] += "\n[" + Time.time + "] " + str + "\n";
 		}
 
-		// ------------------- Security Methods -------------------
+		// ------------ Security And Ownership Methods ------------
+
+		public override void OnPlayerJoined(VRCPlayerApi player) {
+			Initialize();
+			if (isActive || isEditor) return;
+			if (!Networking.IsOwner(gameObject)) return;
+			// We don't want ownership if we're inactive
+			Networking.SetOwner(player, gameObject);
+		}
+
+		private void ChooseNewOwner() {
+			int numPlayers = VRCPlayerApi.GetPlayerCount();
+			VRCPlayerApi[] players = new VRCPlayerApi[numPlayers];
+			VRCPlayerApi newOwner = Networking.LocalPlayer;
+			for (int i = 0; i < numPlayers; i++) {
+				if (!masterLock || CheckPrivilegedInternal(players[i])) {
+					if (players[i].isLocal) continue;
+					newOwner = players[i];
+					break;
+				}
+				if (newOwner.isLocal) newOwner = players[i];
+			}
+			// If new owner is local, there is nobody else in the instance.
+			if (!newOwner.isLocal) Networking.SetOwner(newOwner, gameObject);
+		}
+
+		private void VerifyProperOwnership() {
+			if (!CheckPrivileged(Networking.GetOwner(gameObject)))
+				Networking.SetOwner(Networking.LocalPlayer, gameObject);
+		}
 
 		private bool CheckPrivilegedInternal(VRCPlayerApi vrcPlayer) {
 			if (vrcPlayer == null) return true;
