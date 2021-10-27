@@ -683,7 +683,7 @@ namespace Synergiance.MediaPlayer {
 
 		public override void OnOwnershipTransferred(VRCPlayerApi player) {
 			Initialize();
-			if (isEditor) return;
+			if (player == null) return;
 			if (!player.isLocal) return;
 			PingActive();
 		}
@@ -1360,6 +1360,7 @@ namespace Synergiance.MediaPlayer {
 			VRCPlayerApi[] players = new VRCPlayerApi[numPlayers];
 			VRCPlayerApi newOwner = Networking.LocalPlayer;
 			for (int i = 0; i < numPlayers; i++) {
+				if (players[i] == null) continue;
 				if (!masterLock || CheckPrivilegedInternal(players[i])) {
 					if (players[i].isLocal) continue;
 					newOwner = players[i];
