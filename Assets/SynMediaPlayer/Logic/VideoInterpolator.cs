@@ -97,6 +97,10 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _PlayNext() {
+			if (!gaplessSupport) {
+				Error("Attempting to access unconfigured gapless player!");
+				return;
+			}
 			Initialize();
 			if (!mediaPlayers[nextID].GetReady()) return;
 			Log("Stopping " + PlayerNameAndIDString(activeID) + " and playing " + PlayerNameAndIDString(nextID));

@@ -30,6 +30,12 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private float updatesPerSecond = 10;
 		[SerializeField] private float reloadAvailableFor = 5;
 		[SerializeField] private bool enableDebug;
+		[SerializeField] private bool loadGapless;
+
+		[SerializeField] private VRCUrl[] defaultPlaylist;
+
+		[UdonSynced] private VRCUrl[] videoQueueRemote;
+		private VRCUrl[] videoQueueLocal;
 
 		[HideInInspector] public float volumeVal;
 		[HideInInspector] public int mediaTypeVal;
@@ -65,18 +71,19 @@ namespace Synergiance.MediaPlayer.UI {
 			// Keep UPS to between 50 per second to one every 10 seconds
 			timeBetweenUpdates = Mathf.Max(0.02f, 1 / Mathf.Max(0.1f, updatesPerSecond));
 			if (volumeControl && isValid) volumeControl._SetVolume(mediaPlayer.GetVolume());
-			UpdateTimeString();
+			UpdateTimeAndStatus();
 			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
 			RebuildModList();
 			UpdateModList();
 			initialized = true;
+			loadGapless = false; // TODO: Disables gapless loading, fix gapless loading player
 		}
 
 		public void _SlowUpdate() {
 			if (Time.time < lastSlowUpdate + timeBetweenUpdates * 0.9f) return;
 			lastSlowUpdate = Time.time;
 			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
-			UpdateTimeString();
+			UpdateTimeAndStatus();
 			UpdateAllButtons();
 		}
 
@@ -223,10 +230,16 @@ namespace Synergiance.MediaPlayer.UI {
 				UpdateMediaTypeSlider();
 				return;
 			}
-			int loadedType = mediaPlayer._LoadURLAs(urlField.GetUrl(), mediaType);
+			int loadedType = mediaType;
+			if (loadGapless && mediaPlayer.GetIsPlaying()) {
+				mediaPlayer._LoadQueueURL(urlField.GetUrl());
+				mediaPlayer._PlayNext();
+			} else {
+				loadedType = mediaPlayer._LoadURLAs(urlField.GetUrl(), mediaType);
+			}
+			urlField.SetUrl(VRCUrl.Empty);
 			if (loadedType == mediaType) return;
 			mediaType = loadedType;
-			urlField.SetUrl(VRCUrl.Empty);
 			UpdateMediaTypeSlider();
 		}
 
@@ -290,7 +303,8 @@ namespace Synergiance.MediaPlayer.UI {
 			if (selectionSlider) selectionSlider._SetType(mediaType);
 		}
 
-		private void UpdateTimeString() {
+		private void UpdateTimeAndStatus() {
+			// TODO: Allow splitting time and status
 			string textToDisplay = "00:00:00/00:00:00";
 			if (isValid) {
 				if (hideTime) return;
@@ -411,7 +425,7 @@ namespace Synergiance.MediaPlayer.UI {
 				hideTime = !string.Equals(statusText, "Playing") &&
 				           !string.Equals(statusText, "Stabilizing") &&
 				           mediaPlayer.GetMediaType() == 0;
-				if (!hideTime) UpdateTimeString();
+				if (!hideTime) UpdateTimeAndStatus();
 				else statusField._SetText(statusText);
 				UpdateResyncButton();
 			} else {
