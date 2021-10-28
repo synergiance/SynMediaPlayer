@@ -26,8 +26,9 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private InputField prevUrlField;
 		[SerializeField] private InputField currentUrlField;
 		[SerializeField] private Text moderatorListField;
+		[SerializeField] private Text currentOwnerField;
 		[SerializeField] private bool combineStatusAndTime;
-		[SerializeField] private float updatesPerSecond = 10;
+		[SerializeField] private float updatesPerSecond = 5;
 		[SerializeField] private float reloadAvailableFor = 5;
 		[SerializeField] private bool enableDebug;
 
@@ -78,6 +79,7 @@ namespace Synergiance.MediaPlayer.UI {
 			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
 			UpdateTimeString();
 			UpdateAllButtons();
+			UpdateCurrentOwner();
 		}
 
 		public void _ClickPlayPauseStop() {
@@ -290,6 +292,15 @@ namespace Synergiance.MediaPlayer.UI {
 			if (selectionSlider) selectionSlider._SetType(mediaType);
 		}
 
+		private void UpdateCurrentOwner() {
+			if (!isValid || !currentOwnerField) return;
+			VRCPlayerApi owner = Networking.GetOwner(mediaPlayer.gameObject);
+			string newOwnerName = owner != null ? owner.displayName : "Nobody";
+			string oldOwnerName = currentOwnerField.text;
+			if (string.Equals(newOwnerName, oldOwnerName)) return;
+			currentOwnerField.text = newOwnerName;
+		}
+
 		private void UpdateTimeString() {
 			string textToDisplay = "00:00:00/00:00:00";
 			if (isValid) {
@@ -424,6 +435,7 @@ namespace Synergiance.MediaPlayer.UI {
 			if (urlField && !string.IsNullOrWhiteSpace(urlField.GetUrl().ToString())) return;
 			mediaType = mediaPlayer.GetMediaType();
 			UpdateMediaTypeSlider();
+			UpdateCurrentOwner();
 		}
 
 		public void _PlayerLocked() {
