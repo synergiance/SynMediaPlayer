@@ -77,7 +77,6 @@ namespace Synergiance.MediaPlayer.UI {
 			RebuildModList();
 			UpdateModList();
 			initialized = true;
-			loadGapless = false; // TODO: Disables gapless loading, fix gapless loading player
 		}
 
 		public void _SlowUpdate() {
@@ -233,11 +232,14 @@ namespace Synergiance.MediaPlayer.UI {
 				return;
 			}
 			int loadedType = mediaType;
+			VRCUrl newUrl = urlField.GetUrl();
 			if (loadGapless && mediaPlayer.GetIsPlaying()) {
-				mediaPlayer._LoadQueueURL(urlField.GetUrl());
+				if (newUrl != null) Log("Load Queue URL: " + newUrl.ToString(), this);
+				mediaPlayer._LoadQueueURL(newUrl);
 				mediaPlayer._PlayNext();
 			} else {
-				loadedType = mediaPlayer._LoadURLAs(urlField.GetUrl(), mediaType);
+				if (newUrl != null) Log("Load URL: " + newUrl.ToString(), this);
+				loadedType = mediaPlayer._LoadURLAs(newUrl, mediaType);
 			}
 			urlField.SetUrl(VRCUrl.Empty);
 			if (loadedType == mediaType) return;

@@ -249,6 +249,7 @@ namespace Synergiance.MediaPlayer {
 
 		public void _LoadQueueURL(VRCUrl url) {
 			Initialize();
+			LogVerbose("Load Queue URL", this);
 			if (!isActive) return;
 			if (masterLock && !hasPermissions) return;
 			_LoadQueueURLAs(url, 0);
@@ -849,7 +850,8 @@ namespace Synergiance.MediaPlayer {
 			if (nextVideoLoading) return;
 			if (nextURL == null || nextURL.Equals(VRCUrl.Empty)) return;
 			if (!playNextVideoNow && mediaPlayers.GetDuration() - mediaPlayers.GetTime() > preloadNextVideoTime) return;
-			if (Time.time - lastVideoLoadTime > videoLoadCooldown) return;
+			if (Time.time - lastVideoLoadTime < videoLoadCooldown) return;
+			Log("Loading next URL: " + nextURL.ToString(), this);
 			mediaPlayers._LoadNextURL(nextURL);
 			nextVideoLoading = true;
 		}
@@ -981,14 +983,17 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void PlayNextNowInternal() {
+			LogVerbose("Play Next Now Internal", this);
 			playNextVideoNow = true;
 		}
 
 		private void CancelNextNowInternal() {
+			LogVerbose("Cancel Next Now Internal", this);
 			playNextVideoNow = false;
 		}
 
 		private void SetNextVideoLoadTimeInternal(float time) {
+			LogVerbose("Set Next Video Load Time Internal: " + time, this);
 			playNextVideoTime = time;
 		}
 

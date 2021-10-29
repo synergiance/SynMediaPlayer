@@ -144,6 +144,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!gaplessSupport) return;
 			if (GetPublicActiveID() != 0) return;
+			LogPlayer("Loading Next URL: " + (url != null ? url.ToString() : "<NULL"), nextID);
 			mediaPlayers[nextID]._LoadURL(url);
 		}
 
