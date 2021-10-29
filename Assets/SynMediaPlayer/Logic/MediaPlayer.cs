@@ -843,7 +843,8 @@ namespace Synergiance.MediaPlayer {
 				if (!playNextVideoNow || !(Time.time > playNextVideoTime)) return;
 				Log("Playing next video", this);
 				resyncPauseAt = Time.time;
-				SetTimeInternal(0);
+				if (Networking.IsOwner(gameObject)) SeekTo(0);
+				else SetTimeInternal(0);
 				mediaPlayers._PlayNext();
 				return;
 			}
