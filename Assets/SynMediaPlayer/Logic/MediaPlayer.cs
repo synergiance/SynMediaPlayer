@@ -1410,7 +1410,7 @@ namespace Synergiance.MediaPlayer {
 			str += ", Player Playing: " + mediaPlayers.GetPlaying();
 			str += ", Player Ready: " + mediaPlayers.GetReady();
 			str += "\nNext Video Now: " + playNextVideoNow;
-			str += ", Next Video Time: " + playNextVideoTime.ToString("N3");
+			str += ", Next Video Starts In: " + Mathf.Max(0, playNextVideoTime - uTime).ToString("N3");
 			str += ", Next Video Loading: " + nextVideoLoading;
 			str += ", Next Video Ready: " + nextVideoReady;
 			diagnosticStr = str;
