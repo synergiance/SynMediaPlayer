@@ -840,11 +840,11 @@ namespace Synergiance.MediaPlayer {
 
 		private void PreloadLogic() {
 			if (nextVideoReady) {
-				if (playNextVideoNow && Time.time > playNextVideoTime) {
-					resyncPauseAt = Time.time;
-					SetTimeInternal(0);
-					mediaPlayers._PlayNext();
-				}
+				if (!playNextVideoNow || !(Time.time > playNextVideoTime)) return;
+				Log("Playing next video", this);
+				resyncPauseAt = Time.time;
+				SetTimeInternal(0);
+				mediaPlayers._PlayNext();
 				return;
 			}
 			if (nextVideoLoading) return;
@@ -1409,6 +1409,10 @@ namespace Synergiance.MediaPlayer {
 			str += ", Player Duration: " + mediaPlayers.GetDuration().ToString("N3");
 			str += ", Player Playing: " + mediaPlayers.GetPlaying();
 			str += ", Player Ready: " + mediaPlayers.GetReady();
+			str += "\nNext Video Now: " + playNextVideoNow;
+			str += ", Next Video Time: " + playNextVideoTime.ToString("N3");
+			str += ", Next Video Loading: " + nextVideoLoading;
+			str += ", Next Video Ready: " + nextVideoReady;
 			diagnosticStr = str;
 		}
 
