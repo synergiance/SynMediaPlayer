@@ -737,7 +737,12 @@ namespace Synergiance.MediaPlayer {
 
 		public override void OnOwnershipTransferred(VRCPlayerApi player) {
 			Initialize();
-			if (player == null) return;
+			UpdateUICallback();
+			if (player == null) {
+				Log("Ownership transferred to nobody", this);
+				return;
+			}
+			Log("Ownership transferred to: " + player.displayName, this);
 			if (!player.isLocal) return;
 			PingActive();
 		}
