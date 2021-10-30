@@ -171,6 +171,8 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public bool GetReady() { return mediaPlayers[activeID].GetReady(); }
+
+		public bool GetNextReady() { return gaplessLoaded && mediaPlayers[nextID].GetReady(); }
 		public bool GetPlaying() { return mediaPlayers[activeID].GetPlaying(); }
 		public bool GetLoop() { return mediaPlayers[activeID].GetLoop(); }
 		public float GetTime() { return mediaPlayers[activeID].GetTime(); }

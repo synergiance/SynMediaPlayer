@@ -841,10 +841,16 @@ namespace Synergiance.MediaPlayer {
 		private void PreloadLogic() {
 			if (nextVideoReady) {
 				if (!playNextVideoNow || !(Time.time > playNextVideoTime)) return;
+				if (!mediaPlayers.GetNextReady()) {
+					LogWarning("Next video not actually ready!", this);
+					nextVideoLoading = false;
+					nextVideoReady = false;
+					return;
+				}
 				Log("Playing next video", this);
 				resyncPauseAt = Time.time;
-				if (Networking.IsOwner(gameObject)) SeekTo(0);
-				else SetTimeInternal(0);
+				if (Networking.IsOwner(gameObject)) SeekTo(-seekPeriod);
+				else HardResync(-seekPeriod);
 				mediaPlayers._PlayNext();
 				playNextVideoNow = false;
 				return;
