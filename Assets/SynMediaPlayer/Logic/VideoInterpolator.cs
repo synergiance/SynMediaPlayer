@@ -44,6 +44,7 @@ namespace Synergiance.MediaPlayer {
 		private bool   hasAudioCallback;
 		private bool   initialized;
 		private bool   blackOutPlayer;
+		private bool   gaplessLoaded;
 
 		private string debugPrefix = "[<color=#1FAF5F>Video Interpolator</color>] ";
 
@@ -78,13 +79,15 @@ namespace Synergiance.MediaPlayer {
 
 		private void SwitchPlayerInternal(int id) {
 			if (id == activeID) return;
-			if (activeID >= 0) {
-				mediaPlayers[activeID]._SetTime(0);
-				mediaPlayers[activeID]._Pause();
-				mediaPlayers[activeID]._Stop();
-				mediaPlayers[activeID]._LoadURL(VRCUrl.Empty);
-				mediaPlayers[activeID]._SetVolume(0);
-				interpolatorMaterial.SetFloat(interpolationProps[activeID], 0);
+			int oldID = activeID;
+			activeID = id;
+			if (oldID >= 0) {
+				mediaPlayers[oldID]._SetTime(0);
+				mediaPlayers[oldID]._Pause();
+				mediaPlayers[oldID]._Stop();
+				mediaPlayers[oldID]._LoadURL(VRCUrl.Empty);
+				mediaPlayers[oldID]._SetVolume(0);
+				interpolatorMaterial.SetFloat(interpolationProps[oldID], 0);
 			}
 			if (id >= 0) {
 				mediaPlayers[id]._SetLoop(isLooping);
@@ -93,7 +96,7 @@ namespace Synergiance.MediaPlayer {
 				interpolatorMaterial.SetFloat(interpolationProps[id], visibility);
 				if (hasAudioCallback) audioCallback.SetProgramVariable(audioFieldName, mediaPlayers[id].GetSpeaker());
 			}
-			activeID = id;
+			gaplessLoaded = false;
 		}
 
 		public void _PlayNext() {
@@ -146,6 +149,7 @@ namespace Synergiance.MediaPlayer {
 			if (GetPublicActiveID() != 0) return;
 			LogPlayer("Loading Next URL: " + (url != null ? url.ToString() : "<NULL"), nextID);
 			mediaPlayers[nextID]._LoadURL(url);
+			gaplessLoaded = true;
 		}
 
 		public void _SetTime(float time) {
@@ -212,7 +216,7 @@ namespace Synergiance.MediaPlayer {
 
 		public void _RelayVideoError() {
 			LogPlayer("Error (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
-			if (gaplessSupport && relayIdentifier == nextID) {
+			if (gaplessSupport && gaplessLoaded && relayIdentifier == nextID) {
 				callback.SetProgramVariable("relayIdentifier", identifier);
 				callback.SetProgramVariable("relayVideoError", relayVideoError);
 				callback.SendCustomEvent("_RelayVideoQueueError");
