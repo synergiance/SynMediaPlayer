@@ -32,6 +32,7 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private float reloadAvailableFor = 5;
 		[SerializeField] private bool enableDebug;
 		[SerializeField] private bool loadGapless;
+		[SerializeField] private bool autoplay = true;
 
 		[SerializeField] private VRCUrl[] defaultPlaylist;
 
@@ -76,7 +77,7 @@ namespace Synergiance.MediaPlayer.UI {
 			timeBetweenUpdates = Mathf.Max(0.02f, 1 / Mathf.Max(0.1f, updatesPerSecond));
 			if (volumeControl && isValid) volumeControl._SetVolume(mediaPlayer.GetVolume());
 			initialized = true;
-			InitializeDefaultPlaylist();
+			if (autoplay) InitializeDefaultPlaylist();
 			UpdateTimeAndStatus();
 			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
 			RebuildModList();
@@ -279,7 +280,7 @@ namespace Synergiance.MediaPlayer.UI {
 				return;
 			}
 			mediaPlayer._LoadURL(defaultPlaylist[0]);
-			mediaPlayer._Play();
+			if (loadGapless) PreloadNextDefaultItem();
 		}
 
 		private void PlayNextDefaultItem() {
@@ -290,6 +291,15 @@ namespace Synergiance.MediaPlayer.UI {
 			if (currentDefaultIndex >= defaultPlaylist.Length) currentDefaultIndex = 0;
 			mediaPlayer._LoadURL(defaultPlaylist[currentDefaultIndex]);
 			mediaPlayer._Play();
+		}
+
+		private void PreloadNextDefaultItem() {
+			if (!isValid || !isDefaultPlaylist) return;
+			VRCPlayerApi localPlayer = Networking.LocalPlayer;
+			if (localPlayer != null && !localPlayer.isMaster) return;
+			currentDefaultIndex++;
+			if (currentDefaultIndex >= defaultPlaylist.Length) currentDefaultIndex = 0;
+			mediaPlayer._LoadQueueURL(defaultPlaylist[currentDefaultIndex]);
 		}
 
 		private void LogInvalid() {
@@ -549,6 +559,7 @@ namespace Synergiance.MediaPlayer.UI {
 			// Queued video is starting
 			Initialize();
 			UpdateAllButtons();
+			if (isDefaultPlaylist) PreloadNextDefaultItem();
 		}
 
 		public void _RelayVideoQueueLoading() {

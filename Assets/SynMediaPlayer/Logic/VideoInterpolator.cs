@@ -209,8 +209,7 @@ namespace Synergiance.MediaPlayer {
 				callback.SetProgramVariable("relayIdentifier", identifier);
 				callback.SendCustomEvent("_RelayVideoNext");
 				_PlayNext();
-			}
-			if (relayIdentifier != activeID) return;
+			} else if (relayIdentifier != activeID) return;
 			callback.SetProgramVariable("relayIdentifier", identifier);
 			callback.SendCustomEvent("_RelayVideoEnd");
 		}

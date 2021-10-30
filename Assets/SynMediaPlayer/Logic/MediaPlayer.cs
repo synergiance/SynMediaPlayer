@@ -302,6 +302,7 @@ namespace Synergiance.MediaPlayer {
 			if (masterLock && !hasPermissions) return;
 			Log("_Play", this);
 			SetPlaying(true);
+			if (!playerReady) return;
 			if (playFromBeginning) { // This variable is set from video stop or video end, reset it when used
 				playFromBeginning = false;
 				_SeekTo(0);
@@ -324,7 +325,8 @@ namespace Synergiance.MediaPlayer {
 			if (masterLock && !hasPermissions) return;
 			Log("_Start", this);
 			SetPlaying(true);
-			_SeekTo(0);
+			if (playerReady) _SeekTo(0);
+			else playFromBeginning = true;
 		}
 
 		// Stop a currently playing video and unload it
@@ -868,6 +870,10 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void ResyncLogic() {
+			if (playFromBeginning) {
+				HardResync(-seekPeriod);
+				playFromBeginning = false;
+			}
 			referencePlayhead = Time.time - startTime;
 			float currentTime = mediaPlayers.GetTime();
 			deviation = currentTime - referencePlayhead;
@@ -962,7 +968,10 @@ namespace Synergiance.MediaPlayer {
 		private void SetPlayingInternal(bool playing) {
 			Log("Set Playing Internal: " + (playing ? "Playing" : "Paused"), this);
 			isPlaying = playing;
-			if (!isStream) SeekInternal(referencePlayhead);
+			if (!isStream && playerReady) {
+				SeekInternal(playFromBeginning ? -seekPeriod : referencePlayhead);
+				playFromBeginning = false;
+			}
 			SetPlayerStatusText(playing ? "Waiting to Play" : "Paused");
 		}
 
@@ -1161,7 +1170,7 @@ namespace Synergiance.MediaPlayer {
 			// Queued video is starting
 			resyncPauseAt = Time.time;
 			SetTimeInternal(0);
-			if (Networking.IsOwner(gameObject)) HardResync(mediaPlayers.GetTime());
+			if (Networking.IsOwner(gameObject)) HardResync(0);
 			// Get new duration!
 			nextVideoLoading = nextVideoReady = false;
 			if (Networking.IsOwner(gameObject)) SetNextURL(VRCUrl.Empty);
