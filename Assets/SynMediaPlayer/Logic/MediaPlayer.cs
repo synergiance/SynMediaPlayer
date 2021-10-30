@@ -846,6 +846,7 @@ namespace Synergiance.MediaPlayer {
 				if (Networking.IsOwner(gameObject)) SeekTo(0);
 				else SetTimeInternal(0);
 				mediaPlayers._PlayNext();
+				playNextVideoNow = false;
 				return;
 			}
 			if (nextVideoLoading) return;
