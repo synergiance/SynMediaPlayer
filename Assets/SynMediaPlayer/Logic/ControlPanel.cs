@@ -51,6 +51,9 @@ namespace Synergiance.MediaPlayer.UI {
 		private float lastResync;
 		private bool hideTime;
 		private bool queueCheckURL;
+		
+		[UdonSynced] private bool isDefaultPlaylist = true;
+		[UdonSynced] private int currentDefaultIndex;
 
 		private string[] modList;
 		private int[] modIdList;
@@ -72,11 +75,12 @@ namespace Synergiance.MediaPlayer.UI {
 			// Keep UPS to between 50 per second to one every 10 seconds
 			timeBetweenUpdates = Mathf.Max(0.02f, 1 / Mathf.Max(0.1f, updatesPerSecond));
 			if (volumeControl && isValid) volumeControl._SetVolume(mediaPlayer.GetVolume());
+			initialized = true;
+			InitializeDefaultPlaylist();
 			UpdateTimeAndStatus();
 			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
 			RebuildModList();
 			UpdateModList();
-			initialized = true;
 		}
 
 		public void _SlowUpdate() {
@@ -263,6 +267,29 @@ namespace Synergiance.MediaPlayer.UI {
 			int newType = mediaPlayer.GetUrlId(urlStr, mediaType);
 			if (newType < 0 || newType > 2) return;
 			UpdateMediaTypeSlider();
+		}
+
+		private void InitializeDefaultPlaylist() {
+			if (!isValid) return;
+			VRCPlayerApi localPlayer = Networking.LocalPlayer;
+			if (localPlayer != null && !localPlayer.isMaster) return;
+			if (defaultPlaylist == null || defaultPlaylist.Length < 1) {
+				isDefaultPlaylist = false;
+				RequestSerialization();
+				return;
+			}
+			mediaPlayer._LoadURL(defaultPlaylist[0]);
+			mediaPlayer._Play();
+		}
+
+		private void PlayNextDefaultItem() {
+			if (!isValid || !isDefaultPlaylist) return;
+			VRCPlayerApi localPlayer = Networking.LocalPlayer;
+			if (localPlayer != null && !localPlayer.isMaster) return;
+			currentDefaultIndex++;
+			if (currentDefaultIndex >= defaultPlaylist.Length) currentDefaultIndex = 0;
+			mediaPlayer._LoadURL(defaultPlaylist[currentDefaultIndex]);
+			mediaPlayer._Play();
 		}
 
 		private void LogInvalid() {
