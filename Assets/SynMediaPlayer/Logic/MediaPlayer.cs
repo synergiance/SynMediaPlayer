@@ -621,9 +621,9 @@ namespace Synergiance.MediaPlayer {
 			if (Mathf.Abs(remoteTime - localTime) > 0.1f) localTime = remoteTime;
 			// Read local values and calculate local reference point
 			float seekTime = localIsPlaying ? CalcWithTime(localTime) : localTime;
+			lastResyncTime = Time.time;
 			if (Time.time - resyncPauseAt < pauseResyncFor) return;
 			SeekInternal(seekTime);
-			lastResyncTime = Time.time;
 		}
 
 		private void HardResync(float time) {
@@ -855,6 +855,7 @@ namespace Synergiance.MediaPlayer {
 				else HardResync(-seekPeriod);
 				mediaPlayers._PlayNext();
 				playNextVideoNow = false;
+				nextVideoReady = false; // Next video is now empty since it got loaded into current video
 				return;
 			}
 			if (nextVideoLoading) return;
