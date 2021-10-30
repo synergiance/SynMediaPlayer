@@ -616,6 +616,7 @@ namespace Synergiance.MediaPlayer {
 				lastResyncTime += resyncEvery * 0.25f;
 				return;
 			}
+			LogVerbose("Soft Resync", this);
 			// Make sure local time is in agreement with remote time, since it can change in certain conditions
 			if (Mathf.Abs(remoteTime - localTime) > 0.1f) localTime = remoteTime;
 			// Read local values and calculate local reference point
@@ -678,6 +679,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void SetNextVideoTime(float time) {
+			LogVerbose("Set Next Video Time: " + time, this);
 			localNextTime = CalcWithTime(time);
 			SetNextVideoLoadTimeInternal(time);
 			Sync();
