@@ -890,6 +890,8 @@ namespace Synergiance.MediaPlayer {
 							mediaPlayers._Play();
 							SetPlayerStatusText("Playing");
 						}
+					} else {
+						mediaPlayers.BlackOutPlayer = absDeviation > deviationTolerance * 2;
 					}
 					return;
 				}
@@ -926,14 +928,16 @@ namespace Synergiance.MediaPlayer {
 						mediaPlayers._Play();
 						SetPlayerStatusText("Playing");
 					}
+				} else {
+					mediaPlayers.BlackOutPlayer = absDeviation > deviationTolerance * 2;
 				}
 			}
 			if (isResync) return;
 			if (Time.time - lastResyncTime >= resyncEvery) SoftResync();
 			if (Time.time - lastCheckTime < checkSyncEvery) return;
+			mediaPlayers.BlackOutPlayer = absDeviation > deviationTolerance * 2;
 			if (Time.time - resyncPauseAt < pauseResyncFor) return;
 			lastCheckTime = Time.time;
-			mediaPlayers.BlackOutPlayer = absDeviation > deviationTolerance * 2;
 			if (mediaPlayers.GetPlaying()) {
 				if (absDeviation > deviationTolerance) {
 					ResyncTime(currentTime, referencePlayhead + videoOvershoot);
