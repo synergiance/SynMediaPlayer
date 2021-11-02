@@ -255,6 +255,7 @@ namespace Synergiance.MediaPlayer {
 			_LoadQueueURLAs(url, 0);
 		}
 
+		// TODO: This method will need to go.
 		public void _LoadQueueURLAs(VRCUrl url, int playerID) {
 			Initialize();
 			if (!isActive) return;
@@ -1061,6 +1062,7 @@ namespace Synergiance.MediaPlayer {
 		// ------------------- Callback Methods -------------------
 
 		public void _RelayVideoReady() {
+			LogVerbose("Relay Video Ready", this);
 			Initialize();
 			if (!isActive) return;
 			float duration = mediaPlayers.GetDuration();
@@ -1090,6 +1092,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoEnd() {
+			LogVerbose("Relay Video End", this);
 			Initialize();
 			if (!isActive) return;
 			isPlaying = false;
@@ -1103,6 +1106,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoError() {
+			LogVerbose("Relay Video Error", this);
 			Initialize();
 			if (!isActive) return;
 			string errorString = GetErrorString(relayVideoError);
@@ -1131,6 +1135,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoStart() {
+			LogVerbose("Relay Video Start", this);
 			Initialize();
 			if (!isActive) return;
 			SetPlayerStatusText("Playing");
@@ -1142,6 +1147,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoPlay() {
+			LogVerbose("Relay Video Play", this);
 			Initialize();
 			if (!isActive) return;
 			SetPlayerStatusText("Playing");
@@ -1152,6 +1158,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoPause() {
+			LogVerbose("Relay Video Pause", this);
 			Initialize();
 			if (!isActive) return;
 			string urlText = currentURL == null ? "" : currentURL.ToString();
@@ -1160,6 +1167,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoLoop() {
+			LogVerbose("Relay Video Loop", this);
 			Initialize();
 			if (!isActive) return;
 			resyncPauseAt = Time.time;
@@ -1169,6 +1177,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoNext() {
+			LogVerbose("Relay Video Next", this);
 			Initialize();
 			if (!isActive) return;
 			// Queued video is starting
@@ -1182,6 +1191,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoQueueError() {
+			LogVerbose("Relay Video Queue Error", this);
 			Initialize();
 			if (!isActive) return;
 			// Queued video player has thrown an error
@@ -1194,6 +1204,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoQueueReady() {
+			LogVerbose("Relay Video Queue Ready", this);
 			Initialize();
 			if (!isActive) return;
 			// Queued video has loaded

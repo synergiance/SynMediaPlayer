@@ -96,6 +96,7 @@ namespace Synergiance.MediaPlayer {
 				interpolatorMaterial.SetFloat(interpolationProps[id], visibility);
 				if (hasAudioCallback) audioCallback.SetProgramVariable(audioFieldName, mediaPlayers[id].GetSpeaker());
 			}
+
 			gaplessLoaded = false;
 		}
 
@@ -210,7 +211,9 @@ namespace Synergiance.MediaPlayer {
 				callback.SetProgramVariable("relayIdentifier", identifier);
 				callback.SendCustomEvent("_RelayVideoNext");
 				_PlayNext();
-			} else if (relayIdentifier != activeID) return;
+				return;
+			}
+			if (relayIdentifier != activeID) return;
 			callback.SetProgramVariable("relayIdentifier", identifier);
 			callback.SendCustomEvent("_RelayVideoEnd");
 		}

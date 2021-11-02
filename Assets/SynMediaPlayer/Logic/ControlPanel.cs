@@ -287,6 +287,7 @@ namespace Synergiance.MediaPlayer.UI {
 			if (!isValid || !isDefaultPlaylist) return;
 			VRCPlayerApi localPlayer = Networking.LocalPlayer;
 			if (localPlayer != null && !localPlayer.isMaster) return;
+			Log("Play Next Default Item", this);
 			currentDefaultIndex++;
 			if (currentDefaultIndex >= defaultPlaylist.Length) currentDefaultIndex = 0;
 			mediaPlayer._LoadURL(defaultPlaylist[currentDefaultIndex]);
@@ -297,6 +298,7 @@ namespace Synergiance.MediaPlayer.UI {
 			if (!isValid || !isDefaultPlaylist) return;
 			VRCPlayerApi localPlayer = Networking.LocalPlayer;
 			if (localPlayer != null && !localPlayer.isMaster) return;
+			Log("Preload Next Default Item", this);
 			currentDefaultIndex++;
 			if (currentDefaultIndex >= defaultPlaylist.Length) currentDefaultIndex = 0;
 			mediaPlayer._LoadQueueURL(defaultPlaylist[currentDefaultIndex]);
@@ -444,6 +446,7 @@ namespace Synergiance.MediaPlayer.UI {
 		// ------------------- Callback Methods -------------------
 
 		public override void OnPlayerJoined(VRCPlayerApi player) {
+			Log("On Player Joined", this);
 			if (player == null || !player.IsValid()) return;
 			if (!mediaPlayer.CheckPrivileged(player)) return;
 			if (Array.IndexOf(modIdList, player.playerId) >= 0) return;
@@ -461,6 +464,7 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		public override void OnPlayerLeft(VRCPlayerApi player) {
+			Log("On Player Left", this);
 			if (player == null || !player.IsValid()) return;
 			if (Array.IndexOf(modIdList, player.playerId) < 0) return;
 			RebuildModList();
@@ -469,6 +473,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		public void _SetStatusText() {
 			// Status text has been sent to us
+			Log("Set Status Text", this);
 			Initialize();
 			if (isValid) {
 				bool isPlaying = mediaPlayer.GetIsPlaying();
@@ -484,6 +489,7 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		public void _RecheckVideoPlayer() {
+			Log("Recheck Video Player", this);
 			UpdateAllButtons();
 			if (urlField && !string.IsNullOrWhiteSpace(urlField.GetUrl().ToString())) return;
 			mediaType = mediaPlayer.GetMediaType();
@@ -493,6 +499,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		public void _PlayerLocked() {
 			// Video player has been locked
+			Log("Player Locked", this);
 			Initialize();
 			bool hasPermissions = mediaPlayer.HasPermissions();
 			lockUnlockButton._SetMode(hasPermissions ? 1 : 2);
@@ -501,6 +508,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		public void _PlayerUnlocked() {
 			// Video player has been unlocked
+			Log("Player Unlocked", this);
 			Initialize();
 			lockUnlockButton._SetMode(0);
 			if (urlPlaceholderField) urlPlaceholderField.text = "Enter Video URL (Anyone)...";
@@ -508,6 +516,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		public void _RelayVideoLoading() {
 			// Video is beginning to load
+			Log("Relay Video Loading", this);
 			Initialize();
 			VRCUrl currentURL = mediaPlayer.GetCurrentURL();
 			UpdateAllButtons();
@@ -515,6 +524,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		public void _RelayVideoReady() {
 			// Video has finished loading
+			Log("Relay Video Ready", this);
 			Initialize();
 			UpdateAllButtons();
 			UpdateUrls();
@@ -522,41 +532,48 @@ namespace Synergiance.MediaPlayer.UI {
 
 		public void _RelayVideoError() {
 			// Video player has thrown an error
+			Log("Relay Video Error", this);
 			Initialize();
 		}
 
 		public void _RelayVideoStart() {
 			// Video has started playing
+			Log("Relay Video Start", this);
 			Initialize();
 			UpdateAllButtons();
 		}
 
 		public void _RelayVideoPlay() {
 			// Video has resumed playing
+			Log("Relay Video Play", this);
 			Initialize();
 			UpdateAllButtons();
 		}
 
 		public void _RelayVideoPause() {
 			// Video has paused
+			Log("Relay Video Pause", this);
 			Initialize();
 			UpdateAllButtons();
 		}
 
 		public void _RelayVideoEnd() {
 			// Video has finished playing
+			Log("Relay Video End", this);
 			Initialize();
 			UpdateAllButtons();
 		}
 
 		public void _RelayVideoLoop() {
 			// Video has looped
+			Log("Relay Video Loop", this);
 			Initialize();
 			UpdateAllButtons();
 		}
 
 		public void _RelayVideoNext() {
 			// Queued video is starting
+			Log("Relay Video Next", this);
 			Initialize();
 			UpdateAllButtons();
 			if (isDefaultPlaylist) PreloadNextDefaultItem();
@@ -564,6 +581,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		public void _RelayVideoQueueLoading() {
 			// Queued video is beginning to load
+			Log("Relay Video Queue Loading", this);
 			Initialize();
 			//ShowLoadingBar();
 			UpdateAllButtons();
@@ -571,12 +589,14 @@ namespace Synergiance.MediaPlayer.UI {
 
 		public void _RelayVideoQueueReady() {
 			// Queued video has loaded
+			Log("Relay Video Queue Ready", this);
 			Initialize();
 			UpdateAllButtons();
 		}
 
 		public void _RelayVideoQueueError() {
 			// Queued video player has thrown an error
+			Log("Relay Video Queue Error", this);
 			Initialize();
 		}
 
