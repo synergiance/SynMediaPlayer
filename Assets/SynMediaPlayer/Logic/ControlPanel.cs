@@ -54,6 +54,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private float lastResync;
 		private bool hideTime;
 		private bool queueCheckURL;
+		private bool reachedEnd;
 
 		[UdonSynced] private bool isDefaultPlaylist = true;
 		[UdonSynced] private int currentDefaultIndex;
@@ -84,7 +85,7 @@ namespace Synergiance.MediaPlayer.UI {
 			if (maxVideosInQueue < 1) maxVideosInQueue = 1;
 			if (maxVideosInQueue > hardQueueCap) maxVideosInQueue = hardQueueCap;
 			initialized = true;
-			if (autoplay) InitializeDefaultPlaylist();
+			InitializeDefaultPlaylist();
 			UpdateTimeAndStatus();
 			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
 			RebuildModList();
@@ -393,7 +394,9 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		private void SuppressSecurity() {
-			if (!mediaPlayer.HasPermissions()) mediaPlayer._SuppressSecurity(Time.time);
+			if (mediaPlayer.HasPermissions()) return;
+			LogVerbose("Suppress Security", this);
+			mediaPlayer._SuppressSecurity(Time.time);
 		}
 
 		// --------------- Default Playlist Methods ---------------
@@ -402,12 +405,20 @@ namespace Synergiance.MediaPlayer.UI {
 			if (!isValid) return;
 			VRCPlayerApi localPlayer = Networking.LocalPlayer;
 			if (localPlayer != null && !localPlayer.isMaster) return;
+			LogVerbose("Initialize Default Playlist", this);
 			if (defaultPlaylist == null || defaultPlaylist.Length < 1) {
+				Log("Default playlist empty, disabling", this);
 				isDefaultPlaylist = false;
 				RequestSerialization();
 				return;
 			}
+			if (!mediaPlayer.HasPermissions()) SuppressSecurity();
 			mediaPlayer._LoadURL(defaultPlaylist[0]);
+			reachedEnd = false;
+			if (autoplay) mediaPlayer._Play();
+			mediaPlayer.EngageSecurity();
+			PreloadNextDefaultItem();
+			if (!isDefaultPlaylist) return;
 			PreloadNextDefaultItem();
 		}
 
@@ -423,6 +434,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private void CancelDefaultPlaylist() {
 			if (!isDefaultPlaylist) return;
+			LogVerbose("Cancel Default Playlist", this);
 			isDefaultPlaylist = false;
 			ClearQueueInternal();
 			RequestSerialization();
@@ -483,8 +495,16 @@ namespace Synergiance.MediaPlayer.UI {
 			VRCUrl[] tempUrls = new VRCUrl[videoQueueLocal == null ? 1 : videoQueueLocal.Length + 1];
 			if (tempUrls.Length > 1) Array.Copy(videoQueueLocal, tempUrls, videoQueueLocal.Length);
 			tempUrls[tempUrls.Length - 1] = url;
+			videoQueueLocal = tempUrls;
+			if (tempUrls.Length == 1) {
+				if (reachedEnd) {
+					InsertNextUrl();
+					videoQueueLocal = null;
+				} else if (loadGapless) {
+					UpdateNextUrl();
+				}
+			}
 			Sync();
-			if (tempUrls.Length == 1 && loadGapless) UpdateNextUrl();
 			UpdateQueueUI();
 		}
 
@@ -525,21 +545,22 @@ namespace Synergiance.MediaPlayer.UI {
 			if (videoQueueLocal == null || videoQueueLocal.Length == 0) {
 				if (index != 0) {
 					LogWarning("Cannot insert video into queue! Index out of bounds!", this);
-				}
-				tempUrls = new VRCUrl[1];
-			} else {
-				if (videoQueueLocal.Length >= maxVideosInQueue) {
-					LogWarning("Cannot insert video into queue! Queue length exceeded!", this);
 					return;
 				}
-				if (index > videoQueueLocal.Length || index < 0) {
-					LogWarning("Cannot insert video into queue! Index out of bounds!", this);
-					return;
-				}
-				tempUrls = new VRCUrl[videoQueueLocal.Length + 1];
-				if (index > 0) Array.Copy(videoQueueLocal, tempUrls, index);
-				if (index < videoQueueLocal.Length) Array.Copy(videoQueueLocal, index, tempUrls, index + 1, videoQueueLocal.Length - index);
+				AddToQueueInternal(url);
+				return;
 			}
+			if (videoQueueLocal.Length >= maxVideosInQueue) {
+				LogWarning("Cannot insert video into queue! Queue length exceeded!", this);
+				return;
+			}
+			if (index > videoQueueLocal.Length || index < 0) {
+				LogWarning("Cannot insert video into queue! Index out of bounds!", this);
+				return;
+			}
+			tempUrls = new VRCUrl[videoQueueLocal.Length + 1];
+			if (index > 0) Array.Copy(videoQueueLocal, tempUrls, index);
+			if (index < videoQueueLocal.Length) Array.Copy(videoQueueLocal, index, tempUrls, index + 1, videoQueueLocal.Length - index);
 			LogVerbose("Insert To Queue Internal: " + index + ", " + url, this);
 			tempUrls[index] = url;
 			videoQueueLocal = tempUrls;
@@ -580,9 +601,12 @@ namespace Synergiance.MediaPlayer.UI {
 				LogWarning("Attempting to insert new URL when queue is empty!", this);
 				return;
 			}
+			LogVerbose("Insert Next URL: " + videoQueueLocal[0], this);
 			if (!mediaPlayer.HasPermissions()) SuppressSecurity();
 			mediaPlayer._LoadURL(videoQueueLocal[0]);
 			mediaPlayer.EngageSecurity();
+			reachedEnd = false;
+			if (autoplay || isDefaultPlaylist) mediaPlayer._Play();
 		}
 
 		private void AdvanceQueue() {
@@ -596,15 +620,15 @@ namespace Synergiance.MediaPlayer.UI {
 			if (videoQueueLocal.Length == 1) {
 				if (!loadGapless) InsertNextUrl();
 				videoQueueLocal = null;
-				if (videoQueueRemote == null) return;
-				Sync();
+				if (videoQueueRemote != null) Sync();
 				if (loadGapless) UpdateNextUrl();
 				UpdateQueueUI();
+				PreloadNextDefaultItem();
 				return;
 			}
 			if (!loadGapless) InsertNextUrl();
 			VRCUrl[] tempUrls = new VRCUrl[videoQueueLocal.Length - 1];
-			Array.Copy(videoQueueLocal, tempUrls, tempUrls.Length);
+			Array.Copy(videoQueueLocal, 1, tempUrls, 0, tempUrls.Length);
 			videoQueueLocal = tempUrls;
 			Sync();
 			if (loadGapless) UpdateNextUrl();
@@ -749,6 +773,7 @@ namespace Synergiance.MediaPlayer.UI {
 		public void _RelayVideoError() {
 			// Video player has thrown an error
 			Log("Relay Video Error", this);
+			reachedEnd = true;
 			Initialize();
 		}
 
@@ -776,6 +801,7 @@ namespace Synergiance.MediaPlayer.UI {
 		public void _RelayVideoEnd() {
 			// Video has finished playing
 			Log("Relay Video End", this);
+			reachedEnd = true;
 			Initialize();
 			UpdateAllButtons();
 			AdvanceQueue();
@@ -784,6 +810,7 @@ namespace Synergiance.MediaPlayer.UI {
 		public void _RelayVideoLoop() {
 			// Video has looped
 			Log("Relay Video Loop", this);
+			reachedEnd = false;
 			Initialize();
 			UpdateAllButtons();
 		}
@@ -791,6 +818,7 @@ namespace Synergiance.MediaPlayer.UI {
 		public void _RelayVideoNext() {
 			// Queued video is starting
 			Log("Relay Video Next", this);
+			reachedEnd = false;
 			Initialize();
 			UpdateAllButtons();
 			AdvanceQueue();
