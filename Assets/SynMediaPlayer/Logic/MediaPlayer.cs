@@ -226,7 +226,7 @@ namespace Synergiance.MediaPlayer {
 		public void _LoadURL(VRCUrl url) {
 			Initialize();
 			if (!isActive) return;
-			if (masterLock && !hasPermissions) return;
+			if (masterLock && !hasPermissions && !suppressSecurity) return;
 			int playerID = mediaSelect == null ? mediaPlayers.GetActiveID() : mediaSelect.GetCurrentID();
 			_LoadURLAs(url, playerID);
 		}
@@ -234,7 +234,7 @@ namespace Synergiance.MediaPlayer {
 		public int _LoadURLAs(VRCUrl url, int playerID) {
 			Initialize();
 			if (!isActive) return playerID;
-			if (masterLock && !hasPermissions) return playerID;
+			if (masterLock && !hasPermissions && !suppressSecurity) return playerID;
 			Log("_Load", this);
 			// Sanity Check URL
 			string urlStr = url != null ? url.ToString() : "";
@@ -253,7 +253,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			LogVerbose("Load Queue URL", this);
 			if (!isActive) return;
-			if (masterLock && !hasPermissions) return;
+			if (masterLock && !hasPermissions && !suppressSecurity) return;
 			_LoadQueueURLAs(url, 0);
 		}
 
@@ -284,7 +284,7 @@ namespace Synergiance.MediaPlayer {
 		public void _PlayNext() {
 			Initialize();
 			if (!isActive) return;
-			if (masterLock && !hasPermissions) return;
+			if (masterLock && !hasPermissions && !suppressSecurity) return;
 			Log("_PlayNext", this);
 			PlayNextNow();
 		}
@@ -302,7 +302,7 @@ namespace Synergiance.MediaPlayer {
 		public void _Play() {
 			Initialize();
 			if (!isActive) return;
-			if (masterLock && !hasPermissions) return;
+			if (masterLock && !hasPermissions && !suppressSecurity) return;
 			Log("_Play", this);
 			SetPlaying(true);
 			if (!playerReady) return;
@@ -316,7 +316,7 @@ namespace Synergiance.MediaPlayer {
 		public void _Pause() {
 			Initialize();
 			if (!isActive) return;
-			if (masterLock && !hasPermissions) return;
+			if (masterLock && !hasPermissions && !suppressSecurity) return;
 			Log("_Pause", this);
 			SetPlaying(false);
 		}
@@ -336,7 +336,7 @@ namespace Synergiance.MediaPlayer {
 		public void _Stop() {
 			Initialize();
 			if (!isActive) return;
-			if (masterLock && !hasPermissions) return;
+			if (masterLock && !hasPermissions && !suppressSecurity) return;
 			Log("_Stop", this);
 			SeekTo(0);
 			SetPlaying(false);
@@ -398,7 +398,7 @@ namespace Synergiance.MediaPlayer {
 		public void _SetLooping(bool loop) {
 			Initialize();
 			if (!isActive) return;
-			if (masterLock && !hasPermissions) return;
+			if (masterLock && !hasPermissions && !suppressSecurity) return;
 			if (loopToggle != null) loopToggle.isOn = loop;
 			else SetLooping(loop);
 		}
