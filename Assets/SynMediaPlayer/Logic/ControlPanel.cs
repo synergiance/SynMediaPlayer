@@ -235,14 +235,20 @@ namespace Synergiance.MediaPlayer.UI {
 				LogInvalid();
 				return;
 			}
+			if (mediaPlayer.GetLockStatus() && !mediaPlayer.HasPermissions()) {
+				LogWarning("Not permitted to load a new URL", this);
+				return;
+			}
 			if (!urlField) {
 				LogError("Url Field not set!", this);
 				return;
 			}
 			if (string.IsNullOrWhiteSpace(urlField.GetUrl().ToString())) {
+				LogError("URL is empty!", this);
 				UpdateMediaTypeSlider();
 				return;
 			}
+			CancelDefaultPlaylist();
 			int loadedType = mediaType;
 			VRCUrl newUrl = urlField.GetUrl();
 			if (loadGapless && mediaPlayer.GetIsPlaying()) {
