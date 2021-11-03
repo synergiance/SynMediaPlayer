@@ -120,6 +120,7 @@ namespace Synergiance.MediaPlayer {
 
 		private bool     masterLock;                     // Stores state of whether the player is locked
 		private bool     hasPermissions;                 // Cached value for whether the local user has permissions
+		private bool     suppressSecurity;               // Stores whether we're suppressing security
 
 		private bool     isLoggingDiagnostics;           // Stores whether we're taking diagnostic data
 		private string[] diagnosticLog;                  // String to catch all our diagnostic data and output to the user
@@ -1531,6 +1532,20 @@ namespace Synergiance.MediaPlayer {
 			masterLock = lockState;
 			if (seekBar) seekBar._SetLocked(masterLock && !hasPermissions);
 			if (hasCallback) callback.SendCustomEvent(masterLock ? "_PlayerLocked" : "_PlayerUnlocked");
+		}
+
+		public void _SuppressSecurity(float t) {
+			if (Time.time - t > 0.01f) {
+				LogWarning("Invalid security override canceled", this);
+				return;
+			}
+			LogVerbose("Suppress Security", this);
+			suppressSecurity = true;
+			SendCustomEventDelayedFrames("EngageSecurity", 0);
+		}
+
+		public void EngageSecurity() {
+			suppressSecurity = false;
 		}
 
 		// ----------------- Debug Helper Methods -----------------
