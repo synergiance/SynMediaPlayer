@@ -54,7 +54,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private float lastResync;
 		private bool hideTime;
 		private bool queueCheckURL;
-		
+
 		[UdonSynced] private bool isDefaultPlaylist = true;
 		[UdonSynced] private int currentDefaultIndex;
 
@@ -277,40 +277,6 @@ namespace Synergiance.MediaPlayer.UI {
 			UpdateMediaTypeSlider();
 		}
 
-		private void InitializeDefaultPlaylist() {
-			if (!isValid) return;
-			VRCPlayerApi localPlayer = Networking.LocalPlayer;
-			if (localPlayer != null && !localPlayer.isMaster) return;
-			if (defaultPlaylist == null || defaultPlaylist.Length < 1) {
-				isDefaultPlaylist = false;
-				RequestSerialization();
-				return;
-			}
-			mediaPlayer._LoadURL(defaultPlaylist[0]);
-			if (loadGapless) PreloadNextDefaultItem();
-		}
-
-		private void PlayNextDefaultItem() {
-			if (!isValid || !isDefaultPlaylist) return;
-			VRCPlayerApi localPlayer = Networking.LocalPlayer;
-			if (localPlayer != null && !localPlayer.isMaster) return;
-			Log("Play Next Default Item", this);
-			currentDefaultIndex++;
-			if (currentDefaultIndex >= defaultPlaylist.Length) currentDefaultIndex = 0;
-			mediaPlayer._LoadURL(defaultPlaylist[currentDefaultIndex]);
-			mediaPlayer._Play();
-		}
-
-		private void PreloadNextDefaultItem() {
-			if (!isValid || !isDefaultPlaylist) return;
-			VRCPlayerApi localPlayer = Networking.LocalPlayer;
-			if (localPlayer != null && !localPlayer.isMaster) return;
-			Log("Preload Next Default Item", this);
-			currentDefaultIndex++;
-			if (currentDefaultIndex >= defaultPlaylist.Length) currentDefaultIndex = 0;
-			mediaPlayer._LoadQueueURL(defaultPlaylist[currentDefaultIndex]);
-		}
-
 		private void LogInvalid() {
 			LogError("Not properly initialized!", this);
 		}
@@ -419,7 +385,49 @@ namespace Synergiance.MediaPlayer.UI {
 			if (prevUrlField) prevUrlField.text = currentUrlField.text;
 			currentUrlField.text = url.ToString();
 		}
-		
+
+		// --------------- Default Playlist Methods ---------------
+
+		private void InitializeDefaultPlaylist() {
+			if (!isValid) return;
+			VRCPlayerApi localPlayer = Networking.LocalPlayer;
+			if (localPlayer != null && !localPlayer.isMaster) return;
+			if (defaultPlaylist == null || defaultPlaylist.Length < 1) {
+				isDefaultPlaylist = false;
+				RequestSerialization();
+				return;
+			}
+			mediaPlayer._LoadURL(defaultPlaylist[0]);
+			if (loadGapless) PreloadNextDefaultItem();
+		}
+
+		private void PlayNextDefaultItem() {
+			if (!isValid || !isDefaultPlaylist) return;
+			VRCPlayerApi localPlayer = Networking.LocalPlayer;
+			if (localPlayer != null && !localPlayer.isMaster) return;
+			Log("Play Next Default Item", this);
+			currentDefaultIndex++;
+			if (currentDefaultIndex >= defaultPlaylist.Length) currentDefaultIndex = 0;
+			mediaPlayer._LoadURL(defaultPlaylist[currentDefaultIndex]);
+			mediaPlayer._Play();
+		}
+
+		private void PreloadNextDefaultItem() {
+			if (!isValid || !isDefaultPlaylist) return;
+			VRCPlayerApi localPlayer = Networking.LocalPlayer;
+			if (localPlayer != null && !localPlayer.isMaster) return;
+			Log("Preload Next Default Item", this);
+			currentDefaultIndex++;
+			if (currentDefaultIndex >= defaultPlaylist.Length) currentDefaultIndex = 0;
+			mediaPlayer._LoadQueueURL(defaultPlaylist[currentDefaultIndex]);
+		}
+
+		private void CancelDefaultPlaylist() {
+			isDefaultPlaylist = false;
+			ClearQueueInternal();
+			RequestSerialization();
+		}
+
 		// -------------------- Queue Methods ---------------------
 
 		private void AddToQueue(VRCUrl url) {
@@ -429,6 +437,7 @@ namespace Synergiance.MediaPlayer.UI {
 				LogWarning("Cannot add video to queue! Permission denied!", this);
 				return;
 			}
+			CancelDefaultPlaylist();
 			AddToQueueInternal(url);
 		}
 
@@ -439,6 +448,7 @@ namespace Synergiance.MediaPlayer.UI {
 				LogWarning("Cannot clear queue! Permission denied!", this);
 				return;
 			}
+			CancelDefaultPlaylist();
 			ClearQueueInternal();
 		}
 
@@ -449,6 +459,7 @@ namespace Synergiance.MediaPlayer.UI {
 				LogWarning("Cannot insert video into queue! Permission denied!", this);
 				return;
 			}
+			CancelDefaultPlaylist();
 			InsertToQueueInternal(url, index);
 		}
 
@@ -467,6 +478,10 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		private void ClearQueueInternal() {
+			if (videoQueueLocal == null || videoQueueLocal.Length == 0) {
+				Log("Cannot clear queue! Queue already empty!", this);
+				return;
+			}
 			LogVerbose("Clear Queue Internal", this);
 			videoQueueLocal = null;
 			Sync();
