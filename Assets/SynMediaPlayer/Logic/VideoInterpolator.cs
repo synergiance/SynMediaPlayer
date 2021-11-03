@@ -17,6 +17,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField]  private float              volume = 0.5f;
 		[SerializeField]  private int                activeID;
 		[SerializeField]  private bool               enableDebug;
+		[SerializeField]  private bool               disableBlackingOut;
 		
 		[Header("Callback Settings")] // Settings for callback
 		[SerializeField]  private UdonSharpBehaviour callback;
@@ -32,7 +33,8 @@ namespace Synergiance.MediaPlayer {
 			set {
 				if (blackOutPlayer == value) return;
 				blackOutPlayer = value;
-				float visibility = blackOutPlayer ? 0 : 1;
+				Log("Black out set to: " + blackOutPlayer);
+				float visibility = blackOutPlayer && !disableBlackingOut ? 0 : 1;
 				interpolatorMaterial.SetFloat(interpolationProps[activeID], visibility);
 				mediaPlayers[activeID]._SetVolume(volume * visibility);
 			}
@@ -44,6 +46,7 @@ namespace Synergiance.MediaPlayer {
 		private bool   hasAudioCallback;
 		private bool   initialized;
 		private bool   blackOutPlayer;
+		private bool   gaplessLoaded;
 
 		private string debugPrefix = "[<color=#1FAF5F>Video Interpolator</color>] ";
 
@@ -78,13 +81,14 @@ namespace Synergiance.MediaPlayer {
 
 		private void SwitchPlayerInternal(int id) {
 			if (id == activeID) return;
-			if (activeID >= 0) {
-				mediaPlayers[activeID]._SetTime(0);
-				mediaPlayers[activeID]._Pause();
-				mediaPlayers[activeID]._Stop();
-				mediaPlayers[activeID]._LoadURL(VRCUrl.Empty);
-				mediaPlayers[activeID]._SetVolume(0);
-				interpolatorMaterial.SetFloat(interpolationProps[activeID], 0);
+			int oldID = activeID;
+			activeID = id;
+			if (oldID >= 0) {
+				mediaPlayers[oldID]._SetTime(0);
+				mediaPlayers[oldID]._Pause();
+				mediaPlayers[oldID]._Stop();
+				mediaPlayers[oldID]._SetVolume(0);
+				interpolatorMaterial.SetFloat(interpolationProps[oldID], 0);
 			}
 			if (id >= 0) {
 				mediaPlayers[id]._SetLoop(isLooping);
@@ -93,10 +97,15 @@ namespace Synergiance.MediaPlayer {
 				interpolatorMaterial.SetFloat(interpolationProps[id], visibility);
 				if (hasAudioCallback) audioCallback.SetProgramVariable(audioFieldName, mediaPlayers[id].GetSpeaker());
 			}
-			activeID = id;
+
+			gaplessLoaded = false;
 		}
 
 		public void _PlayNext() {
+			if (!gaplessSupport) {
+				Error("Attempting to access unconfigured gapless player!");
+				return;
+			}
 			Initialize();
 			if (!mediaPlayers[nextID].GetReady()) return;
 			Log("Stopping " + PlayerNameAndIDString(activeID) + " and playing " + PlayerNameAndIDString(nextID));
@@ -140,7 +149,9 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!gaplessSupport) return;
 			if (GetPublicActiveID() != 0) return;
+			LogPlayer("Loading Next URL: " + (url != null ? url.ToString() : "<NULL"), nextID);
 			mediaPlayers[nextID]._LoadURL(url);
+			gaplessLoaded = true;
 		}
 
 		public void _SetTime(float time) {
@@ -162,6 +173,8 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public bool GetReady() { return mediaPlayers[activeID].GetReady(); }
+
+		public bool GetNextReady() { return gaplessLoaded && mediaPlayers[nextID].GetReady(); }
 		public bool GetPlaying() { return mediaPlayers[activeID].GetPlaying(); }
 		public bool GetLoop() { return mediaPlayers[activeID].GetLoop(); }
 		public float GetTime() { return mediaPlayers[activeID].GetTime(); }
@@ -199,6 +212,7 @@ namespace Synergiance.MediaPlayer {
 				callback.SetProgramVariable("relayIdentifier", identifier);
 				callback.SendCustomEvent("_RelayVideoNext");
 				_PlayNext();
+				return;
 			}
 			if (relayIdentifier != activeID) return;
 			callback.SetProgramVariable("relayIdentifier", identifier);
@@ -207,7 +221,7 @@ namespace Synergiance.MediaPlayer {
 
 		public void _RelayVideoError() {
 			LogPlayer("Error (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
-			if (gaplessSupport && relayIdentifier == nextID) {
+			if (gaplessSupport && gaplessLoaded && relayIdentifier == nextID) {
 				callback.SetProgramVariable("relayIdentifier", identifier);
 				callback.SetProgramVariable("relayVideoError", relayVideoError);
 				callback.SendCustomEvent("_RelayVideoQueueError");
