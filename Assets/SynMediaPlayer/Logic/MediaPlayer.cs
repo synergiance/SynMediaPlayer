@@ -117,6 +117,7 @@ namespace Synergiance.MediaPlayer {
 		private bool     isPreparingForLoad;             // Stores whether we're preparing to enter a URL and to suppress other video loads
 		private bool     newVideoLoading;                // Stores whether the video we're loading is a new video
 		private bool     isWakingUp;                     // Stores whether the video player is initializing or coming out of inactive state
+		private bool     isBlackingOut;                  // Stores local variable for whether we're blacking out the video player
 
 		private bool     masterLock;                     // Stores state of whether the player is locked
 		private bool     hasPermissions;                 // Cached value for whether the local user has permissions
@@ -192,6 +193,7 @@ namespace Synergiance.MediaPlayer {
 				SendStatusCallback();
 			}
 			if (masterLock && !isEditor && CheckPrivileged(Networking.LocalPlayer)) VerifyProperOwnership();
+			isBlackingOut = mediaPlayers.BlackOutPlayer;
 			initialized = true;
 		}
 
@@ -892,7 +894,7 @@ namespace Synergiance.MediaPlayer {
 							SetPlayerStatusText("Playing");
 						}
 					} else {
-						mediaPlayers.BlackOutPlayer = absDeviation > deviationTolerance * 2;
+						BlackOutInternal(absDeviation > deviationTolerance * 2);
 					}
 					return;
 				}
@@ -930,13 +932,13 @@ namespace Synergiance.MediaPlayer {
 						SetPlayerStatusText("Playing");
 					}
 				} else {
-					mediaPlayers.BlackOutPlayer = absDeviation > deviationTolerance * 2;
+					BlackOutInternal(absDeviation > deviationTolerance * 2);
 				}
 			}
 			if (isResync) return;
 			if (Time.time - lastResyncTime >= resyncEvery) SoftResync();
 			if (Time.time - lastCheckTime < checkSyncEvery) return;
-			mediaPlayers.BlackOutPlayer = absDeviation > deviationTolerance * 2;
+			BlackOutInternal(absDeviation > deviationTolerance * 2);
 			if (Time.time - resyncPauseAt < pauseResyncFor) return;
 			lastCheckTime = Time.time;
 			if (mediaPlayers.GetPlaying()) {
@@ -982,7 +984,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void PauseInternal() {
 			if (!mediaPlayers.GetReady()) return;
-			mediaPlayers.BlackOutPlayer = false;
+			BlackOutInternal(false);
 			if (!mediaPlayers.GetPlaying()) return;
 			Log("Pause Internal", this);
 			mediaPlayers._Pause();
@@ -994,7 +996,7 @@ namespace Synergiance.MediaPlayer {
 		private void StopInternal() {
 			Log("Stop", this);
 			isPlaying = false;
-			mediaPlayers.BlackOutPlayer = true;
+			BlackOutInternal(true);
 			if (Networking.IsOwner(gameObject)) SetPlaying(false);
 			currentURL = VRCUrl.Empty;
 			urlValid = false;
@@ -1059,6 +1061,11 @@ namespace Synergiance.MediaPlayer {
 			SetPlayerStatusText(isPlaying ? "Playing" : "Paused");
 		}
 
+		private void BlackOutInternal(bool blackOut) {
+			if (isBlackingOut == blackOut) return;
+			mediaPlayers.BlackOutPlayer = isBlackingOut = blackOut;
+		}
+
 		// ------------------- Callback Methods -------------------
 
 		public void _RelayVideoReady() {
@@ -1073,7 +1080,7 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 			bool isReallyStream = Single.IsNaN(duration) || Single.IsInfinity(duration);
-			mediaPlayers.BlackOutPlayer = !isReallyStream;
+			BlackOutInternal(!isReallyStream);
 			if (isStream != isReallyStream) {
 				isStream = isReallyStream;
 				UpdateUICallback();

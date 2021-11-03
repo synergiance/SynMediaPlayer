@@ -17,6 +17,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField]  private float              volume = 0.5f;
 		[SerializeField]  private int                activeID;
 		[SerializeField]  private bool               enableDebug;
+		[SerializeField]  private bool               disableBlackingOut = false;
 		
 		[Header("Callback Settings")] // Settings for callback
 		[SerializeField]  private UdonSharpBehaviour callback;
