@@ -422,12 +422,37 @@ namespace Synergiance.MediaPlayer.UI {
 		
 		// -------------------- Queue Methods ---------------------
 
-		private void AddToQueueInternal(VRCUrl url) {
+		private void AddToQueue(VRCUrl url) {
+			LogVerbose("Add To Queue", this);
 			if (!isValid) return;
 			if (!mediaPlayer.HasPermissions()) {
 				LogWarning("Cannot add video to queue! Permission denied!", this);
 				return;
 			}
+			AddToQueueInternal(url);
+		}
+
+		private void ClearQueue() {
+			LogVerbose("Clear Queue", this);
+			if (!isValid) return;
+			if (!mediaPlayer.HasPermissions()) {
+				LogWarning("Cannot clear queue! Permission denied!", this);
+				return;
+			}
+			ClearQueueInternal();
+		}
+
+		private void InsertToQueue(VRCUrl url, int index) {
+			LogVerbose("Insert To Queue", this);
+			if (!isValid) return;
+			if (!mediaPlayer.HasPermissions()) {
+				LogWarning("Cannot insert video into queue! Permission denied!", this);
+				return;
+			}
+			InsertToQueueInternal(url, index);
+		}
+
+		private void AddToQueueInternal(VRCUrl url) {
 			if (videoQueueLocal != null && videoQueueLocal.Length >= maxVideosInQueue) {
 				LogWarning("Cannot add video to queue! Queue length exceeded!", this);
 				return;
@@ -442,11 +467,6 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		private void ClearQueueInternal() {
-			if (!isValid) return;
-			if (!mediaPlayer.HasPermissions()) {
-				LogWarning("Cannot clear queue! Permission denied!", this);
-				return;
-			}
 			LogVerbose("Clear Queue Internal", this);
 			videoQueueLocal = null;
 			Sync();
@@ -455,11 +475,6 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		private void InsertToQueueInternal(VRCUrl url, int index) {
-			if (!isValid) return;
-			if (!mediaPlayer.HasPermissions()) {
-				LogWarning("Cannot insert video into queue! Permission denied!", this);
-				return;
-			}
 			VRCUrl[] tempUrls;
 			if (videoQueueLocal == null || videoQueueLocal.Length == 0) {
 				if (index != 0) {
