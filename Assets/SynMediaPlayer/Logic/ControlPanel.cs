@@ -34,7 +34,7 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private bool verboseDebug;
 		[SerializeField] private bool loadGapless;
 		[SerializeField] private bool autoplay = true;
-		[Range(1,100)] [SerializeField] private int maxVideosInQueue = 20;
+		[Range(5,50)] [SerializeField] private int maxVideosInQueue = 20;
 
 		[SerializeField] private VRCUrl[] defaultPlaylist;
 
@@ -392,6 +392,10 @@ namespace Synergiance.MediaPlayer.UI {
 			currentUrlField.text = url.ToString();
 		}
 
+		private void SuppressSecurity() {
+			if (!mediaPlayer.HasPermissions()) mediaPlayer._SuppressSecurity(Time.time);
+		}
+
 		// --------------- Default Playlist Methods ---------------
 
 		private void InitializeDefaultPlaylist() {
@@ -404,18 +408,7 @@ namespace Synergiance.MediaPlayer.UI {
 				return;
 			}
 			mediaPlayer._LoadURL(defaultPlaylist[0]);
-			if (loadGapless) PreloadNextDefaultItem();
-		}
-
-		private void PlayNextDefaultItem() {
-			if (!isValid || !isDefaultPlaylist) return;
-			VRCPlayerApi localPlayer = Networking.LocalPlayer;
-			if (localPlayer != null && !localPlayer.isMaster) return;
-			Log("Play Next Default Item", this);
-			currentDefaultIndex++;
-			if (currentDefaultIndex >= defaultPlaylist.Length) currentDefaultIndex = 0;
-			mediaPlayer._LoadURL(defaultPlaylist[currentDefaultIndex]);
-			mediaPlayer._Play();
+			PreloadNextDefaultItem();
 		}
 
 		private void PreloadNextDefaultItem() {
@@ -425,10 +418,11 @@ namespace Synergiance.MediaPlayer.UI {
 			Log("Preload Next Default Item", this);
 			currentDefaultIndex++;
 			if (currentDefaultIndex >= defaultPlaylist.Length) currentDefaultIndex = 0;
-			mediaPlayer._LoadQueueURL(defaultPlaylist[currentDefaultIndex]);
+			AddToQueueInternal(defaultPlaylist[currentDefaultIndex]);
 		}
 
 		private void CancelDefaultPlaylist() {
+			if (!isDefaultPlaylist) return;
 			isDefaultPlaylist = false;
 			ClearQueueInternal();
 			RequestSerialization();
@@ -458,6 +452,17 @@ namespace Synergiance.MediaPlayer.UI {
 			ClearQueueInternal();
 		}
 
+		private void RemoveFromQueue(int index) {
+			LogVerbose("Remove From Queue", this);
+			if (!isValid) return;
+			if (!mediaPlayer.HasPermissions()) {
+				LogWarning("Cannot remove video from queue! Permission denied!", this);
+				return;
+			}
+			CancelDefaultPlaylist();
+			RemoveFromQueueInternal(index);
+		}
+
 		private void InsertToQueue(VRCUrl url, int index) {
 			LogVerbose("Insert To Queue", this);
 			if (!isValid) return;
@@ -479,7 +484,7 @@ namespace Synergiance.MediaPlayer.UI {
 			if (tempUrls.Length > 1) Array.Copy(videoQueueLocal, tempUrls, videoQueueLocal.Length);
 			tempUrls[tempUrls.Length - 1] = url;
 			Sync();
-			if (tempUrls.Length == 1) UpdateNextUrl();
+			if (tempUrls.Length == 1 && loadGapless) UpdateNextUrl();
 			UpdateQueueUI();
 		}
 
@@ -491,7 +496,27 @@ namespace Synergiance.MediaPlayer.UI {
 			LogVerbose("Clear Queue Internal", this);
 			videoQueueLocal = null;
 			Sync();
-			UpdateNextUrl();
+			if (loadGapless) UpdateNextUrl();
+			UpdateQueueUI();
+		}
+
+		private void RemoveFromQueueInternal(int index) {
+			if (index < 0 || videoQueueLocal == null || index >= videoQueueLocal.Length) {
+				LogWarning("Cannot remove video from queue! Index out of bounds!", this);
+				return;
+			}
+			VRCUrl[] tempUrls;
+			if (videoQueueLocal.Length == 1) {
+				tempUrls = null;
+			} else {
+				tempUrls = new VRCUrl[videoQueueLocal.Length - 1];
+				if (index > 0) Array.Copy(videoQueueLocal, tempUrls, index);
+				if (index < videoQueueLocal.Length - 1) Array.Copy(videoQueueLocal, index + 1, tempUrls, index, tempUrls.Length - index);
+			}
+			LogVerbose("Remove From Queue Internal: " + index, this);
+			videoQueueLocal = tempUrls;
+			Sync();
+			if (index == 0 && loadGapless) UpdateNextUrl();
 			UpdateQueueUI();
 		}
 
@@ -519,7 +544,7 @@ namespace Synergiance.MediaPlayer.UI {
 			tempUrls[index] = url;
 			videoQueueLocal = tempUrls;
 			Sync();
-			if (index == 0) UpdateNextUrl();
+			if (index == 0 && loadGapless) UpdateNextUrl();
 			UpdateQueueUI();
 		}
 
@@ -529,19 +554,62 @@ namespace Synergiance.MediaPlayer.UI {
 			int newLen = videoQueueRemote != null ? videoQueueRemote.Length : 0;
 			bool firstUrlChanged = oldLen == 0 && newLen > 0 || oldLen > 0 && newLen == 0;
 			if (oldLen > 0 && newLen > 0) firstUrlChanged = string.Equals(videoQueueLocal[0].ToString(), videoQueueRemote[0].ToString());
+			if (!isValid || !Networking.IsOwner(mediaPlayer.gameObject)) firstUrlChanged = false;
 			videoQueueLocal = videoQueueRemote;
-			if (firstUrlChanged) UpdateNextUrl();
+			if (firstUrlChanged && loadGapless) UpdateNextUrl();
 			UpdateQueueUI();
 		}
 
 		private void UpdateNextUrl() {
 			if (!isValid) return;
+			if (!mediaPlayer.HasPermissions() && !Networking.IsOwner(mediaPlayer.gameObject)) return;
 			VRCUrl nextUrl = VRCUrl.Empty;
 			if (videoQueueLocal != null && videoQueueLocal.Length > 0) {
 				nextUrl = videoQueueLocal[0];
 			}
 			LogVerbose("Update Next URL: " + nextUrl, this);
+			if (!mediaPlayer.HasPermissions()) SuppressSecurity();
 			mediaPlayer._LoadQueueURL(nextUrl);
+			mediaPlayer.EngageSecurity();
+		}
+
+		private void InsertNextUrl() {
+			if (!isValid) return;
+			if (!mediaPlayer.HasPermissions() && !Networking.IsOwner(mediaPlayer.gameObject)) return;
+			if (videoQueueLocal == null || videoQueueLocal.Length <= 0) {
+				LogWarning("Attempting to insert new URL when queue is empty!", this);
+				return;
+			}
+			if (!mediaPlayer.HasPermissions()) SuppressSecurity();
+			mediaPlayer._LoadURL(videoQueueLocal[0]);
+			mediaPlayer.EngageSecurity();
+		}
+
+		private void AdvanceQueue() {
+			if (!Networking.IsOwner(mediaPlayer.gameObject)) return;
+			LogVerbose("Advance Queue", this);
+			if (videoQueueLocal == null || videoQueueLocal.Length <= 0) {
+				Log("No more videos in queue!", this);
+				if (videoQueueRemote != null) Sync();
+				return;
+			}
+			if (videoQueueLocal.Length == 1) {
+				if (!loadGapless) InsertNextUrl();
+				videoQueueLocal = null;
+				if (videoQueueRemote == null) return;
+				Sync();
+				if (loadGapless) UpdateNextUrl();
+				UpdateQueueUI();
+				return;
+			}
+			if (!loadGapless) InsertNextUrl();
+			VRCUrl[] tempUrls = new VRCUrl[videoQueueLocal.Length - 1];
+			Array.Copy(videoQueueLocal, tempUrls, tempUrls.Length);
+			videoQueueLocal = tempUrls;
+			Sync();
+			if (loadGapless) UpdateNextUrl();
+			UpdateQueueUI();
+			PreloadNextDefaultItem();
 		}
 
 		private void UpdateQueueUI() {
@@ -710,6 +778,7 @@ namespace Synergiance.MediaPlayer.UI {
 			Log("Relay Video End", this);
 			Initialize();
 			UpdateAllButtons();
+			AdvanceQueue();
 		}
 
 		public void _RelayVideoLoop() {
@@ -724,7 +793,7 @@ namespace Synergiance.MediaPlayer.UI {
 			Log("Relay Video Next", this);
 			Initialize();
 			UpdateAllButtons();
-			if (isDefaultPlaylist) PreloadNextDefaultItem();
+			AdvanceQueue();
 		}
 
 		public void _RelayVideoQueueLoading() {

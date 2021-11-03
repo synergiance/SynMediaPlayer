@@ -1741,10 +1741,10 @@ MonoBehaviour:
       Data: 116|UnityEngine.RangeAttribute, UnityEngine.CoreModule
     - Name: min
       Entry: 4
-      Data: 1
+      Data: 5
     - Name: max
       Entry: 4
-      Data: 100
+      Data: 50
     - Name: 
       Entry: 8
       Data: 
