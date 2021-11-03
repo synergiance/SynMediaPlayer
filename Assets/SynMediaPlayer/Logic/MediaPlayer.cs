@@ -113,7 +113,6 @@ namespace Synergiance.MediaPlayer {
 		private float    lastVideoLoadTime;              // Stores the last time a video was loaded, to prevent any issues loading new videos
 		private int      retryCount;                     // Stores number of automatic retries that have happened
 		private bool     isAutomaticRetry;               // Stores whether this is an automatic retry
-		private bool     urlInvalidUI;                   // Stores whether the input URL is malformed
 		private bool     isPreparingForLoad;             // Stores whether we're preparing to enter a URL and to suppress other video loads
 		private bool     newVideoLoading;                // Stores whether the video we're loading is a new video
 		private bool     isWakingUp;                     // Stores whether the video player is initializing or coming out of inactive state
@@ -1231,13 +1230,11 @@ namespace Synergiance.MediaPlayer {
 			int colonPos = urlStr.IndexOf("://", StringComparison.Ordinal);
 			if (colonPos < 1 || urlStr.Length < colonPos + 5) {
 				LogError("Malformed URL", this);
-				urlInvalidUI = true;
 				return -1;
 			}
 			int prefixLength = urlStr.IndexOf('/', colonPos + 3);
 			if (prefixLength < 1) {
 				LogError("Malformed URL", this);
-				urlInvalidUI = true;
 				return -1;
 			}
 			string urlProtocol = urlStr.Substring(0, colonPos).ToLower();
@@ -1245,7 +1242,6 @@ namespace Synergiance.MediaPlayer {
 			foreach (string protocol in videoProtocols) if (string.Equals(urlProtocol, protocol)) { isAllowedProtocol = true; break; }
 			if (!isAllowedProtocol) {
 				Log("Invalid Protocol: " + urlProtocol, this);
-				urlInvalidUI = true;
 				return -1;
 			}
 			Log("URL Protocol: " + urlProtocol, this);

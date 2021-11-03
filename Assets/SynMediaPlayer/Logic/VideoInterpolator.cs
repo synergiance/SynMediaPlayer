@@ -17,7 +17,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField]  private float              volume = 0.5f;
 		[SerializeField]  private int                activeID;
 		[SerializeField]  private bool               enableDebug;
-		[SerializeField]  private bool               disableBlackingOut = false;
+		[SerializeField]  private bool               disableBlackingOut;
 		
 		[Header("Callback Settings")] // Settings for callback
 		[SerializeField]  private UdonSharpBehaviour callback;
@@ -34,7 +34,7 @@ namespace Synergiance.MediaPlayer {
 				if (blackOutPlayer == value) return;
 				blackOutPlayer = value;
 				Log("Black out set to: " + blackOutPlayer);
-				float visibility = blackOutPlayer ? 0 : 1;
+				float visibility = blackOutPlayer && !disableBlackingOut ? 0 : 1;
 				interpolatorMaterial.SetFloat(interpolationProps[activeID], visibility);
 				mediaPlayers[activeID]._SetVolume(volume * visibility);
 			}
