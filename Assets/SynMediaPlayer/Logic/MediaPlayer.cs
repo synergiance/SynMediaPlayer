@@ -1545,7 +1545,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void LogVerbose(string message, UnityEngine.Object context) {
 			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Verbose: " + message);
-			if (verboseDebug) Debug.Log(debugPrefix + "(+v) " + message, context);
+			if (verboseDebug && enableDebug) Debug.Log(debugPrefix + "(+v) " + message, context);
 		}
 
 		private void LogWarning(string message, UnityEngine.Object context) {

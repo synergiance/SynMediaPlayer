@@ -31,8 +31,10 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private float updatesPerSecond = 5;
 		[SerializeField] private float reloadAvailableFor = 5;
 		[SerializeField] private bool enableDebug;
+		[SerializeField] private bool verboseDebug;
 		[SerializeField] private bool loadGapless;
 		[SerializeField] private bool autoplay = true;
+		[Range(1,100)] [SerializeField] private int maxVideosInQueue = 20;
 
 		[SerializeField] private VRCUrl[] defaultPlaylist;
 
@@ -59,6 +61,8 @@ namespace Synergiance.MediaPlayer.UI {
 		private string[] modList;
 		private int[] modIdList;
 
+		private int hardQueueCap = 100;
+
 		private string debugPrefix = "[<color=#20C0A0>SMP Control Panel</color>] ";
 
 		void Start() {
@@ -76,6 +80,9 @@ namespace Synergiance.MediaPlayer.UI {
 			// Keep UPS to between 50 per second to one every 10 seconds
 			timeBetweenUpdates = Mathf.Max(0.02f, 1 / Mathf.Max(0.1f, updatesPerSecond));
 			if (volumeControl && isValid) volumeControl._SetVolume(mediaPlayer.GetVolume());
+			// ReSharper disable once ConditionIsAlwaysTrueOrFalse
+			if (maxVideosInQueue < 1) maxVideosInQueue = 1;
+			if (maxVideosInQueue > hardQueueCap) maxVideosInQueue = hardQueueCap;
 			initialized = true;
 			if (autoplay) InitializeDefaultPlaylist();
 			UpdateTimeAndStatus();
@@ -412,6 +419,111 @@ namespace Synergiance.MediaPlayer.UI {
 			if (prevUrlField) prevUrlField.text = currentUrlField.text;
 			currentUrlField.text = url.ToString();
 		}
+		
+		// -------------------- Queue Methods ---------------------
+
+		private void AddToQueueInternal(VRCUrl url) {
+			if (!isValid) return;
+			if (!mediaPlayer.HasPermissions()) {
+				LogWarning("Cannot add video to queue! Permission denied!", this);
+				return;
+			}
+			if (videoQueueLocal != null && videoQueueLocal.Length >= maxVideosInQueue) {
+				LogWarning("Cannot add video to queue! Queue length exceeded!", this);
+				return;
+			}
+			LogVerbose("Add To Queue Internal: " + url, this);
+			VRCUrl[] tempUrls = new VRCUrl[videoQueueLocal == null ? 1 : videoQueueLocal.Length + 1];
+			if (tempUrls.Length > 1) Array.Copy(videoQueueLocal, tempUrls, videoQueueLocal.Length);
+			tempUrls[tempUrls.Length - 1] = url;
+			Sync();
+			if (tempUrls.Length == 1) UpdateNextUrl();
+			UpdateQueueUI();
+		}
+
+		private void ClearQueueInternal() {
+			if (!isValid) return;
+			if (!mediaPlayer.HasPermissions()) {
+				LogWarning("Cannot clear queue! Permission denied!", this);
+				return;
+			}
+			LogVerbose("Clear Queue Internal", this);
+			videoQueueLocal = null;
+			Sync();
+			UpdateNextUrl();
+			UpdateQueueUI();
+		}
+
+		private void InsertToQueueInternal(VRCUrl url, int index) {
+			if (!isValid) return;
+			if (!mediaPlayer.HasPermissions()) {
+				LogWarning("Cannot insert video into queue! Permission denied!", this);
+				return;
+			}
+			VRCUrl[] tempUrls;
+			if (videoQueueLocal == null || videoQueueLocal.Length == 0) {
+				if (index != 0) {
+					LogWarning("Cannot insert video into queue! Index out of bounds!", this);
+				}
+				tempUrls = new VRCUrl[1];
+			} else {
+				if (videoQueueLocal.Length >= maxVideosInQueue) {
+					LogWarning("Cannot insert video into queue! Queue length exceeded!", this);
+					return;
+				}
+				if (index > videoQueueLocal.Length || index < 0) {
+					LogWarning("Cannot insert video into queue! Index out of bounds!", this);
+					return;
+				}
+				tempUrls = new VRCUrl[videoQueueLocal.Length + 1];
+				if (index > 0) Array.Copy(videoQueueLocal, tempUrls, index);
+				if (index < videoQueueLocal.Length) Array.Copy(videoQueueLocal, index, tempUrls, index + 1, videoQueueLocal.Length - index);
+			}
+			LogVerbose("Insert To Queue Internal: " + index + ", " + url, this);
+			tempUrls[index] = url;
+			videoQueueLocal = tempUrls;
+			Sync();
+			if (index == 0) UpdateNextUrl();
+			UpdateQueueUI();
+		}
+
+		private void UpdateQueue() {
+			LogVerbose("Update Queue", this);
+			int oldLen = videoQueueLocal != null ? videoQueueLocal.Length : 0;
+			int newLen = videoQueueRemote != null ? videoQueueRemote.Length : 0;
+			bool firstUrlChanged = oldLen == 0 && newLen > 0 || oldLen > 0 && newLen == 0;
+			if (oldLen > 0 && newLen > 0) firstUrlChanged = string.Equals(videoQueueLocal[0].ToString(), videoQueueRemote[0].ToString());
+			videoQueueLocal = videoQueueRemote;
+			if (firstUrlChanged) UpdateNextUrl();
+			UpdateQueueUI();
+		}
+
+		private void UpdateNextUrl() {
+			if (!isValid) return;
+			VRCUrl nextUrl = VRCUrl.Empty;
+			if (videoQueueLocal != null && videoQueueLocal.Length > 0) {
+				nextUrl = videoQueueLocal[0];
+			}
+			LogVerbose("Update Next URL: " + nextUrl, this);
+			mediaPlayer._LoadQueueURL(nextUrl);
+		}
+
+		private void UpdateQueueUI() {
+			// TODO: Implement
+		}
+		
+		// ----------------- Serialization Methods ----------------
+
+		public override void OnDeserialization() {
+			if (videoQueueLocal != videoQueueRemote) UpdateQueue();
+		}
+
+		private void Sync() {
+			videoQueueRemote = videoQueueLocal;
+			if (Networking.LocalPlayer == null) return;
+			Networking.SetOwner(Networking.LocalPlayer, gameObject);
+			RequestSerialization();
+		}
 
 		// --------------- Player Detection Methods ---------------
 
@@ -602,6 +714,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		// ----------------- Debug Helper Methods -----------------
 		private void Log(string message, UnityEngine.Object context) { if (enableDebug) Debug.Log(debugPrefix + message, context); }
+		private void LogVerbose(string message, UnityEngine.Object context) { if (verboseDebug && enableDebug) Debug.Log(debugPrefix + "(+v) " + message, context); }
 		private void LogWarning(string message, UnityEngine.Object context) { Debug.LogWarning(debugPrefix + message, context); }
 		private void LogError(string message, UnityEngine.Object context) { Debug.LogError(debugPrefix + message, context); }
 	}
