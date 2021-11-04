@@ -819,6 +819,10 @@ namespace Synergiance.MediaPlayer {
 				SetPlayerStatusText("Reloading Video");
 				SetVideoURLFromLocal();
 			}
+			if (!playerReady && !isAutomaticRetry && retryCount == 0 && Time.time > lastVideoLoadTime + videoLoadCooldown) {
+				isAutomaticRetry = true;
+				ReloadVideoInternal();
+			}
 		}
 
 		private void StreamLogic() {
@@ -859,7 +863,7 @@ namespace Synergiance.MediaPlayer {
 			}
 			if (nextVideoLoading) return;
 			if (nextURL == null || nextURL.Equals(VRCUrl.Empty)) return;
-			if (mediaPlayers.GetReady() || !isPlaying) return;
+			if (!mediaPlayers.GetReady() || !isPlaying) return;
 			float mediaTime = mediaPlayers.GetTime();
 			if (!playNextVideoNow && mediaTime > 0.01f && mediaPlayers.GetDuration() - mediaTime > preloadNextVideoTime) return;
 			if (Time.time - lastVideoLoadTime < videoLoadCooldown) return;
