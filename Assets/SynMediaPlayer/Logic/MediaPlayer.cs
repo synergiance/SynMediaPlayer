@@ -832,11 +832,17 @@ namespace Synergiance.MediaPlayer {
 				Log("Playing Stream", this);
 				mediaPlayers._Play();
 			} else if (!isLoading) {
+				if (Time.time - lastVideoLoadTime < videoLoadCooldown) return;
 				SetPlayerStatusText("Loading Stream");
 				string urlStr = currentURL != null ? currentURL.ToString() : "";
 				Log("Loading Stream URL: " + urlStr, this);
-				if (isPlaying) mediaPlayers._PlayURL(currentURL);
-				else mediaPlayers._LoadURL(currentURL);
+				if (isPlaying) {
+					mediaPlayers._PlayURL(currentURL);
+					SetLoadTimeToNow();
+				} else {
+					mediaPlayers._LoadURL(currentURL);
+					SetLoadTimeToNow();
+				}
 				if (hasCallback && !isLoading) callback.SendCustomEvent("_RelayVideoLoading");
 				isLoading = true;
 			}
@@ -865,7 +871,7 @@ namespace Synergiance.MediaPlayer {
 			if (nextURL == null || nextURL.Equals(VRCUrl.Empty)) return;
 			if (!mediaPlayers.GetReady() || !isPlaying) return;
 			float mediaTime = mediaPlayers.GetTime();
-			if (!playNextVideoNow && mediaTime > 0.01f && mediaPlayers.GetDuration() - mediaTime > preloadNextVideoTime) return;
+			if (!playNextVideoNow && (mediaTime < 0.01f || mediaPlayers.GetDuration() - mediaTime > preloadNextVideoTime)) return;
 			if (Time.time - lastVideoLoadTime < videoLoadCooldown) return;
 			Log("Loading next URL: " + nextURL.ToString(), this);
 			mediaPlayers._LoadNextURL(nextURL);
