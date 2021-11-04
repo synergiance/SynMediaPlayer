@@ -85,7 +85,7 @@ namespace Synergiance.MediaPlayer.UI {
 			if (maxVideosInQueue < 1) maxVideosInQueue = 1;
 			if (maxVideosInQueue > hardQueueCap) maxVideosInQueue = hardQueueCap;
 			initialized = true;
-			InitializeDefaultPlaylist();
+			if (!mediaPlayer.GetIsPlaying()) InitializeDefaultPlaylist();
 			UpdateTimeAndStatus();
 			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
 			RebuildModList();

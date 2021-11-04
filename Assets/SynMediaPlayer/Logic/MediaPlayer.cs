@@ -16,7 +16,6 @@ namespace Synergiance.MediaPlayer {
 		[Header("Objects")] // Objects and components
 		[SerializeField]  private VideoInterpolator  mediaPlayers;                  // Object to reference all your different media players.  Needs to correspond with media select
 		[SerializeField]  private VRCUrlInputField   urlInputField;                 // URL Input Field to use to load a URL from
-		[SerializeField]  private ToggleGroupHelper  mediaSelect;                   // Toggle Group with names indicating what type of media you want
 		[SerializeField]  private SeekControl        seekBar;                       // Seek bar object.  Needs to be normalized
 		[SerializeField]  private Slider             volumeBar;                     // Volume bar object.  Range is 0-1
 		[SerializeField]  private Text               statisticsText;                // Text for video stats, will read out video player status
@@ -178,12 +177,14 @@ namespace Synergiance.MediaPlayer {
 			SetActiveInternal(startActive);
 			masterLock = lockByDefault;
 			setStatusEnabled = callback && !string.IsNullOrWhiteSpace(setStatusMethod) && !string.IsNullOrWhiteSpace(statusProperty);
-			if (mediaSelect != null) mediaSelect._SetToggleID(mediaPlayers.GetActiveID());
 			if (Networking.LocalPlayer == null) isEditor = true;
 			hasPermissions = CheckPrivilegedInternal(Networking.LocalPlayer);
 			if (Networking.IsOwner(gameObject)) SetLockState(masterLock);
 			if (volumeBar != null) volumeBar.value = mediaPlayers.GetVolume();
 			if (loopToggle != null) SetLooping(loopToggle.isOn);
+			isBlackingOut = mediaPlayers.BlackOutPlayer;
+			if (masterLock && !isEditor && hasPermissions) VerifyProperOwnership();
+			initialized = true;
 			if (!isActive) {
 				// Need to set inactive status here since the update method will be disabled
 				SetPlayerStatusText("Inactive");
@@ -192,9 +193,7 @@ namespace Synergiance.MediaPlayer {
 				// Make sure initial status is shown
 				SendStatusCallback();
 			}
-			if (masterLock && !isEditor && CheckPrivileged(Networking.LocalPlayer)) VerifyProperOwnership();
-			isBlackingOut = mediaPlayers.BlackOutPlayer;
-			initialized = true;
+			CheckDeserializedData();
 		}
 
 		private void Update() {
@@ -227,7 +226,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions && !suppressSecurity) return;
-			int playerID = mediaSelect == null ? mediaPlayers.GetActiveID() : mediaSelect.GetCurrentID();
+			int playerID = mediaPlayers.GetActiveID();
 			_LoadURLAs(url, playerID);
 		}
 
@@ -439,7 +438,7 @@ namespace Synergiance.MediaPlayer {
 		public float GetTime() { return isPlaying ? Time.time - startTime : pausedTime; }
 		public float GetDuration() { return playerReady ? mediaPlayers.GetDuration() : 0; }
 		public float GetTimePrecise() { return mediaPlayers.GetTime(); }
-		public bool GetIsPlaying() { return isPlaying; }
+		public bool GetIsPlaying() { Initialize(); return isPlaying; }
 		public bool GetIsReady() { return playerReady; }
 		public VRCUrl GetCurrentURL() { return currentURL; }
 		public VRCUrl GetNextURL() { return nextURL; }
@@ -597,7 +596,6 @@ namespace Synergiance.MediaPlayer {
 		private void SetPlayerID(int id) {
 			Log("Set Media Player: " + mediaPlayers.GetPlayerName(id), this);
 			SwitchVideoPlayerInternal(id);
-			if (mediaSelect != null) mediaSelect._SetToggleID(id);
 			UpdateUICallback();
 		}
 
@@ -637,7 +635,7 @@ namespace Synergiance.MediaPlayer {
 			Log("Switch Player: " + mediaPlayers.GetPlayerName(id), this);
 			if (isEditor && id != 0) {
 				LogWarning("Cannot use stream player in editor! Setting ID to 0", this);
-				if (mediaSelect != null) mediaSelect._SetToggleID(id = 0);
+				id = 0;
 			}
 			if (id == localPlayerID) return;
 			localPlayerID = id;
@@ -861,11 +859,14 @@ namespace Synergiance.MediaPlayer {
 			}
 			if (nextVideoLoading) return;
 			if (nextURL == null || nextURL.Equals(VRCUrl.Empty)) return;
-			if (!playNextVideoNow && mediaPlayers.GetDuration() - mediaPlayers.GetTime() > preloadNextVideoTime) return;
+			if (mediaPlayers.GetReady() || !isPlaying) return;
+			float mediaTime = mediaPlayers.GetTime();
+			if (!playNextVideoNow && mediaTime > 0.01f && mediaPlayers.GetDuration() - mediaTime > preloadNextVideoTime) return;
 			if (Time.time - lastVideoLoadTime < videoLoadCooldown) return;
 			Log("Loading next URL: " + nextURL.ToString(), this);
 			mediaPlayers._LoadNextURL(nextURL);
 			nextVideoLoading = true;
+			SetLoadTimeToNow();
 		}
 
 		private void ResyncLogic() {
@@ -981,6 +982,13 @@ namespace Synergiance.MediaPlayer {
 		private void PauseInternal() {
 			if (!mediaPlayers.GetReady()) return;
 			BlackOutInternal(false);
+			if (Time.time - lastResyncTime >= resyncEvery) {
+				lastResyncTime = Time.time;
+				if (isPlaying == localIsPlaying) return;
+				isPlaying = localIsPlaying;
+				Log("Playing status corrected to: " + isPlaying, this);
+				return;
+			}
 			if (!mediaPlayers.GetPlaying()) return;
 			Log("Pause Internal", this);
 			mediaPlayers._Pause();
@@ -1020,6 +1028,11 @@ namespace Synergiance.MediaPlayer {
 			playNextVideoTime = time;
 		}
 
+		private void SetLoadTimeToNow() {
+			// Adds a random value to the last video load time to randomize the time interval between loads
+			lastVideoLoadTime = Time.time + UnityEngine.Random.value;
+		}
+
 		private void LoadURLInternal(VRCUrl url) {
 			string urlStr = url != null ? url.ToString() : "";
 			Log("Load URL: " + urlStr, this);
@@ -1040,7 +1053,7 @@ namespace Synergiance.MediaPlayer {
 			currentURL = url;
 			mediaPlayers._LoadURL(url);
 			SetReadyInternal(false);
-			lastVideoLoadTime = Time.time + UnityEngine.Random.value; // Adds a random value to the last video load time to randomize the time interval between loads
+			SetLoadTimeToNow();
 			if (hasCallback && !isLoading) callback.SendCustomEvent("_RelayVideoLoading");
 			isLoading = true;
 			SetPlayerStatusText("Loading Video" + suffix);
@@ -1213,6 +1226,11 @@ namespace Synergiance.MediaPlayer {
 			// Queued video has loaded
 			nextVideoLoading = false;
 			nextVideoReady = true;
+			if (newVideoLoading && !isAutomaticRetry) {
+				isAutomaticRetry = true;
+				retryCount = 0;
+				ReloadVideoInternal();
+			}
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoQueueReady");
 			if (!Networking.IsOwner(gameObject)) return;
 			SetNextVideoTime(Time.time + syncPeriod);
