@@ -107,6 +107,7 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 			Initialize();
+			if (!gaplessLoaded) return;
 			if (!mediaPlayers[nextID].GetReady()) return;
 			Log("Stopping " + PlayerNameAndIDString(activeID) + " and playing " + PlayerNameAndIDString(nextID));
 			int tradesies = activeID;
@@ -150,6 +151,10 @@ namespace Synergiance.MediaPlayer {
 			if (!gaplessSupport) return;
 			if (GetPublicActiveID() != 0) return;
 			LogPlayer("Loading Next URL: " + (url != null ? url.ToString() : "<NULL"), nextID);
+			if (url == null || url == VRCUrl.Empty) {
+				gaplessLoaded = false;
+				return;
+			}
 			mediaPlayers[nextID]._LoadURL(url);
 			gaplessLoaded = true;
 		}
@@ -208,7 +213,7 @@ namespace Synergiance.MediaPlayer {
 
 		public void _RelayVideoEnd() {
 			LogPlayer("End (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
-			if (gaplessSupport && GetPublicActiveID() == 0) {
+			if (gaplessSupport && gaplessLoaded && GetPublicActiveID() == 0) {
 				callback.SetProgramVariable("relayIdentifier", identifier);
 				callback.SendCustomEvent("_RelayVideoNext");
 				_PlayNext();

@@ -254,19 +254,14 @@ namespace Synergiance.MediaPlayer {
 			LogVerbose("Load Queue URL", this);
 			if (!isActive) return;
 			if (masterLock && !hasPermissions && !suppressSecurity) return;
-			_LoadQueueURLAs(url, 0);
-		}
-
-		// TODO: This method will need to go.
-		public void _LoadQueueURLAs(VRCUrl url, int playerID) {
-			Initialize();
-			if (!isActive) return;
-			if (masterLock && !hasPermissions) return;
 			Log("Load Queued", this);
 			string urlStr = url != null ? url.ToString() : "";
+			if (string.IsNullOrEmpty(urlStr)) {
+				SetNextURL(url);
+				return;
+			}
 			if (!SanityCheckURL(urlStr)) return;
-			playerID = CheckURL(urlStr, playerID);
-			if (playerID == 0) SetNextURL(url);
+			SetNextURL(url);
 		}
 
 		// Attempt to load video again
@@ -860,7 +855,8 @@ namespace Synergiance.MediaPlayer {
 				else HardResync(-seekPeriod);
 				mediaPlayers._PlayNext();
 				playNextVideoNow = false;
-				nextVideoReady = false; // Next video is now empty since it got loaded into current video
+				nextVideoReady = false;
+				if (Networking.IsOwner(gameObject)) SetNextURL(VRCUrl.Empty);
 				return;
 			}
 			if (nextVideoLoading) return;
