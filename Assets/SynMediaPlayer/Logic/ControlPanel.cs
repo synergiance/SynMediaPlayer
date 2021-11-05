@@ -639,6 +639,7 @@ namespace Synergiance.MediaPlayer.UI {
 				if (loadGapless) UpdateNextUrl();
 				UpdateQueueUI();
 				PreloadNextDefaultItem();
+				Sync();
 				return;
 			}
 			if (!loadGapless) InsertNextUrl();
@@ -649,6 +650,7 @@ namespace Synergiance.MediaPlayer.UI {
 			if (loadGapless) UpdateNextUrl();
 			UpdateQueueUI();
 			PreloadNextDefaultItem();
+			Sync();
 		}
 
 		private void UpdateQueueUI() {

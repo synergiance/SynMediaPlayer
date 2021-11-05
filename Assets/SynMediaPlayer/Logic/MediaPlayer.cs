@@ -861,7 +861,10 @@ namespace Synergiance.MediaPlayer {
 				mediaPlayers._PlayNext();
 				playNextVideoNow = false;
 				nextVideoReady = false;
-				if (Networking.IsOwner(gameObject)) SetNextURL(VRCUrl.Empty);
+				if (Networking.IsOwner(gameObject)) {
+					currentURL = localURL = nextURL;
+					SetNextURL(VRCUrl.Empty);
+				}
 				return;
 			}
 			if (nextVideoLoading) return;
@@ -1209,7 +1212,10 @@ namespace Synergiance.MediaPlayer {
 			if (Networking.IsOwner(gameObject)) HardResync(0);
 			// Get new duration!
 			nextVideoLoading = nextVideoReady = false;
-			if (Networking.IsOwner(gameObject)) SetNextURL(VRCUrl.Empty);
+			if (Networking.IsOwner(gameObject)) {
+				currentURL = localURL = nextURL;
+				SetNextURL(VRCUrl.Empty);
+			}
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoNext");
 		}
 
