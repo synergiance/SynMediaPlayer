@@ -55,6 +55,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private bool hideTime;
 		private bool queueCheckURL;
 		private bool reachedEnd;
+		private bool hasActivated;
 
 		[UdonSynced] private bool isDefaultPlaylist = true;
 		[UdonSynced] private int currentDefaultIndex;
@@ -85,17 +86,30 @@ namespace Synergiance.MediaPlayer.UI {
 			if (maxVideosInQueue < 1) maxVideosInQueue = 1;
 			if (maxVideosInQueue > hardQueueCap) maxVideosInQueue = hardQueueCap;
 			initialized = true;
-			if (!mediaPlayer.GetIsPlaying()) InitializeDefaultPlaylist();
-			UpdateTimeAndStatus();
-			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
+			UpdateMethods();
 			RebuildModList();
 			UpdateModList();
+		}
+
+		// This function is what will be called on first activation when the video player decides its right and
+		// after its done all of its initialization.
+		private void Activate() {
+			Log("First Activation", this);
+			if (!mediaPlayer.GetIsPlaying()) InitializeDefaultPlaylist();
+			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
+			UpdateMethods();
+			hasActivated = true;
+			CheckDeserialization();
 		}
 
 		public void _SlowUpdate() {
 			if (Time.time < lastSlowUpdate + timeBetweenUpdates * 0.9f) return;
 			lastSlowUpdate = Time.time;
 			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
+			UpdateMethods();
+		}
+
+		private void UpdateMethods() {
 			UpdateTimeAndStatus();
 			UpdateAllButtons();
 			UpdateCurrentOwner();
@@ -403,6 +417,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private void InitializeDefaultPlaylist() {
 			if (!isValid) return;
+			if (!isDefaultPlaylist) return;
 			VRCPlayerApi localPlayer = Networking.LocalPlayer;
 			if (localPlayer != null && !localPlayer.isMaster) return;
 			LogVerbose("Initialize Default Playlist", this);
@@ -643,6 +658,11 @@ namespace Synergiance.MediaPlayer.UI {
 		// ----------------- Serialization Methods ----------------
 
 		public override void OnDeserialization() {
+			if (!hasActivated) return;
+			CheckDeserialization();
+		}
+
+		private void CheckDeserialization() {
 			if (videoQueueLocal != videoQueueRemote) UpdateQueue();
 		}
 
@@ -709,6 +729,12 @@ namespace Synergiance.MediaPlayer.UI {
 			if (Array.IndexOf(modIdList, player.playerId) < 0) return;
 			RebuildModList();
 			UpdateModList();
+		}
+
+		public void _Activate() {
+			if (hasActivated) return;
+			if (!mediaPlayer.GetIsActive()) return;
+			Activate();
 		}
 
 		public void _SetStatusText() {

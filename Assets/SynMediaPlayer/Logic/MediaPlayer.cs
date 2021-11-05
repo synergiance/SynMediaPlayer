@@ -15,12 +15,9 @@ namespace Synergiance.MediaPlayer {
 	public class MediaPlayer : UdonSharpBehaviour {
 		[Header("Objects")] // Objects and components
 		[SerializeField]  private VideoInterpolator  mediaPlayers;                  // Object to reference all your different media players.  Needs to correspond with media select
-		[SerializeField]  private VRCUrlInputField   urlInputField;                 // URL Input Field to use to load a URL from
 		[SerializeField]  private SeekControl        seekBar;                       // Seek bar object.  Needs to be normalized
-		[SerializeField]  private Slider             volumeBar;                     // Volume bar object.  Range is 0-1
 		[SerializeField]  private Text               statisticsText;                // Text for video stats, will read out video player status
 		[SerializeField]  private Text               diagnosticsText;               // Text field for diagnosing video player
-		[SerializeField]  private Toggle             loopToggle;                    // Toggle for whether video should loop
 
 		[Header("Timings")] // Timings
 		[SerializeField]  private float              syncPeriod = 1.0f;             // This is an internal value used in network to local time conversion.
@@ -135,6 +132,7 @@ namespace Synergiance.MediaPlayer {
 		private bool     setStatusEnabled;               // Cached value for whether status can be set without error
 		private bool     isActive;                       // Value for whether media player is active or not. Videos will only load/play/sync while the player is active
 		private bool     initialized;                    // Value indicating whether this component has initialized or not.
+		private bool     hasActivated;                   // Value for whether player has activated for the first time
 		
 		private float    lastActivePing;                 // Time of last ping for who's active
 		private int      numActivePlayers;               // Number of active players
@@ -162,6 +160,8 @@ namespace Synergiance.MediaPlayer {
 		private float pingActiveEvery = 120.0f;       // How often to ping for who's active
 		private float holdPingOpenFor = 5.0f;         // How long to wait after pinging to update player activity data
 
+		private float activateAfter = 0.5f;           // Amount of time to wait after loading a world to activate player
+
 		private float videoLoadCooldown = 5.5f;       // Minimum delay between attempted video loads
 
 		private void Start() {
@@ -174,17 +174,27 @@ namespace Synergiance.MediaPlayer {
 			Log("Initializing", this);
 			hasCallback = callback != null;
 			hasStatsText = statisticsText != null;
-			SetActiveInternal(startActive);
+			SetActiveInternal(false);
 			masterLock = lockByDefault;
 			setStatusEnabled = callback && !string.IsNullOrWhiteSpace(setStatusMethod) && !string.IsNullOrWhiteSpace(statusProperty);
 			if (Networking.LocalPlayer == null) isEditor = true;
 			hasPermissions = CheckPrivilegedInternal(Networking.LocalPlayer);
 			if (Networking.IsOwner(gameObject)) SetLockState(masterLock);
-			if (volumeBar != null) volumeBar.value = mediaPlayers.GetVolume();
-			if (loopToggle != null) SetLooping(loopToggle.isOn);
 			isBlackingOut = mediaPlayers.BlackOutPlayer;
-			if (masterLock && !isEditor && hasPermissions) VerifyProperOwnership();
+			mediaPlayers.BlackOutPlayer = true;
 			initialized = true;
+			SetPlayerStatusText("Initializing");
+			UpdateStatus();
+			SendCustomEventDelayedSeconds("_Activate", activateAfter);
+		}
+
+		// Activate for the first time
+		public void _Activate() {
+			if (hasActivated) return;
+			Log("First Activation", this);
+			SetActiveInternal(startActive);
+			if (masterLock && !isEditor && hasPermissions) VerifyProperOwnership();
+			mediaPlayers.BlackOutPlayer = isBlackingOut;
 			if (!isActive) {
 				// Need to set inactive status here since the update method will be disabled
 				SetPlayerStatusText("Inactive");
@@ -194,6 +204,8 @@ namespace Synergiance.MediaPlayer {
 				SendStatusCallback();
 			}
 			CheckDeserializedData();
+			if (hasCallback) callback.SendCustomEvent("_Activate");
+			hasActivated = true;
 		}
 
 		private void Update() {
@@ -209,17 +221,6 @@ namespace Synergiance.MediaPlayer {
 
 		public int GetUrlId(string url, int currentID) {
 			return CheckURL(url, currentID);
-		}
-
-		public void _Load() {
-			Initialize();
-			if (!isActive) return;
-			if (masterLock && !hasPermissions) return;
-			if (urlInputField == null) {
-				LogError("Cannot read URL Input Field if its null!", this);
-				return;
-			}
-			_LoadURL(urlInputField.GetUrl());
 		}
 
 		public void _LoadURL(VRCUrl url) {
@@ -353,12 +354,6 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		// Set the volume on the video player
-		public void _Volume() {
-			Initialize();
-			if (volumeBar == null) return;
-			mediaPlayers._SetVolume(volumeBar.value);
-		}
-
 		public void _SetVolume(float volume) {
 			Initialize();
 			mediaPlayers._SetVolume(volume);
@@ -382,18 +377,10 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		// Set whether the video should loop when it finishes
-		public void _SetLoop() {
-			Initialize();
-			if (!isActive) return;
-			if (masterLock && !hasPermissions) return;
-			if (loopToggle != null) SetLooping(loopToggle.isOn);
-		}
-
 		public void _SetLooping(bool loop) {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions && !suppressSecurity) return;
-			if (loopToggle != null) loopToggle.isOn = loop;
 			else SetLooping(loop);
 		}
 
@@ -407,7 +394,7 @@ namespace Synergiance.MediaPlayer {
 				SetPlayerStatusText("No Video"); // Catch all for if nothing sets the status text
 				CheckDeserializedData(); // Deserialization is paused and flushed while inactive
 				// Unprivileged player should not retain ownership of player if player is locked
-				if (masterLock && !isEditor && CheckPrivileged(Networking.LocalPlayer)) VerifyProperOwnership();
+				if (masterLock && !isEditor && CheckPrivilegedInternal(Networking.LocalPlayer)) VerifyProperOwnership();
 			} else {
 				UnloadMediaAndFlushBuffers(); // Flush buffers and unload media
 				if (Networking.IsOwner(gameObject)) ChooseNewOwner(); // We don't want ownership if inactive
@@ -514,57 +501,67 @@ namespace Synergiance.MediaPlayer {
 		// Extension of OnDeserialization to let it be called internally.  This method checks local copies of variables against remote ones.
 		private void CheckDeserializedData() {
 			waitForNextNetworkSync = false; // Cancel any waiting, this will 99.9% of the time be the correct value
-			if (remotePlayerID != localPlayerID) { // Determines whether we swapped media type
+			bool hasNewPlayerID = remotePlayerID != localPlayerID;
+			// Cache local and remote strings so ToString() doesn't get called multiple times
+			string localStr = localURL != null ? localURL.ToString() : "";
+			string remoteStr = remoteURL != null ? remoteURL.ToString() : "";
+			bool hasNewUrl = !string.Equals(localStr, remoteStr);
+			// Cache next local and remote strings
+			localStr = localNextURL != null ? localNextURL.ToString() : "";
+			remoteStr = remoteNextURL != null ? remoteNextURL.ToString() : "";
+			bool hasNewNextUrl = !string.Equals(localStr, remoteStr);
+			bool hasNewIsPlaying = remoteIsPlaying != localIsPlaying;
+			bool hasNewTime = Mathf.Abs(remoteTime - localTime) > 0.1f;
+			bool hasNewLock = remoteLock != localLock;
+			bool hasNewLooping = remoteLooping != localLooping;
+			bool hasNewNextNow = remoteNextNow != localNextNow;
+			bool hasNewNextTime = Mathf.Abs(remoteNextTime - localNextTime) > 0.1f;
+			if (hasNewPlayerID) { // Determines whether we swapped media type
 				Log("Deserialization found new Media Player: " + mediaPlayers.GetPlayerName(remotePlayerID), this);
 				localPlayerID = remotePlayerID;
 				SetPlayerID(localPlayerID);
 				SetPlayingInternal(localIsPlaying);
 			}
-			// Cache local and remote strings so ToString() doesn't get called multiple times
-			string localStr = localURL != null ? localURL.ToString() : "";
-			string remoteStr = remoteURL != null ? remoteURL.ToString() : "";
-			if (!string.Equals(localStr, remoteStr)) { // Load the new video if it has changed
+			if (hasNewUrl) { // Load the new video if it has changed
 				Log("Deserialization found new URL: " + remoteStr, this);
 				Log("Old URL: " + localStr, this);
 				localURL = remoteURL;
+				if (hasNewTime) playFromBeginning = false;
 				SetVideoURLFromLocal();
 			}
-			// Cache next local and remote strings
-			localStr = localNextURL != null ? localNextURL.ToString() : "";
-			remoteStr = remoteNextURL != null ? remoteNextURL.ToString() : "";
-			if (!string.Equals(localStr, remoteStr)) { // Load the new video if it has changed
+			if (hasNewNextUrl) { // Load the new video if it has changed
 				newVideoLoading = !isWakingUp;
 				Log("Deserialization found next URL: " + remoteStr, this);
 				Log("Old URL: " + localStr, this);
 				localNextURL = remoteNextURL;
 				SetNextVideoURLFromLocal();
 			}
-			if (remoteIsPlaying != localIsPlaying) { // Update playing status if changed.
+			if (hasNewIsPlaying) { // Update playing status if changed.
 				Log("Deserialization found new playing status: " + (remoteIsPlaying ? "Playing" : "Paused"), this);
 				SetPlayingInternal(localIsPlaying = remoteIsPlaying);
 			}
-			if (Mathf.Abs(remoteTime - localTime) > 0.1f) { // Update local reference time if seek occurred
+			if (hasNewTime) { // Update local reference time if seek occurred
 				Log("Deserialization found new seek position: " + remoteTime, this);
 				localTime = remoteTime;
 				SoftResync();
 			}
-			if (remoteLock != localLock) {
+			if (hasNewLock) {
 				Log("Deserialization found lock status changed! Now " + (remoteLock ? "locked" : "unlocked"), this);
 				localLock = remoteLock;
 				SetLockStateInternal(localLock);
 			}
-			if (remoteLooping != localLooping) {
+			if (hasNewLooping) {
 				Log("Deserialization found video is " + (remoteLooping ? "now" : "no longer") + " looping", this);
 				localLooping = remoteLooping;
 				SetLoopingInternal();
 			}
-			if (remoteNextNow != localNextNow) {
+			if (hasNewNextNow) {
 				Log("Next Now network state changed from " + localNextNow + " to " + remoteNextNow, this);
 				localNextNow = remoteNextNow;
 				if (localNextNow) PlayNextNowInternal();
 				else CancelNextNowInternal();
 			}
-			if (Mathf.Abs(remoteNextTime - localNextTime) > 0.1f) {
+			if (hasNewNextTime) {
 				float newTime = CalcWithTime(localNextTime = remoteNextTime);
 				Log("Deserialization found new sync next video time: " + newTime, this);
 				SetNextVideoLoadTimeInternal(newTime);
@@ -819,7 +816,7 @@ namespace Synergiance.MediaPlayer {
 				SetPlayerStatusText("Reloading Video");
 				SetVideoURLFromLocal();
 			}
-			if (!playerReady && !isAutomaticRetry && retryCount == 0 && Time.time > lastVideoLoadTime + videoLoadCooldown) {
+			if (!playerReady && !isAutomaticRetry && retryCount == 0 && !localURL.Equals(VRCUrl.Empty) && Time.time > lastVideoLoadTime + videoLoadCooldown) {
 				isAutomaticRetry = true;
 				ReloadVideoInternal();
 			}
@@ -1334,6 +1331,7 @@ namespace Synergiance.MediaPlayer {
 			isActive = active;
 			if (Networking.IsOwner(gameObject)) return;
 			SendCustomNetworkEvent(NetworkEventTarget.Owner, active ? "ActivePing" : "InactivePing");
+			if (hasPermissions && isActive) VerifyProperOwnership();
 		}
 
 		// Returns time in video, conditionally pulling it from the player or
@@ -1530,7 +1528,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void VerifyProperOwnership() {
 			if (isEditor) return;
-			if (!CheckPrivileged(Networking.GetOwner(gameObject)))
+			if (!CheckPrivilegedInternal(Networking.GetOwner(gameObject)))
 				Networking.SetOwner(Networking.LocalPlayer, gameObject);
 		}
 
