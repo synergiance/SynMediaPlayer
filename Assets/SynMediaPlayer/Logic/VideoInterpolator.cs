@@ -114,6 +114,7 @@ namespace Synergiance.MediaPlayer {
 			SwitchPlayerInternal(nextID);
 			nextID = tradesies;
 			mediaPlayers[nextID]._Play();
+			SendCallback("_RelayVideoNext");
 		}
 
 		public void _Play() {
@@ -177,6 +178,11 @@ namespace Synergiance.MediaPlayer {
 			mediaPlayers[activeID]._SetVolume(blackOutPlayer ? 0f : volume);
 		}
 
+		private void SendCallback(string eventName) {
+			callback.SetProgramVariable("relayIdentifier", identifier);
+			callback.SendCustomEvent(eventName);
+		}
+
 		public bool GetReady() { return mediaPlayers[activeID].GetReady(); }
 
 		public bool GetNextReady() { return gaplessLoaded && mediaPlayers[nextID].GetReady(); }
@@ -202,68 +208,58 @@ namespace Synergiance.MediaPlayer {
 		public void _RelayVideoReady() {
 			LogPlayer("Ready (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
 			if (gaplessSupport && relayIdentifier == nextID) {
-				callback.SetProgramVariable("relayIdentifier", identifier);
-				callback.SendCustomEvent("_RelayVideoQueueReady");
+				SendCallback("_RelayVideoQueueReady");
 				return;
 			}
 			if (relayIdentifier != activeID) return;
-			callback.SetProgramVariable("relayIdentifier", identifier);
-			callback.SendCustomEvent("_RelayVideoReady");
+			SendCallback("_RelayVideoReady");
 		}
 
 		public void _RelayVideoEnd() {
 			LogPlayer("End (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
 			if (gaplessSupport && gaplessLoaded && GetPublicActiveID() == 0) {
-				callback.SetProgramVariable("relayIdentifier", identifier);
-				callback.SendCustomEvent("_RelayVideoNext");
+				SendCallback("_RelayVideoNext");
 				_PlayNext();
 				return;
 			}
 			if (relayIdentifier != activeID) return;
-			callback.SetProgramVariable("relayIdentifier", identifier);
-			callback.SendCustomEvent("_RelayVideoEnd");
+			SendCallback("_RelayVideoEnd");
 		}
 
 		public void _RelayVideoError() {
 			LogPlayer("Error (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
 			if (gaplessSupport && gaplessLoaded && relayIdentifier == nextID) {
-				callback.SetProgramVariable("relayIdentifier", identifier);
 				callback.SetProgramVariable("relayVideoError", relayVideoError);
-				callback.SendCustomEvent("_RelayVideoQueueError");
+				SendCallback("_RelayVideoQueueError");
 				return;
 			}
 			if (relayIdentifier != activeID) return;
-			callback.SetProgramVariable("relayIdentifier", identifier);
 			callback.SetProgramVariable("relayVideoError", relayVideoError);
-			callback.SendCustomEvent("_RelayVideoError");
+			SendCallback("_RelayVideoError");
 		}
 
 		public void _RelayVideoStart() {
 			LogPlayer("Start (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
 			if (relayIdentifier != activeID) return;
-			callback.SetProgramVariable("relayIdentifier", identifier);
-			callback.SendCustomEvent("_RelayVideoStart");
+			SendCallback("_RelayVideoStart");
 		}
 
 		public void _RelayVideoPlay() {
 			LogPlayer("Play (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
 			if (relayIdentifier != activeID) return;
-			callback.SetProgramVariable("relayIdentifier", identifier);
-			callback.SendCustomEvent("_RelayVideoPlay");
+			SendCallback("_RelayVideoPlay");
 		}
 
 		public void _RelayVideoPause() {
 			LogPlayer("Pause (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
 			if (relayIdentifier != activeID) return;
-			callback.SetProgramVariable("relayIdentifier", identifier);
-			callback.SendCustomEvent("_RelayVideoPause");
+			SendCallback("_RelayVideoPause");
 		}
 
 		public void _RelayVideoLoop() {
 			LogPlayer("Loop (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
 			if (relayIdentifier != activeID) return;
-			callback.SetProgramVariable("relayIdentifier", identifier);
-			callback.SendCustomEvent("_RelayVideoLoop");
+			SendCallback("_RelayVideoLoop");
 		}
 	}
 }

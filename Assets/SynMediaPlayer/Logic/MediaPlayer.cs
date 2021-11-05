@@ -57,7 +57,7 @@ namespace Synergiance.MediaPlayer {
 		[UdonSynced]      private float              remoteTime;                    // Network time based reference for when video began.
 		[UdonSynced]      private bool               remoteIsPlaying;               // Network sync boolean for whether video is playing.
 		[UdonSynced]      private VRCUrl             remoteURL = VRCUrl.Empty;      // Network sync URL of a video.
-		[UdonSynced]      private VRCUrl             remoteNextURL = VRCUrl.Empty;  // Network sync URL of next video
+		[UdonSynced]      private VRCUrl             remoteQueueURL = VRCUrl.Empty; // Network sync URL of next video
 		[UdonSynced]      private int                remotePlayerID;                // Network sync media type.
 		[UdonSynced]      private bool               remoteLock;                    // Network sync player lock.
 		[UdonSynced]      private bool               remoteLooping;                 // Network sync player lock.
@@ -66,7 +66,7 @@ namespace Synergiance.MediaPlayer {
 		                  private float              localTime;                     // Local variables are used for local use of network variables.
 		                  private bool               localIsPlaying;                // Before use, they will be checked against for changes.
 		                  private VRCUrl             localURL = VRCUrl.Empty;       // Upon change, the proper methods will be called.
-		                  private VRCUrl             localNextURL = VRCUrl.Empty;   //
+		                  private VRCUrl             localQueueURL = VRCUrl.Empty;  //
 		                  private int                localPlayerID;                 //
 		                  private bool               localLock;                     //
 		                  private bool               localLooping;                  //
@@ -477,7 +477,9 @@ namespace Synergiance.MediaPlayer {
 			localIsPlaying = false;
 			localPlayerID = 0;
 			localURL = VRCUrl.Empty;
-			localNextURL = VRCUrl.Empty;
+			localQueueURL = VRCUrl.Empty;
+			localNextNow = false;
+			localNextTime = -1;
 			// Stop and unload all media
 			SetPlayingInternal(false);
 			SetTimeInternal(0);
@@ -507,8 +509,8 @@ namespace Synergiance.MediaPlayer {
 			string remoteStr = remoteURL != null ? remoteURL.ToString() : "";
 			bool hasNewUrl = !string.Equals(localStr, remoteStr);
 			// Cache next local and remote strings
-			localStr = localNextURL != null ? localNextURL.ToString() : "";
-			remoteStr = remoteNextURL != null ? remoteNextURL.ToString() : "";
+			localStr = localQueueURL != null ? localQueueURL.ToString() : "";
+			remoteStr = remoteQueueURL != null ? remoteQueueURL.ToString() : "";
 			bool hasNewNextUrl = !string.Equals(localStr, remoteStr);
 			bool hasNewIsPlaying = remoteIsPlaying != localIsPlaying;
 			bool hasNewTime = Mathf.Abs(remoteTime - localTime) > 0.1f;
@@ -531,9 +533,9 @@ namespace Synergiance.MediaPlayer {
 			}
 			if (hasNewNextUrl) { // Load the new video if it has changed
 				newVideoLoading = !isWakingUp;
-				Log("Deserialization found next URL: " + remoteStr, this);
+				Log("Deserialization found new queue URL: " + remoteStr, this);
 				Log("Old URL: " + localStr, this);
-				localNextURL = remoteNextURL;
+				localQueueURL = remoteQueueURL;
 				SetNextVideoURLFromLocal();
 			}
 			if (hasNewIsPlaying) { // Update playing status if changed.
@@ -586,8 +588,8 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void SetNextVideoURLFromLocal() {
-			Log("Decode Next URL: " + localNextURL, this);
-			nextURL = localNextURL;
+			Log("Decode Next URL: " + localQueueURL, this);
+			nextURL = localQueueURL;
 		}
 
 		private void SetPlayerID(int id) {
@@ -652,11 +654,11 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void SetNextURL(VRCUrl url) {
-			string localStr = localNextURL != null ? localNextURL.ToString() : "";
+			string localStr = localQueueURL != null ? localQueueURL.ToString() : "";
 			string urlStr = url != null ? url.ToString() : "";
 			Log("Set Next URL: " + urlStr, this);
 			if (string.Equals(localStr, urlStr)) return;
-			localNextURL = url;
+			localQueueURL = url;
 			SetNextVideoURLFromLocal();
 			Sync();
 		}
@@ -687,6 +689,13 @@ namespace Synergiance.MediaPlayer {
 			HardResync(referencePlayhead);
 		}
 
+		private void SwapNetworkNextToCurrent() {
+			currentURL = localURL = localQueueURL;
+			string newUrl = currentURL == null ? "" : currentURL.ToString();
+			LogVerbose("Swapping network queue URL to current: " + newUrl, this);
+			SetNextURL(VRCUrl.Empty);
+		}
+
 		private void SetLooping(bool looping) {
 			if (masterLock && !hasPermissions) return;
 			if (localLooping == looping) return;
@@ -709,7 +718,7 @@ namespace Synergiance.MediaPlayer {
 			remoteURL = localURL;
 			remoteTime = localTime;
 			remoteIsPlaying = localIsPlaying;
-			remoteNextURL = localNextURL;
+			remoteQueueURL = localQueueURL;
 			remoteLock = localLock;
 			remoteLooping = localLooping;
 			remoteNextNow = localNextNow;
@@ -859,12 +868,6 @@ namespace Synergiance.MediaPlayer {
 				if (Networking.IsOwner(gameObject)) SeekTo(-seekPeriod);
 				else HardResync(-seekPeriod);
 				mediaPlayers._PlayNext();
-				playNextVideoNow = false;
-				nextVideoReady = false;
-				if (Networking.IsOwner(gameObject)) {
-					currentURL = localURL = nextURL;
-					SetNextURL(VRCUrl.Empty);
-				}
 				return;
 			}
 			if (nextVideoLoading) return;
@@ -1211,11 +1214,9 @@ namespace Synergiance.MediaPlayer {
 			SetTimeInternal(0);
 			if (Networking.IsOwner(gameObject)) HardResync(0);
 			// Get new duration!
-			nextVideoLoading = nextVideoReady = false;
-			if (Networking.IsOwner(gameObject)) {
-				currentURL = localURL = nextURL;
-				SetNextURL(VRCUrl.Empty);
-			}
+			nextVideoLoading = nextVideoReady = playNextVideoNow = false;
+			currentURL = nextURL;
+			if (Networking.IsOwner(gameObject)) SwapNetworkNextToCurrent();
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoNext");
 		}
 

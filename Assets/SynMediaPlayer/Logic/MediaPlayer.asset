@@ -2243,7 +2243,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: remoteNextURL
+      Data: remoteQueueURL
     - Name: $v
       Entry: 7
       Data: 149|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -2264,10 +2264,10 @@ MonoBehaviour:
       Data: VRCSDKBaseVRCUrl
     - Name: symbolOriginalName
       Entry: 1
-      Data: remoteNextURL
+      Data: remoteQueueURL
     - Name: symbolUniqueName
       Entry: 1
-      Data: remoteNextURL
+      Data: remoteQueueURL
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -2801,7 +2801,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: localNextURL
+      Data: localQueueURL
     - Name: $v
       Entry: 7
       Data: 182|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -2822,10 +2822,10 @@ MonoBehaviour:
       Data: VRCSDKBaseVRCUrl
     - Name: symbolOriginalName
       Entry: 1
-      Data: localNextURL
+      Data: localQueueURL
     - Name: symbolUniqueName
       Entry: 1
-      Data: localNextURL
+      Data: localQueueURL
     - Name: symbolDefaultValue
       Entry: 6
       Data: 

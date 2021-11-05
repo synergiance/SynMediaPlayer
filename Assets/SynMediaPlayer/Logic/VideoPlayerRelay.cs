@@ -49,40 +49,38 @@ namespace Synergiance.MediaPlayer {
 		public string GetName() { return playerName; }
 		public AudioSource GetSpeaker() { return speaker; }
 
-		public override void OnVideoEnd() {
+		private void SendRelayEvent(string eventName) {
 			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoEnd");
+			relayPoint.SendCustomEvent(eventName);
+		}
+
+		public override void OnVideoEnd() {
+			SendRelayEvent("_RelayVideoEnd");
 		}
 
 		public override void OnVideoReady() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoReady");
+			SendRelayEvent("_RelayVideoReady");
 		}
 
 		public override void OnVideoError(VideoError videoError) {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
 			relayPoint.SetProgramVariable("relayVideoError", videoError);
-			relayPoint.SendCustomEvent("_RelayVideoError");
+			SendRelayEvent("_RelayVideoError");
 		}
 
 		public override void OnVideoPlay() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoPlay");
+			SendRelayEvent("_RelayVideoPlay");
 		}
 
 		public override void OnVideoStart() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoStart");
+			SendRelayEvent("_RelayVideoStart");
 		}
 
 		public override void OnVideoLoop() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoLoop");
+			SendRelayEvent("_RelayVideoLoop");
 		}
 
 		public override void OnVideoPause() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoPause");
+			SendRelayEvent("_RelayVideoPause");
 		}
 	}
 }
