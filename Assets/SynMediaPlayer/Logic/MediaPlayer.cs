@@ -523,9 +523,9 @@ namespace Synergiance.MediaPlayer {
 			string remoteStr = remoteURL != null ? remoteURL.ToString() : "";
 			bool hasNewUrl = !string.Equals(localStr, remoteStr);
 			// Cache next local and remote strings
-			localStr = localQueueURL != null ? localQueueURL.ToString() : "";
-			remoteStr = remoteQueueURL != null ? remoteQueueURL.ToString() : "";
-			bool hasNewQueueUrl = !string.Equals(localStr, remoteStr);
+			string localQueueStr = localQueueURL != null ? localQueueURL.ToString() : "";
+			string remoteQueueStr = remoteQueueURL != null ? remoteQueueURL.ToString() : "";
+			bool hasNewQueueUrl = !string.Equals(localQueueStr, remoteQueueStr);
 			bool hasNewIsPlaying = remoteIsPlaying != localIsPlaying;
 			bool hasNewTime = Mathf.Abs(remoteTime - localTime) > 0.1f;
 			bool hasNewLock = remoteLock != localLock;
@@ -547,8 +547,8 @@ namespace Synergiance.MediaPlayer {
 			}
 			if (hasNewQueueUrl) { // Load the new video if it has changed
 				newVideoLoading = !isWakingUp;
-				Log("Deserialization found new queue URL: " + remoteStr, this);
-				Log("Old URL: " + localStr, this);
+				Log("Deserialization found new queue URL: " + remoteQueueStr, this);
+				Log("Old URL: " + localQueueStr, this);
 				localQueueURL = remoteQueueURL;
 				SetQueueVideoURLFromLocal();
 			}
