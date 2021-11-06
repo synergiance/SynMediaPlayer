@@ -733,7 +733,7 @@ namespace Synergiance.MediaPlayer {
 				Networking.SetOwner(Networking.LocalPlayer, gameObject);
 			if (syncingNextFrame) return;
 			syncingNextFrame = true;
-			SendCustomEventDelayedFrames("Serialize", 0);
+			SendCustomEventDelayedFrames("_Serialize", 0);
 		}
 
 		private void SetRemoteVariables() {
@@ -759,11 +759,12 @@ namespace Synergiance.MediaPlayer {
 			LogVerbose(logMsg, this);
 		}
 
-		public void Serialize() {
+		public void _Serialize() {
 			if (!Networking.IsOwner(gameObject) || !syncingNextFrame) {
 				Log("Throwing out serialization attempt", this);
 				return;
 			}
+			Log("Serializing", this);
 			SetRemoteVariables();
 			RequestSerialization();
 			syncingNextFrame = false;
