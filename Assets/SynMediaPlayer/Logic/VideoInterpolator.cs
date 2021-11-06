@@ -223,7 +223,6 @@ namespace Synergiance.MediaPlayer {
 		public void _RelayVideoEnd() {
 			LogPlayer("End (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
 			if (gaplessSupport && gaplessLoaded && GetPublicActiveID() == 0) {
-				SendCallback("_RelayVideoNext");
 				_PlayNext();
 				return;
 			}

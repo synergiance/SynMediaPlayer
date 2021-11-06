@@ -113,6 +113,7 @@ namespace Synergiance.MediaPlayer {
 		private bool     newVideoLoading;                // Stores whether the video we're loading is a new video
 		private bool     isWakingUp;                     // Stores whether the video player is initializing or coming out of inactive state
 		private bool     isBlackingOut;                  // Stores local variable for whether we're blacking out the video player
+		private bool     syncingNextFrame;               // Stores whether we're already calling sync
 
 		private bool     masterLock;                     // Stores state of whether the player is locked
 		private bool     hasPermissions;                 // Cached value for whether the local user has permissions
@@ -201,7 +202,7 @@ namespace Synergiance.MediaPlayer {
 				UpdateStatus();
 			} else {
 				// Make sure initial status is shown
-				SendStatusCallback();
+				SetPlayerStatusText("No Video");
 			}
 			CheckDeserializedData();
 			if (hasCallback) callback.SendCustomEvent("_Activate");
@@ -727,19 +728,45 @@ namespace Synergiance.MediaPlayer {
 		private void Sync() {
 			if (masterLock && !hasPermissions && !Networking.IsOwner(gameObject)) return;
 			Log("Sync", this);
-			isWakingUp = false;
-			remotePlayerID = localPlayerID;
-			remoteURL = localURL;
-			remoteTime = localTime;
-			remoteIsPlaying = localIsPlaying;
-			remoteQueueURL = localQueueURL;
-			remoteLock = localLock;
-			remoteLooping = localLooping;
-			remoteQueueNow = localQueueNow;
-			remoteQueueTime = localQueueTime;
+			SetRemoteVariables();
 			if (!Networking.IsOwner(gameObject))
 				Networking.SetOwner(Networking.LocalPlayer, gameObject);
+			if (syncingNextFrame) return;
+			syncingNextFrame = true;
+			SendCustomEventDelayedFrames("Serialize", 0);
+		}
+
+		private void SetRemoteVariables() {
+			string logMsg;
+			remotePlayerID = localPlayerID;
+			logMsg = "Player: " + remotePlayerID;
+			remoteURL = localURL;
+			logMsg += ", URL: " + remoteURL;
+			remoteTime = localTime;
+			logMsg += ", Time: " + CalcWithTime(remoteTime);
+			remoteIsPlaying = localIsPlaying;
+			logMsg += ", Playing: " + remoteIsPlaying;
+			remoteQueueURL = localQueueURL;
+			logMsg += ", Queue URL: " + remoteQueueURL;
+			remoteLock = localLock;
+			logMsg += ", Lock: " + (remoteLock ? "Enabled" : "Disabled");
+			remoteLooping = localLooping;
+			logMsg += ", Looping: " + remoteLooping;
+			remoteQueueNow = localQueueNow;
+			logMsg += ", Queue Now: " + remoteQueueNow;
+			remoteQueueTime = localQueueTime;
+			logMsg += ", Queue Time: " + remoteQueueTime;
+			LogVerbose(logMsg, this);
+		}
+
+		public void Serialize() {
+			if (!Networking.IsOwner(gameObject) || !syncingNextFrame) {
+				Log("Throwing out serialization attempt", this);
+				return;
+			}
+			SetRemoteVariables();
 			RequestSerialization();
+			syncingNextFrame = false;
 		}
 
 		private float GetServerTime() {
