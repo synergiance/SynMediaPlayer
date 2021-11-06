@@ -880,7 +880,7 @@ namespace Synergiance.MediaPlayer {
 				Log("Playing queued video", this);
 				resyncPauseAt = Time.time;
 				if (Networking.IsOwner(gameObject)) SeekTo(-seekPeriod);
-				else HardResync(-seekPeriod);
+				else SeekInternal(-seekPeriod);
 				mediaPlayers._PlayNext();
 				return;
 			}
@@ -898,7 +898,13 @@ namespace Synergiance.MediaPlayer {
 
 		private void ResyncLogic() {
 			if (playFromBeginning) {
-				HardResync(-seekPeriod);
+				if (Networking.IsOwner(gameObject)) {
+					Log("Playing from beginning and syncing", this);
+					HardResync(-seekPeriod);
+				} else {
+					Log("Playing from beginning", this);
+					SeekInternal(-seekPeriod);
+				}
 				playFromBeginning = false;
 			}
 			referencePlayhead = Time.time - startTime;
