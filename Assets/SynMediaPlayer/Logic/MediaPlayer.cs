@@ -227,7 +227,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions && !suppressSecurity) return;
-			int playerID = mediaPlayers.GetActiveID();
+			int playerID = mediaPlayers.ActivePlayerID;
 			_LoadURLAs(url, playerID);
 		}
 
@@ -238,14 +238,14 @@ namespace Synergiance.MediaPlayer {
 			Log("_Load", this);
 			// Sanity Check URL
 			string urlStr = url != null ? url.ToString() : "";
-			if (!SanityCheckURL(urlStr)) return mediaPlayers.GetActiveID(); 
+			if (!SanityCheckURL(urlStr)) return mediaPlayers.ActivePlayerID; 
 			// Sync new values over the network
 			int correctedID = isEditor ? 0 : CheckURL(urlStr, playerID);
-			if (correctedID < 0) return mediaPlayers.GetActiveID();
+			if (correctedID < 0) return mediaPlayers.ActivePlayerID;
 			isPreparingForLoad = true; // Suppress reloads
 			SwitchPlayer(correctedID);
 			SetURL(url);
-			isStream = mediaPlayers.GetIsStream();
+			isStream = mediaPlayers.IsStream;
 			return correctedID;
 		}
 
@@ -356,7 +356,7 @@ namespace Synergiance.MediaPlayer {
 		// Set the volume on the video player
 		public void _SetVolume(float volume) {
 			Initialize();
-			mediaPlayers._SetVolume(volume);
+			mediaPlayers.Volume = volume;
 		}
 
 		// Seek to a different position in a video if possible
@@ -364,7 +364,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions) return;
-			SeekTo(seekVal * mediaPlayers.GetDuration()); // seekVal is normalized so multiply it by media length
+			SeekTo(seekVal * mediaPlayers.Duration); // seekVal is normalized so multiply it by media length
 		}
 
 		// Seek to a different position in a video if possible
@@ -372,7 +372,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions) return;
-			seekBar._SetVal(time / mediaPlayers.GetDuration());
+			seekBar._SetVal(time / mediaPlayers.Duration);
 			SeekTo(time);
 		}
 
@@ -420,25 +420,39 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		// ---------------------- Accessors -----------------------
+		
+		public bool IsLocked => masterLock;
+		public bool HasPermissions => hasPermissions;
+		public bool AllowRetries => allowRetryWhenLoaded;
+		public VRCUrl CurrentUrl => currentURL;
+		public VRCUrl QueuedUrl => queueURL;
+		public string PlayerStatus => playerStatus;
+		public bool Loop => mediaPlayers.Loop;
+		public float CurrentTime => isPlaying ? Time.time - startTime : pausedTime;
+		public float Duration => playerReady ? mediaPlayers.Duration : 0;
+		public float PreciseTime => mediaPlayers.Time;
+		public bool Ready => playerReady;
+		public float Volume => mediaPlayers.Volume;
+		public int MediaType => isStream ? isLowLatency ? 2 : 1 : 0;
+		public bool IsPlaying { get { Initialize(); return isPlaying; } }
+		public bool IsSyncing => isSeeking || isResync || postResync;
+		public bool IsLoggingDiagnostics => isLoggingDiagnostics;
+		public bool Active => isActive;
 
-		public string GetStatus() { return playerStatus; }
-		public float GetTime() { return isPlaying ? Time.time - startTime : pausedTime; }
-		public float GetDuration() { return playerReady ? mediaPlayers.GetDuration() : 0; }
-		public float GetTimePrecise() { return mediaPlayers.GetTime(); }
-		public bool GetIsPlaying() { Initialize(); return isPlaying; }
-		public bool GetIsReady() { return playerReady; }
-		public VRCUrl GetCurrentURL() { return currentURL; }
-		public VRCUrl GetQueueURL() { return queueURL; }
-		public float GetVolume() { return mediaPlayers.GetVolume(); }
-		public bool GetIsActive() { return isActive; }
-		public bool GetIsLooping() { return mediaPlayers.GetLoop(); }
-		public int GetMediaType() { return isStream ? isLowLatency ? 2 : 1 : 0; }
-		public bool GetLockStatus() { return masterLock; }
-		public bool HasPermissions() { return hasPermissions; }
-		public bool GetIsSyncing() { return isSeeking || isResync || postResync; }
-		public bool GetIsLoggingDiagnostics() { return isLoggingDiagnostics; }
+		public string GetStatus() { return playerStatus; } // Deprecated
+		public float GetTime() { return CurrentTime; } // Deprecated
+		public float GetDuration() { return Duration; } // Deprecated
+		public float GetTimePrecise() { return PreciseTime; } // Deprecated
+		public bool GetIsPlaying() { return IsPlaying; } // Deprecated
+		public bool GetIsReady() { return playerReady; } // Deprecated
+		public VRCUrl GetCurrentURL() { return currentURL; } // Deprecated
+		public float GetVolume() { return Volume; } // Deprecated
+		public bool GetIsActive() { return isActive; } // Deprecated
+		public bool GetIsLooping() { return Loop; } // Deprecated
+		public int GetMediaType() { return MediaType; } // Deprecated
+		public bool GetIsSyncing() { return IsSyncing; } // Deprecated
+		public bool GetIsLoggingDiagnostics() { return isLoggingDiagnostics; } // Deprecated
 		public bool CheckPrivileged(VRCPlayerApi vrcPlayer) { return CheckPrivilegedInternal(vrcPlayer); }
-		public bool GetAllowRetry() { return allowRetryWhenLoaded; }
 
 		// ------------------ External Utilities ------------------
 
@@ -454,7 +468,7 @@ namespace Synergiance.MediaPlayer {
 		// displays them in a text UI element
 		private void UpdateStatus() {
 			if (!hasStatsText) return;
-			TimeSpan playingTime = TimeSpan.FromSeconds(mediaPlayers.GetTime());
+			TimeSpan playingTime = TimeSpan.FromSeconds(mediaPlayers.Time);
 			string timeStr = playingTime.ToString("G");
 			timeStr = timeStr.Substring(0, timeStr.Length - 4);
 			statisticsText.text = "Playback Time: " + timeStr + "\nStatus: " + playerStatus;
@@ -463,10 +477,10 @@ namespace Synergiance.MediaPlayer {
 		private void UpdateSeek() {
 			if (isSeeking) {
 				if (Time.time - lastSeekTime > seekPeriod) isSeeking = false;
-				if (Mathf.Abs(mediaPlayers.GetTime() - playerTimeAtSeek) < 0.5f) return;
+				if (Mathf.Abs(mediaPlayers.Time - playerTimeAtSeek) < 0.5f) return;
 			}
 			if (!isPlaying) return;
-			seekBar._SetVal(mediaPlayers.GetTime() / Mathf.Max(0.1f, mediaPlayers.GetDuration()));
+			seekBar._SetVal(mediaPlayers.Time / Mathf.Max(0.1f, mediaPlayers.Duration));
 		}
 
 		// If anything is playing, unload it, flush buffers
@@ -601,7 +615,7 @@ namespace Synergiance.MediaPlayer {
 		private void SeekTo(float newTime) {
 			if (masterLock && !hasPermissions && !Networking.IsOwner(gameObject)) return;
 			Log("Seek To: " + newTime, this);
-			playerTimeAtSeek = mediaPlayers.GetTime(); // Set a reference value to be able to timeout if seeking takes too long
+			playerTimeAtSeek = mediaPlayers.Time; // Set a reference value to be able to timeout if seeking takes too long
 			lastSeekTime = Time.time; // Video player will essentially pause on this time until it has finished seeking
 			isSeeking = true;
 			HardResync(newTime);
@@ -832,8 +846,8 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void StreamLogic() {
-			if (!isPlaying || mediaPlayers.GetPlaying()) return;
-			if (mediaPlayers.GetReady()) {
+			if (!isPlaying || mediaPlayers.IsPlaying) return;
+			if (mediaPlayers.IsReady) {
 				SetPlayerStatusText("Playing Stream");
 				Log("Playing Stream", this);
 				mediaPlayers._Play();
@@ -857,7 +871,7 @@ namespace Synergiance.MediaPlayer {
 		private void PreloadLogic() {
 			if (queueVideoReady) {
 				if (!playQueueVideoNow || !(Time.time > playQueueVideoTime)) return;
-				if (!mediaPlayers.GetNextReady()) {
+				if (!mediaPlayers.NextReady) {
 					LogWarning("Next video not actually ready!", this);
 					queueVideoLoading = false;
 					queueVideoReady = false;
@@ -872,9 +886,9 @@ namespace Synergiance.MediaPlayer {
 			}
 			if (queueVideoLoading) return;
 			if (queueURL == null || queueURL.Equals(VRCUrl.Empty)) return;
-			if (!mediaPlayers.GetReady() || !isPlaying) return;
-			float mediaTime = mediaPlayers.GetTime();
-			if (!playQueueVideoNow && (mediaTime < 0.01f || mediaPlayers.GetDuration() - mediaTime > preloadNextVideoTime)) return;
+			if (!mediaPlayers.IsReady || !isPlaying) return;
+			float mediaTime = mediaPlayers.Time;
+			if (!playQueueVideoNow && (mediaTime < 0.01f || mediaPlayers.Duration - mediaTime > preloadNextVideoTime)) return;
 			if (Time.time - lastVideoLoadTime < videoLoadCooldown) return;
 			Log("Loading queue URL: " + queueURL.ToString(), this);
 			mediaPlayers._LoadNextURL(queueURL);
@@ -888,13 +902,13 @@ namespace Synergiance.MediaPlayer {
 				playFromBeginning = false;
 			}
 			referencePlayhead = Time.time - startTime;
-			float currentTime = mediaPlayers.GetTime();
+			float currentTime = mediaPlayers.Time;
 			deviation = currentTime - referencePlayhead;
 			float absDeviation = Mathf.Abs(deviation);
 			float timeMinusLastSoftSync = Time.time - lastSoftSyncTime;
 			if (postResync) {
 				if (Time.time < postResyncEndsAt) {
-					if (!mediaPlayers.GetPlaying()) {
+					if (!mediaPlayers.IsPlaying) {
 						if (currentTime > referencePlayhead + deviationTolerance) {
 							LogVerbose("Ending Post Resync early", this);
 							postResyncEndsAt = Time.time;
@@ -917,7 +931,7 @@ namespace Synergiance.MediaPlayer {
 				ResyncTime(currentTime, referencePlayhead + overshoot);
 				Log("Post Resync Compensation: " + overshoot, this);
 				SetPlayerStatusText("Catching Up");
-				if (!mediaPlayers.GetPlaying()) {
+				if (!mediaPlayers.IsPlaying) {
 					LogVerbose("Resuming internal player at end of Post Resync period", this);
 					mediaPlayers._Play();
 					SetPlayerStatusText("Playing");
@@ -930,12 +944,12 @@ namespace Synergiance.MediaPlayer {
 					postResync = true;
 					postResyncEndsAt = Time.time + (timeMinusLastSoftSync + checkSyncEvery * 0.5f);
 					SetPlayerStatusText("Stabilizing");
-					if (!mediaPlayers.GetPlaying()) {
+					if (!mediaPlayers.IsPlaying) {
 						LogVerbose("Resuming internal player on end of Resync", this);
 						mediaPlayers._Play();
 						SetPlayerStatusText("Playing");
 					}
-				} else if (!mediaPlayers.GetPlaying()) {
+				} else if (!mediaPlayers.IsPlaying) {
 					if (currentTime < referencePlayhead + deviationTolerance) {
 						LogVerbose("Resuming internal player during Resync", this);
 						mediaPlayers._Play();
@@ -951,7 +965,7 @@ namespace Synergiance.MediaPlayer {
 			BlackOutInternal(absDeviation > deviationTolerance * 2);
 			if (Time.time - resyncPauseAt < pauseResyncFor) return;
 			lastCheckTime = Time.time;
-			if (mediaPlayers.GetPlaying()) {
+			if (mediaPlayers.IsPlaying) {
 				if (absDeviation > deviationTolerance) {
 					ResyncTime(currentTime, referencePlayhead + videoOvershoot);
 					SetPlayerStatusText("Syncing");
@@ -976,7 +990,7 @@ namespace Synergiance.MediaPlayer {
 			isResync = true;
 			lastSoftSyncTime = Time.time;
 			playerTimeAtResync = oldTime;
-			if (mediaPlayers.GetReady() && !mediaPlayers.GetPlaying()) {
+			if (mediaPlayers.IsReady && !mediaPlayers.IsPlaying) {
 				LogVerbose("Resuming internal player on Resync Time", this);
 				mediaPlayers._Play();
 			}
@@ -993,7 +1007,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void PauseInternal() {
-			if (!mediaPlayers.GetReady()) return;
+			if (!mediaPlayers.IsReady) return;
 			BlackOutInternal(false);
 			if (Time.time - lastResyncTime >= resyncEvery) {
 				lastResyncTime = Time.time;
@@ -1002,7 +1016,7 @@ namespace Synergiance.MediaPlayer {
 				Log("Playing status corrected to: " + isPlaying, this);
 				return;
 			}
-			if (!mediaPlayers.GetPlaying()) return;
+			if (!mediaPlayers.IsPlaying) return;
 			Log("Pause Internal", this);
 			mediaPlayers._Pause();
 			SetTimeInternal(pausedTime);
@@ -1023,7 +1037,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void SetLoopingInternal() {
 			Log("Set Looping Internal: " + localLooping, this);
-			mediaPlayers._SetLoop(localLooping);
+			mediaPlayers.Loop = localLooping;
 		}
 
 		private void PlayQueueNowInternal() {
@@ -1094,7 +1108,7 @@ namespace Synergiance.MediaPlayer {
 			LogVerbose("Relay Video Ready", this);
 			Initialize();
 			if (!isActive) return;
-			float duration = mediaPlayers.GetDuration();
+			float duration = mediaPlayers.Duration;
 			if (duration <= 0.01f) { // Video loaded incorrectly, retry
 				Log("Video loaded incorrectly, retrying...", this);
 				ReloadVideoInternal();
@@ -1345,20 +1359,20 @@ namespace Synergiance.MediaPlayer {
 		// from the paused time.
 		private float GetTimeInternal() {
 			LogVerbose("GetTimeInternal", this);
-			return isPlaying ? mediaPlayers.GetTime() : pausedTime;
+			return isPlaying ? mediaPlayers.Time : pausedTime;
 		}
 
 		private void SetTimeInternal(float time) {
 			LogVerbose("Set Time Internal: " + time, this);
 			if (isStream) return;
-			mediaPlayers._SetTime(time > 0 ? time : 0);
+			mediaPlayers.Time = time > 0 ? time : 0;
 		}
 
 		private void SwitchVideoPlayerInternal(int id) {
 			LogVerbose("Switch Video Player Internal: " + id, this);
 			mediaPlayers._SwitchPlayer(id);
 			if (isPlaying) ReloadVideoInternal();
-			isStream = mediaPlayers.GetIsStream();
+			isStream = mediaPlayers.IsStream;
 			seekBar._SetEnabled(!isStream);
 		}
 
@@ -1473,10 +1487,10 @@ namespace Synergiance.MediaPlayer {
 			str += ", Time Since Resync Pause: " + (uTime - resyncPauseAt).ToString("N3");
 			str += ", Player Time At Resync: " + playerTimeAtResync.ToString("N3");
 			str += ", Time Since Soft Sync: " + (uTime - lastSoftSyncTime).ToString("N3");
-			str += "\nPlayer Time: " + mediaPlayers.GetTime().ToString("N3");
-			str += ", Player Duration: " + mediaPlayers.GetDuration().ToString("N3");
-			str += ", Player Playing: " + mediaPlayers.GetPlaying();
-			str += ", Player Ready: " + mediaPlayers.GetReady();
+			str += "\nPlayer Time: " + mediaPlayers.Time.ToString("N3");
+			str += ", Player Duration: " + mediaPlayers.Duration.ToString("N3");
+			str += ", Player Playing: " + mediaPlayers.IsPlaying;
+			str += ", Player Ready: " + mediaPlayers.IsReady;
 			str += "\nQueue Video Now: " + playQueueVideoNow;
 			str += ", Queue Video Starts In: " + Mathf.Max(0, playQueueVideoTime - uTime).ToString("N3");
 			str += ", Queue Video Loading: " + queueVideoLoading;

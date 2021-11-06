@@ -81,7 +81,7 @@ namespace Synergiance.MediaPlayer.UI {
 			}
 			// Keep UPS to between 50 per second to one every 10 seconds
 			timeBetweenUpdates = Mathf.Max(0.02f, 1 / Mathf.Max(0.1f, updatesPerSecond));
-			if (volumeControl && isValid) volumeControl._SetVolume(mediaPlayer.GetVolume());
+			if (volumeControl && isValid) volumeControl._SetVolume(mediaPlayer.Volume);
 			// ReSharper disable once ConditionIsAlwaysTrueOrFalse
 			if (maxVideosInQueue < 1) maxVideosInQueue = 1;
 			if (maxVideosInQueue > hardQueueCap) maxVideosInQueue = hardQueueCap;
@@ -95,7 +95,7 @@ namespace Synergiance.MediaPlayer.UI {
 		// after its done all of its initialization.
 		private void Activate() {
 			Log("First Activation", this);
-			if (!mediaPlayer.GetIsPlaying()) InitializeDefaultPlaylist();
+			if (!mediaPlayer.IsPlaying) InitializeDefaultPlaylist();
 			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
 			UpdateMethods();
 			hasActivated = true;
@@ -121,10 +121,10 @@ namespace Synergiance.MediaPlayer.UI {
 				LogInvalid();
 				return;
 			}
-			if (mediaPlayer.GetMediaType() == 0) { // Media Type 0 is video
+			if (mediaPlayer.MediaType == 0) { // Media Type 0 is video
 				mediaPlayer._PlayPause();
 			} else { // Media Type 1-2 is stream
-				if (mediaPlayer.GetIsPlaying()) mediaPlayer._Stop();
+				if (mediaPlayer.IsPlaying) mediaPlayer._Stop();
 				else mediaPlayer._Play();
 			}
 			UpdatePlayPauseStopButtons();
@@ -176,7 +176,7 @@ namespace Synergiance.MediaPlayer.UI {
 				LogInvalid();
 				return;
 			}
-			bool active = !mediaPlayer.GetIsActive();
+			bool active = !mediaPlayer.Active;
 			Log("Setting active: " + active, this);
 			mediaPlayer._SetActive(active);
 			UpdatePowerButton();
@@ -188,7 +188,7 @@ namespace Synergiance.MediaPlayer.UI {
 				LogInvalid();
 				return;
 			}
-			mediaPlayer._SetLooping(!mediaPlayer.GetIsLooping());
+			mediaPlayer._SetLooping(!mediaPlayer.Loop);
 			UpdateLoopButton();
 		}
 
@@ -198,7 +198,7 @@ namespace Synergiance.MediaPlayer.UI {
 				LogInvalid();
 				return;
 			}
-			if (mediaPlayer.GetLockStatus()) mediaPlayer._Unlock();
+			if (mediaPlayer.IsLocked) mediaPlayer._Unlock();
 			else mediaPlayer._Lock();
 		}
 
@@ -214,7 +214,7 @@ namespace Synergiance.MediaPlayer.UI {
 		public void _ClickResync() {
 			Initialize();
 			if (!isValid) return;
-			if (mediaPlayer.GetIsReady() && Time.time > lastResync + reloadAvailableFor) {
+			if (mediaPlayer.Ready && Time.time > lastResync + reloadAvailableFor) {
 				mediaPlayer.Resync();
 				lastResync = Time.time;
 			} else {
@@ -225,7 +225,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		public void _ClickDiagnostics() {
 			if (!isValid) return;
-			if (mediaPlayer.GetIsLoggingDiagnostics())
+			if (mediaPlayer.IsLoggingDiagnostics)
 				mediaPlayer._CancelDiagnostics();
 			else
 				mediaPlayer._StartDiagnostics();
@@ -250,7 +250,7 @@ namespace Synergiance.MediaPlayer.UI {
 				LogInvalid();
 				return;
 			}
-			if (mediaPlayer.GetLockStatus() && !mediaPlayer.HasPermissions()) {
+			if (mediaPlayer.IsLocked && !mediaPlayer.HasPermissions) {
 				LogWarning("Not permitted to load a new URL", this);
 				return;
 			}
@@ -266,7 +266,7 @@ namespace Synergiance.MediaPlayer.UI {
 			CancelDefaultPlaylist();
 			int loadedType = mediaType;
 			VRCUrl newUrl = urlField.GetUrl();
-			if (loadGapless && mediaPlayer.GetIsPlaying()) {
+			if (loadGapless && mediaPlayer.IsPlaying) {
 				if (newUrl != null) Log("Load Queue URL: " + newUrl.ToString(), this);
 				mediaPlayer._LoadQueueURL(newUrl);
 				mediaPlayer._PlayNext();
@@ -310,30 +310,30 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		private void UpdatePlayPauseStopButtons() {
-			if (playPauseButton) playPauseButton._SetMode(mediaPlayer.GetIsPlaying() ? 1 : 0);
+			if (playPauseButton) playPauseButton._SetMode(mediaPlayer.IsPlaying ? 1 : 0);
 			if (playPauseStopButton) {
-				bool isPlaying = mediaPlayer.GetIsPlaying();
-				bool stream = mediaPlayer.GetMediaType() != 0;
+				bool isPlaying = mediaPlayer.IsPlaying;
+				bool stream = mediaPlayer.MediaType != 0;
 				playPauseStopButton._SetMode(isPlaying ? stream ? 2 : 1 : 0);
 			}
 		}
 
 		private void UpdateResyncButton() {
 			if (!isValid || !refreshButton) return;
-			int loaded = mediaPlayer.GetIsReady() ? 1 : 0;
-			int syncing = mediaPlayer.GetIsSyncing() ? 2 : 0;
+			int loaded = mediaPlayer.Ready ? 1 : 0;
+			int syncing = mediaPlayer.IsSyncing ? 2 : 0;
 			if (loaded == 1 && Time.time <= lastResync + reloadAvailableFor) loaded = 0;
 			refreshButton._SetMode(loaded + syncing);
 		}
 
 		private void UpdatePowerButton() {
 			if (!isValid || !powerButton) return;
-			powerButton._SetMode(mediaPlayer.GetIsActive() ? 0 : 1);
+			powerButton._SetMode(mediaPlayer.Active ? 0 : 1);
 		}
 
 		private void UpdateLoopButton() {
 			if (!isValid || !loopButton) return;
-			loopButton._SetMode(mediaPlayer.GetIsLooping() ? 1 : 0);
+			loopButton._SetMode(mediaPlayer.Loop ? 1 : 0);
 		}
 
 		private void UpdateMediaTypeSlider() {
@@ -354,8 +354,8 @@ namespace Synergiance.MediaPlayer.UI {
 			string textToDisplay = "00:00:00/00:00:00";
 			if (isValid) {
 				if (hideTime) return;
-				float duration = mediaPlayer.GetDuration();
-				float currentTime = mediaPlayer.GetTime();
+				float duration = mediaPlayer.Duration;
+				float currentTime = mediaPlayer.CurrentTime;
 				textToDisplay = FormatTime(currentTime);
 				if (Single.IsNaN(duration) || Single.IsInfinity(duration)) textToDisplay = "Live";
 				else if (duration > 0.01f) textToDisplay += "/" + FormatTime(duration);
@@ -400,7 +400,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private void UpdateUrls() {
 			if (!isValid) return;
-			VRCUrl url = mediaPlayer.GetCurrentURL();
+			VRCUrl url = mediaPlayer.CurrentUrl;
 			if (url == null || string.IsNullOrWhiteSpace(url.ToString())) return;
 			if (!currentUrlField) return;
 			if (prevUrlField) prevUrlField.text = currentUrlField.text;
@@ -408,7 +408,7 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		private void SuppressSecurity() {
-			if (mediaPlayer.HasPermissions()) return;
+			if (mediaPlayer.HasPermissions) return;
 			LogVerbose("Suppress Security", this);
 			mediaPlayer._SuppressSecurity(Time.time);
 		}
@@ -420,14 +420,14 @@ namespace Synergiance.MediaPlayer.UI {
 			if (!isDefaultPlaylist) return;
 			VRCPlayerApi localPlayer = Networking.LocalPlayer;
 			if (localPlayer != null && !localPlayer.isMaster) return;
-			LogVerbose("Initialize Default Playlist", this);
 			if (defaultPlaylist == null || defaultPlaylist.Length < 1) {
 				Log("Default playlist empty, disabling", this);
 				isDefaultPlaylist = false;
 				RequestSerialization();
 				return;
 			}
-			if (!mediaPlayer.HasPermissions()) SuppressSecurity();
+			LogVerbose("Initialize Default Playlist", this);
+			if (!mediaPlayer.HasPermissions) SuppressSecurity();
 			mediaPlayer._LoadURL(defaultPlaylist[0]);
 			reachedEnd = false;
 			if (autoplay) mediaPlayer._Play();
@@ -438,7 +438,11 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		private void PreloadNextDefaultItem() {
-			if (!isValid || !isDefaultPlaylist) return;
+			if (!isValid) return;
+			if (!isDefaultPlaylist) {
+				LogVerbose("Not preloading new default item, default playlist is false!", this);
+				return;
+			}
 			VRCPlayerApi localPlayer = Networking.LocalPlayer;
 			if (localPlayer != null && !localPlayer.isMaster) return;
 			Log("Preload Next Default Item", this);
@@ -460,7 +464,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private void AddToQueue(VRCUrl url) {
 			LogVerbose("Add To Queue", this);
 			if (!isValid) return;
-			if (!mediaPlayer.HasPermissions()) {
+			if (!mediaPlayer.HasPermissions) {
 				LogWarning("Cannot add video to queue! Permission denied!", this);
 				return;
 			}
@@ -471,7 +475,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private void ClearQueue() {
 			LogVerbose("Clear Queue", this);
 			if (!isValid) return;
-			if (!mediaPlayer.HasPermissions()) {
+			if (!mediaPlayer.HasPermissions) {
 				LogWarning("Cannot clear queue! Permission denied!", this);
 				return;
 			}
@@ -482,7 +486,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private void RemoveFromQueue(int index) {
 			LogVerbose("Remove From Queue", this);
 			if (!isValid) return;
-			if (!mediaPlayer.HasPermissions()) {
+			if (!mediaPlayer.HasPermissions) {
 				LogWarning("Cannot remove video from queue! Permission denied!", this);
 				return;
 			}
@@ -493,7 +497,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private void InsertToQueue(VRCUrl url, int index) {
 			LogVerbose("Insert To Queue", this);
 			if (!isValid) return;
-			if (!mediaPlayer.HasPermissions()) {
+			if (!mediaPlayer.HasPermissions && mediaPlayer.IsLocked) {
 				LogWarning("Cannot insert video into queue! Permission denied!", this);
 				return;
 			}
@@ -590,7 +594,12 @@ namespace Synergiance.MediaPlayer.UI {
 			int newLen = videoQueueRemote != null ? videoQueueRemote.Length : 0;
 			bool firstUrlChanged = oldLen == 0 && newLen > 0 || oldLen > 0 && newLen == 0;
 			if (oldLen > 0 && newLen > 0) firstUrlChanged = string.Equals(videoQueueLocal[0].ToString(), videoQueueRemote[0].ToString());
+			string logMsg = "Old queue length: " + oldLen;
+			logMsg += ", New queue length: " + newLen;
+			logMsg += ", First URL " + (firstUrlChanged ? "changed" : "unchanged");
 			if (!isValid || !Networking.IsOwner(mediaPlayer.gameObject)) firstUrlChanged = false;
+			logMsg += "Updating next URL? " + (firstUrlChanged && loadGapless);
+			LogVerbose(logMsg, this);
 			videoQueueLocal = videoQueueRemote;
 			if (firstUrlChanged && loadGapless) UpdateNextUrl();
 			UpdateQueueUI();
@@ -598,26 +607,26 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private void UpdateNextUrl() {
 			if (!isValid) return;
-			if (!mediaPlayer.HasPermissions() && !Networking.IsOwner(mediaPlayer.gameObject)) return;
+			if (!mediaPlayer.HasPermissions && !Networking.IsOwner(mediaPlayer.gameObject)) return;
 			VRCUrl nextUrl = VRCUrl.Empty;
 			if (videoQueueLocal != null && videoQueueLocal.Length > 0) {
 				nextUrl = videoQueueLocal[0];
 			}
 			LogVerbose("Update Next URL: " + nextUrl, this);
-			if (!mediaPlayer.HasPermissions()) SuppressSecurity();
+			if (!mediaPlayer.HasPermissions) SuppressSecurity();
 			mediaPlayer._LoadQueueURL(nextUrl);
 			mediaPlayer.EngageSecurity();
 		}
 
 		private void InsertNextUrl() {
 			if (!isValid) return;
-			if (!mediaPlayer.HasPermissions() && !Networking.IsOwner(mediaPlayer.gameObject)) return;
+			if (!mediaPlayer.HasPermissions && !Networking.IsOwner(mediaPlayer.gameObject)) return;
 			if (videoQueueLocal == null || videoQueueLocal.Length <= 0) {
 				LogWarning("Attempting to insert new URL when queue is empty!", this);
 				return;
 			}
 			LogVerbose("Insert Next URL: " + videoQueueLocal[0], this);
-			if (!mediaPlayer.HasPermissions()) SuppressSecurity();
+			if (!mediaPlayer.HasPermissions) SuppressSecurity();
 			mediaPlayer._LoadURL(videoQueueLocal[0]);
 			mediaPlayer.EngageSecurity();
 			reachedEnd = false;
@@ -633,21 +642,33 @@ namespace Synergiance.MediaPlayer.UI {
 				return;
 			}
 			if (videoQueueLocal.Length == 1) {
-				if (!loadGapless) InsertNextUrl();
+				if (!loadGapless) {
+					LogVerbose("Inserting last URL", this);
+					InsertNextUrl();
+				}
 				videoQueueLocal = null;
 				if (videoQueueRemote != null) Sync();
-				if (loadGapless) UpdateNextUrl();
+				if (loadGapless) {
+					Log("Updating next URL (Should be blank)", this);
+					UpdateNextUrl();
+				}
 				UpdateQueueUI();
 				PreloadNextDefaultItem();
 				Sync();
 				return;
 			}
-			if (!loadGapless) InsertNextUrl();
+			if (!loadGapless) {
+				LogVerbose("Inserting next URL", this);
+				InsertNextUrl();
+			}
 			VRCUrl[] tempUrls = new VRCUrl[videoQueueLocal.Length - 1];
 			Array.Copy(videoQueueLocal, 1, tempUrls, 0, tempUrls.Length);
 			videoQueueLocal = tempUrls;
 			Sync();
-			if (loadGapless) UpdateNextUrl();
+			if (loadGapless) {
+				LogVerbose("Updating next URL (Should not be blank)", this);
+				UpdateNextUrl();
+			}
 			UpdateQueueUI();
 			PreloadNextDefaultItem();
 			Sync();
@@ -655,6 +676,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private void UpdateQueueUI() {
 			// TODO: Implement
+			LogVerbose("Update Queue UI (Doesn't actually do anything yet)", this);
 		}
 		
 		// ----------------- Serialization Methods ----------------
@@ -665,10 +687,12 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		private void CheckDeserialization() {
+			LogVerbose("Check Deserialization", this);
 			if (videoQueueLocal != videoQueueRemote) UpdateQueue();
 		}
 
 		private void Sync() {
+			LogVerbose("Sync", this);
 			videoQueueRemote = videoQueueLocal;
 			if (Networking.LocalPlayer == null) return;
 			Networking.SetOwner(Networking.LocalPlayer, gameObject);
@@ -735,7 +759,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		public void _Activate() {
 			if (hasActivated) return;
-			if (!mediaPlayer.GetIsActive()) return;
+			if (!mediaPlayer.Active) return;
 			Activate();
 		}
 
@@ -744,10 +768,10 @@ namespace Synergiance.MediaPlayer.UI {
 			Log("Set Status Text", this);
 			Initialize();
 			if (isValid) {
-				bool isPlaying = mediaPlayer.GetIsPlaying();
+				bool isPlaying = mediaPlayer.IsPlaying;
 				hideTime = !string.Equals(statusText, "Playing") &&
 				           !string.Equals(statusText, "Stabilizing") &&
-				           mediaPlayer.GetMediaType() == 0;
+				           mediaPlayer.MediaType == 0;
 				if (!hideTime) UpdateTimeAndStatus();
 				else statusField._SetText(statusText);
 				UpdateResyncButton();
@@ -760,7 +784,7 @@ namespace Synergiance.MediaPlayer.UI {
 			Log("Recheck Video Player", this);
 			UpdateAllButtons();
 			if (urlField && !string.IsNullOrWhiteSpace(urlField.GetUrl().ToString())) return;
-			mediaType = mediaPlayer.GetMediaType();
+			mediaType = mediaPlayer.MediaType;
 			UpdateMediaTypeSlider();
 			UpdateCurrentOwner();
 		}
@@ -769,7 +793,7 @@ namespace Synergiance.MediaPlayer.UI {
 			// Video player has been locked
 			Log("Player Locked", this);
 			Initialize();
-			bool hasPermissions = mediaPlayer.HasPermissions();
+			bool hasPermissions = mediaPlayer.HasPermissions;
 			lockUnlockButton._SetMode(hasPermissions ? 1 : 2);
 			if (urlPlaceholderField) urlPlaceholderField.text = hasPermissions ? "Enter Video URL (Instance Moderators)..." : "Player locked!";
 		}
@@ -786,7 +810,7 @@ namespace Synergiance.MediaPlayer.UI {
 			// Video is beginning to load
 			Log("Relay Video Loading", this);
 			Initialize();
-			VRCUrl currentURL = mediaPlayer.GetCurrentURL();
+			VRCUrl currentURL = mediaPlayer.CurrentUrl;
 			UpdateAllButtons();
 		}
 

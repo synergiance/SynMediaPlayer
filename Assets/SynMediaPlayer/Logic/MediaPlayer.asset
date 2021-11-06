@@ -2499,7 +2499,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: remoteNextNow
+      Data: remoteQueueNow
     - Name: $v
       Entry: 7
       Data: 165|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -2520,10 +2520,10 @@ MonoBehaviour:
       Data: SystemBoolean
     - Name: symbolOriginalName
       Entry: 1
-      Data: remoteNextNow
+      Data: remoteQueueNow
     - Name: symbolUniqueName
       Entry: 1
-      Data: remoteNextNow
+      Data: remoteQueueNow
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -2563,7 +2563,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: remoteNextTime
+      Data: remoteQueueTime
     - Name: $v
       Entry: 7
       Data: 169|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -2584,10 +2584,10 @@ MonoBehaviour:
       Data: SystemSingle
     - Name: symbolOriginalName
       Entry: 1
-      Data: remoteNextTime
+      Data: remoteQueueTime
     - Name: symbolUniqueName
       Entry: 1
-      Data: remoteNextTime
+      Data: remoteQueueTime
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -3033,7 +3033,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: localNextNow
+      Data: localQueueNow
     - Name: $v
       Entry: 7
       Data: 194|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -3054,10 +3054,10 @@ MonoBehaviour:
       Data: SystemBoolean
     - Name: symbolOriginalName
       Entry: 1
-      Data: localNextNow
+      Data: localQueueNow
     - Name: symbolUniqueName
       Entry: 1
-      Data: localNextNow
+      Data: localQueueNow
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -3091,7 +3091,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: localNextTime
+      Data: localQueueTime
     - Name: $v
       Entry: 7
       Data: 197|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -3112,10 +3112,10 @@ MonoBehaviour:
       Data: SystemSingle
     - Name: symbolOriginalName
       Entry: 1
-      Data: localNextTime
+      Data: localQueueTime
     - Name: symbolUniqueName
       Entry: 1
-      Data: localNextTime
+      Data: localQueueTime
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -3787,7 +3787,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: nextURL
+      Data: queueURL
     - Name: $v
       Entry: 7
       Data: 233|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -3808,10 +3808,10 @@ MonoBehaviour:
       Data: VRCSDKBaseVRCUrl
     - Name: symbolOriginalName
       Entry: 1
-      Data: nextURL
+      Data: queueURL
     - Name: symbolUniqueName
       Entry: 1
-      Data: nextURL
+      Data: queueURL
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -4715,7 +4715,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: nextVideoReady
+      Data: queueVideoReady
     - Name: $v
       Entry: 7
       Data: 281|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -4736,10 +4736,10 @@ MonoBehaviour:
       Data: SystemBoolean
     - Name: symbolOriginalName
       Entry: 1
-      Data: nextVideoReady
+      Data: queueVideoReady
     - Name: symbolUniqueName
       Entry: 1
-      Data: nextVideoReady
+      Data: queueVideoReady
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -4773,7 +4773,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: nextVideoLoading
+      Data: queueVideoLoading
     - Name: $v
       Entry: 7
       Data: 284|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -4794,10 +4794,10 @@ MonoBehaviour:
       Data: SystemBoolean
     - Name: symbolOriginalName
       Entry: 1
-      Data: nextVideoLoading
+      Data: queueVideoLoading
     - Name: symbolUniqueName
       Entry: 1
-      Data: nextVideoLoading
+      Data: queueVideoLoading
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -4831,7 +4831,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: playNextVideoNow
+      Data: playQueueVideoNow
     - Name: $v
       Entry: 7
       Data: 287|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -4852,10 +4852,10 @@ MonoBehaviour:
       Data: SystemBoolean
     - Name: symbolOriginalName
       Entry: 1
-      Data: playNextVideoNow
+      Data: playQueueVideoNow
     - Name: symbolUniqueName
       Entry: 1
-      Data: playNextVideoNow
+      Data: playQueueVideoNow
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -4889,7 +4889,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: playNextVideoTime
+      Data: playQueueVideoTime
     - Name: $v
       Entry: 7
       Data: 290|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -4910,10 +4910,10 @@ MonoBehaviour:
       Data: SystemSingle
     - Name: symbolOriginalName
       Entry: 1
-      Data: playNextVideoTime
+      Data: playQueueVideoTime
     - Name: symbolUniqueName
       Entry: 1
-      Data: playNextVideoTime
+      Data: playQueueVideoTime
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
