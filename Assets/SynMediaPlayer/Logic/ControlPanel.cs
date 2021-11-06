@@ -514,6 +514,11 @@ namespace Synergiance.MediaPlayer.UI {
 			VRCUrl[] tempUrls = new VRCUrl[videoQueueLocal == null ? 1 : videoQueueLocal.Length + 1];
 			if (tempUrls.Length > 1) Array.Copy(videoQueueLocal, tempUrls, videoQueueLocal.Length);
 			tempUrls[tempUrls.Length - 1] = url;
+			int oldLength = videoQueueLocal != null ? videoQueueLocal.Length : 0;
+			string logMsg = "Old queue length: " + oldLength;
+			logMsg += ", New queue length: " + tempUrls.Length;
+			logMsg += ", First URL " + (oldLength == 0 ? "changed" : "unchanged");
+			LogVerbose(logMsg, this);
 			videoQueueLocal = tempUrls;
 			if (tempUrls.Length == 1) {
 				if (reachedEnd) {
@@ -533,6 +538,7 @@ namespace Synergiance.MediaPlayer.UI {
 				return;
 			}
 			LogVerbose("Clear Queue Internal", this);
+			LogVerbose("Old queue length: " + (videoQueueLocal != null ? videoQueueLocal.Length : 0), this);
 			videoQueueLocal = null;
 			Sync();
 			if (loadGapless) UpdateNextUrl();
@@ -553,6 +559,11 @@ namespace Synergiance.MediaPlayer.UI {
 				if (index < videoQueueLocal.Length - 1) Array.Copy(videoQueueLocal, index + 1, tempUrls, index, tempUrls.Length - index);
 			}
 			LogVerbose("Remove From Queue Internal: " + index, this);
+			int oldLength = videoQueueLocal != null ? videoQueueLocal.Length : 0;
+			string logMsg = "Old queue length: " + oldLength;
+			logMsg += ", New queue length: " + tempUrls.Length;
+			logMsg += ", First URL " + (index == 0 ? "changed" : "unchanged");
+			LogVerbose(logMsg, this);
 			videoQueueLocal = tempUrls;
 			Sync();
 			if (index == 0 && loadGapless) UpdateNextUrl();
@@ -582,6 +593,11 @@ namespace Synergiance.MediaPlayer.UI {
 			if (index < videoQueueLocal.Length) Array.Copy(videoQueueLocal, index, tempUrls, index + 1, videoQueueLocal.Length - index);
 			LogVerbose("Insert To Queue Internal: " + index + ", " + url, this);
 			tempUrls[index] = url;
+			int oldLength = videoQueueLocal != null ? videoQueueLocal.Length : 0;
+			string logMsg = "Old queue length: " + oldLength;
+			logMsg += ", New queue length: " + tempUrls.Length;
+			logMsg += ", First URL " + (index == 0 ? "changed" : "unchanged");
+			LogVerbose(logMsg, this);
 			videoQueueLocal = tempUrls;
 			Sync();
 			if (index == 0 && loadGapless) UpdateNextUrl();
@@ -598,7 +614,7 @@ namespace Synergiance.MediaPlayer.UI {
 			logMsg += ", New queue length: " + newLen;
 			logMsg += ", First URL " + (firstUrlChanged ? "changed" : "unchanged");
 			if (!isValid || !Networking.IsOwner(mediaPlayer.gameObject)) firstUrlChanged = false;
-			logMsg += "Updating next URL? " + (firstUrlChanged && loadGapless);
+			logMsg += ", Updating next URL? " + (firstUrlChanged && loadGapless);
 			LogVerbose(logMsg, this);
 			videoQueueLocal = videoQueueRemote;
 			if (firstUrlChanged && loadGapless) UpdateNextUrl();
@@ -772,6 +788,7 @@ namespace Synergiance.MediaPlayer.UI {
 				hideTime = !string.Equals(statusText, "Playing") &&
 				           !string.Equals(statusText, "Stabilizing") &&
 				           mediaPlayer.MediaType == 0;
+				if (!mediaPlayer.Ready) hideTime = true;
 				if (!hideTime) UpdateTimeAndStatus();
 				else statusField._SetText(statusText);
 				UpdateResyncButton();

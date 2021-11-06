@@ -1457,6 +1457,8 @@ namespace Synergiance.MediaPlayer {
 		private void UpdateDiagnosticString() {
 			if (!string.IsNullOrWhiteSpace(diagnosticStr)) return;
 			float uTime = Time.time;
+			float pTime = mediaPlayers.Time;
+			float pDuration = mediaPlayers.Duration;
 			string str = "Time: " + uTime.ToString("N3");
 			str += ", Player Status: " + playerStatus;
 			str += ", Start Time: " + startTime.ToString("N3");
@@ -1487,8 +1489,8 @@ namespace Synergiance.MediaPlayer {
 			str += ", Time Since Resync Pause: " + (uTime - resyncPauseAt).ToString("N3");
 			str += ", Player Time At Resync: " + playerTimeAtResync.ToString("N3");
 			str += ", Time Since Soft Sync: " + (uTime - lastSoftSyncTime).ToString("N3");
-			str += "\nPlayer Time: " + mediaPlayers.Time.ToString("N3");
-			str += ", Player Duration: " + mediaPlayers.Duration.ToString("N3");
+			str += "\nPlayer Time: " + pTime.ToString("N3");
+			str += ", Player Duration: " + pDuration.ToString("N3");
 			str += ", Player Playing: " + mediaPlayers.IsPlaying;
 			str += ", Player Ready: " + mediaPlayers.IsReady;
 			str += "\nQueue Video Now: " + playQueueVideoNow;
