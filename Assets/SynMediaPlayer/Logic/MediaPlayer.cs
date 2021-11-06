@@ -57,21 +57,21 @@ namespace Synergiance.MediaPlayer {
 		[UdonSynced]      private float              remoteTime;                    // Network time based reference for when video began.
 		[UdonSynced]      private bool               remoteIsPlaying;               // Network sync boolean for whether video is playing.
 		[UdonSynced]      private VRCUrl             remoteURL = VRCUrl.Empty;      // Network sync URL of a video.
-		[UdonSynced]      private VRCUrl             remoteNextURL = VRCUrl.Empty;  // Network sync URL of next video
+		[UdonSynced]      private VRCUrl             remoteQueueURL = VRCUrl.Empty; // Network sync URL of queue video
 		[UdonSynced]      private int                remotePlayerID;                // Network sync media type.
 		[UdonSynced]      private bool               remoteLock;                    // Network sync player lock.
 		[UdonSynced]      private bool               remoteLooping;                 // Network sync player lock.
-		[UdonSynced]      private bool               remoteNextNow;                 // Network sync play next video now
-		[UdonSynced]      private float              remoteNextTime;                // Network sync play next video time
+		[UdonSynced]      private bool               remoteQueueNow;                // Network sync play queue video now
+		[UdonSynced]      private float              remoteQueueTime;               // Network sync play queue video time
 		                  private float              localTime;                     // Local variables are used for local use of network variables.
 		                  private bool               localIsPlaying;                // Before use, they will be checked against for changes.
 		                  private VRCUrl             localURL = VRCUrl.Empty;       // Upon change, the proper methods will be called.
-		                  private VRCUrl             localNextURL = VRCUrl.Empty;   //
+		                  private VRCUrl             localQueueURL = VRCUrl.Empty;  //
 		                  private int                localPlayerID;                 //
 		                  private bool               localLock;                     //
 		                  private bool               localLooping;                  //
-		                  private bool               localNextNow;                  //
-		                  private float              localNextTime;                 //
+		                  private bool               localQueueNow;                 //
+		                  private float              localQueueTime;                //
 
 		// Player Variables
 		private float    startTime;                      // Local time reference for when video began.
@@ -85,7 +85,7 @@ namespace Synergiance.MediaPlayer {
 		private bool     isLowLatency;                   // Reference variable for whether we're using an AVPro player in Low Latency mode
 		private bool     isStream;                       // Reference variable for whether we're playing a stream
 		private VRCUrl   currentURL;                     // URL of currently loaded video
-		private VRCUrl   nextURL;                        // URL of video set to load seemlessly after current
+		private VRCUrl   queueURL;                       // URL of video set to load seemlessly after current
 		private string   playerStatus      = "No Video"; // Player status string to print to status label
 		private bool     urlValid;                       // Stores state of whether a video has been determined to be a valid video.
 		private bool     playerReady;                    // Stores state of whether the video player is ready to play.
@@ -101,10 +101,10 @@ namespace Synergiance.MediaPlayer {
 		private bool     waitForNextNetworkSync;         // Stores whether the resync routine should wait for the next network sync before adjusting.
 		private bool     isResync;                       // Stores whether player is in the process of a resync.
 		private bool     postResync;                     // Stores whether we're in the post resync state
-		private bool     nextVideoReady;                 // Stores state of queued video
-		private bool     nextVideoLoading;               // Stores state of whether queued video is loading
-		private bool     playNextVideoNow;               // Stores whether we're trying to load next video ASAP
-		private float    playNextVideoTime;              // Stores the time at which we will load the next video
+		private bool     queueVideoReady;                // Stores state of queued video
+		private bool     queueVideoLoading;              // Stores state of whether queued video is loading
+		private bool     playQueueVideoNow;              // Stores whether we're trying to load queue video ASAP
+		private float    playQueueVideoTime;             // Stores the time at which we will load the queue video
 		private bool     isReloadingVideo;               // Stores state of whether the video is reloading.  Used for forcing the video to actually reload.
 		private float    lastVideoLoadTime;              // Stores the last time a video was loaded, to prevent any issues loading new videos
 		private int      retryCount;                     // Stores number of automatic retries that have happened
@@ -113,6 +113,7 @@ namespace Synergiance.MediaPlayer {
 		private bool     newVideoLoading;                // Stores whether the video we're loading is a new video
 		private bool     isWakingUp;                     // Stores whether the video player is initializing or coming out of inactive state
 		private bool     isBlackingOut;                  // Stores local variable for whether we're blacking out the video player
+		private bool     syncingNextFrame;               // Stores whether we're already calling sync
 
 		private bool     masterLock;                     // Stores state of whether the player is locked
 		private bool     hasPermissions;                 // Cached value for whether the local user has permissions
@@ -201,7 +202,7 @@ namespace Synergiance.MediaPlayer {
 				UpdateStatus();
 			} else {
 				// Make sure initial status is shown
-				SendStatusCallback();
+				SetPlayerStatusText("No Video");
 			}
 			CheckDeserializedData();
 			if (hasCallback) callback.SendCustomEvent("_Activate");
@@ -227,7 +228,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions && !suppressSecurity) return;
-			int playerID = mediaPlayers.GetActiveID();
+			int playerID = mediaPlayers.ActivePlayerID;
 			_LoadURLAs(url, playerID);
 		}
 
@@ -238,14 +239,14 @@ namespace Synergiance.MediaPlayer {
 			Log("_Load", this);
 			// Sanity Check URL
 			string urlStr = url != null ? url.ToString() : "";
-			if (!SanityCheckURL(urlStr)) return mediaPlayers.GetActiveID(); 
+			if (!SanityCheckURL(urlStr)) return mediaPlayers.ActivePlayerID; 
 			// Sync new values over the network
 			int correctedID = isEditor ? 0 : CheckURL(urlStr, playerID);
-			if (correctedID < 0) return mediaPlayers.GetActiveID();
+			if (correctedID < 0) return mediaPlayers.ActivePlayerID;
 			isPreparingForLoad = true; // Suppress reloads
 			SwitchPlayer(correctedID);
 			SetURL(url);
-			isStream = mediaPlayers.GetIsStream();
+			isStream = mediaPlayers.IsStream;
 			return correctedID;
 		}
 
@@ -257,11 +258,11 @@ namespace Synergiance.MediaPlayer {
 			Log("Load Queued", this);
 			string urlStr = url != null ? url.ToString() : "";
 			if (string.IsNullOrEmpty(urlStr)) {
-				SetNextURL(url);
+				SetQueueURL(url);
 				return;
 			}
 			if (!SanityCheckURL(urlStr)) return;
-			SetNextURL(url);
+			SetQueueURL(url);
 		}
 
 		// Attempt to load video again
@@ -281,7 +282,7 @@ namespace Synergiance.MediaPlayer {
 			if (!isActive) return;
 			if (masterLock && !hasPermissions && !suppressSecurity) return;
 			Log("_PlayNext", this);
-			PlayNextNow();
+			PlayQueueNow();
 		}
 
 		// Call _Play if paused and _Pause if playing
@@ -356,7 +357,7 @@ namespace Synergiance.MediaPlayer {
 		// Set the volume on the video player
 		public void _SetVolume(float volume) {
 			Initialize();
-			mediaPlayers._SetVolume(volume);
+			mediaPlayers.Volume = volume;
 		}
 
 		// Seek to a different position in a video if possible
@@ -364,7 +365,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions) return;
-			SeekTo(seekVal * mediaPlayers.GetDuration()); // seekVal is normalized so multiply it by media length
+			SeekTo(seekVal * mediaPlayers.Duration); // seekVal is normalized so multiply it by media length
 		}
 
 		// Seek to a different position in a video if possible
@@ -372,7 +373,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions) return;
-			seekBar._SetVal(time / mediaPlayers.GetDuration());
+			seekBar._SetVal(time / mediaPlayers.Duration);
 			SeekTo(time);
 		}
 
@@ -420,25 +421,39 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		// ---------------------- Accessors -----------------------
+		
+		public bool IsLocked => masterLock;
+		public bool HasPermissions => hasPermissions;
+		public bool AllowRetries => allowRetryWhenLoaded;
+		public VRCUrl CurrentUrl => currentURL;
+		public VRCUrl QueuedUrl => queueURL;
+		public string PlayerStatus => playerStatus;
+		public bool Loop => mediaPlayers.Loop;
+		public float CurrentTime => isPlaying ? Time.time - startTime : pausedTime;
+		public float Duration => playerReady ? mediaPlayers.Duration : 0;
+		public float PreciseTime => mediaPlayers.Time;
+		public bool Ready => playerReady;
+		public float Volume => mediaPlayers.Volume;
+		public int MediaType => isStream ? isLowLatency ? 2 : 1 : 0;
+		public bool IsPlaying { get { Initialize(); return isPlaying; } }
+		public bool IsSyncing => isSeeking || isResync || postResync;
+		public bool IsLoggingDiagnostics => isLoggingDiagnostics;
+		public bool Active => isActive;
 
-		public string GetStatus() { return playerStatus; }
-		public float GetTime() { return isPlaying ? Time.time - startTime : pausedTime; }
-		public float GetDuration() { return playerReady ? mediaPlayers.GetDuration() : 0; }
-		public float GetTimePrecise() { return mediaPlayers.GetTime(); }
-		public bool GetIsPlaying() { Initialize(); return isPlaying; }
-		public bool GetIsReady() { return playerReady; }
-		public VRCUrl GetCurrentURL() { return currentURL; }
-		public VRCUrl GetNextURL() { return nextURL; }
-		public float GetVolume() { return mediaPlayers.GetVolume(); }
-		public bool GetIsActive() { return isActive; }
-		public bool GetIsLooping() { return mediaPlayers.GetLoop(); }
-		public int GetMediaType() { return isStream ? isLowLatency ? 2 : 1 : 0; }
-		public bool GetLockStatus() { return masterLock; }
-		public bool HasPermissions() { return hasPermissions; }
-		public bool GetIsSyncing() { return isSeeking || isResync || postResync; }
-		public bool GetIsLoggingDiagnostics() { return isLoggingDiagnostics; }
+		public string GetStatus() { return playerStatus; } // Deprecated
+		public float GetTime() { return CurrentTime; } // Deprecated
+		public float GetDuration() { return Duration; } // Deprecated
+		public float GetTimePrecise() { return PreciseTime; } // Deprecated
+		public bool GetIsPlaying() { return IsPlaying; } // Deprecated
+		public bool GetIsReady() { return playerReady; } // Deprecated
+		public VRCUrl GetCurrentURL() { return currentURL; } // Deprecated
+		public float GetVolume() { return Volume; } // Deprecated
+		public bool GetIsActive() { return isActive; } // Deprecated
+		public bool GetIsLooping() { return Loop; } // Deprecated
+		public int GetMediaType() { return MediaType; } // Deprecated
+		public bool GetIsSyncing() { return IsSyncing; } // Deprecated
+		public bool GetIsLoggingDiagnostics() { return isLoggingDiagnostics; } // Deprecated
 		public bool CheckPrivileged(VRCPlayerApi vrcPlayer) { return CheckPrivilegedInternal(vrcPlayer); }
-		public bool GetAllowRetry() { return allowRetryWhenLoaded; }
 
 		// ------------------ External Utilities ------------------
 
@@ -454,7 +469,7 @@ namespace Synergiance.MediaPlayer {
 		// displays them in a text UI element
 		private void UpdateStatus() {
 			if (!hasStatsText) return;
-			TimeSpan playingTime = TimeSpan.FromSeconds(mediaPlayers.GetTime());
+			TimeSpan playingTime = TimeSpan.FromSeconds(mediaPlayers.Time);
 			string timeStr = playingTime.ToString("G");
 			timeStr = timeStr.Substring(0, timeStr.Length - 4);
 			statisticsText.text = "Playback Time: " + timeStr + "\nStatus: " + playerStatus;
@@ -463,10 +478,10 @@ namespace Synergiance.MediaPlayer {
 		private void UpdateSeek() {
 			if (isSeeking) {
 				if (Time.time - lastSeekTime > seekPeriod) isSeeking = false;
-				if (Mathf.Abs(mediaPlayers.GetTime() - playerTimeAtSeek) < 0.5f) return;
+				if (Mathf.Abs(mediaPlayers.Time - playerTimeAtSeek) < 0.5f) return;
 			}
 			if (!isPlaying) return;
-			seekBar._SetVal(mediaPlayers.GetTime() / Mathf.Max(0.1f, mediaPlayers.GetDuration()));
+			seekBar._SetVal(mediaPlayers.Time / Mathf.Max(0.1f, mediaPlayers.Duration));
 		}
 
 		// If anything is playing, unload it, flush buffers
@@ -477,14 +492,16 @@ namespace Synergiance.MediaPlayer {
 			localIsPlaying = false;
 			localPlayerID = 0;
 			localURL = VRCUrl.Empty;
-			localNextURL = VRCUrl.Empty;
+			localQueueURL = VRCUrl.Empty;
+			localQueueNow = false;
+			localQueueTime = -1;
 			// Stop and unload all media
 			SetPlayingInternal(false);
 			SetTimeInternal(0);
 			StopInternal();
 			mediaPlayers._Pause();
 			// Ensure there's no queued media
-			nextURL = VRCUrl.Empty;
+			queueURL = VRCUrl.Empty;
 			// Set status text one final time before activating again
 			SetPlayerStatusText("Inactive");
 			UpdateStatus();
@@ -507,15 +524,15 @@ namespace Synergiance.MediaPlayer {
 			string remoteStr = remoteURL != null ? remoteURL.ToString() : "";
 			bool hasNewUrl = !string.Equals(localStr, remoteStr);
 			// Cache next local and remote strings
-			localStr = localNextURL != null ? localNextURL.ToString() : "";
-			remoteStr = remoteNextURL != null ? remoteNextURL.ToString() : "";
-			bool hasNewNextUrl = !string.Equals(localStr, remoteStr);
+			string localQueueStr = localQueueURL != null ? localQueueURL.ToString() : "";
+			string remoteQueueStr = remoteQueueURL != null ? remoteQueueURL.ToString() : "";
+			bool hasNewQueueUrl = !string.Equals(localQueueStr, remoteQueueStr);
 			bool hasNewIsPlaying = remoteIsPlaying != localIsPlaying;
 			bool hasNewTime = Mathf.Abs(remoteTime - localTime) > 0.1f;
 			bool hasNewLock = remoteLock != localLock;
 			bool hasNewLooping = remoteLooping != localLooping;
-			bool hasNewNextNow = remoteNextNow != localNextNow;
-			bool hasNewNextTime = Mathf.Abs(remoteNextTime - localNextTime) > 0.1f;
+			bool hasNewQueueNow = remoteQueueNow != localQueueNow;
+			bool hasNewQueueTime = Mathf.Abs(remoteQueueTime - localQueueTime) > 0.1f;
 			if (hasNewPlayerID) { // Determines whether we swapped media type
 				Log("Deserialization found new Media Player: " + mediaPlayers.GetPlayerName(remotePlayerID), this);
 				localPlayerID = remotePlayerID;
@@ -529,12 +546,12 @@ namespace Synergiance.MediaPlayer {
 				if (hasNewTime) playFromBeginning = false;
 				SetVideoURLFromLocal();
 			}
-			if (hasNewNextUrl) { // Load the new video if it has changed
+			if (hasNewQueueUrl) { // Load the new video if it has changed
 				newVideoLoading = !isWakingUp;
-				Log("Deserialization found next URL: " + remoteStr, this);
-				Log("Old URL: " + localStr, this);
-				localNextURL = remoteNextURL;
-				SetNextVideoURLFromLocal();
+				Log("Deserialization found new queue URL: " + remoteQueueStr, this);
+				Log("Old URL: " + localQueueStr, this);
+				localQueueURL = remoteQueueURL;
+				SetQueueVideoURLFromLocal();
 			}
 			if (hasNewIsPlaying) { // Update playing status if changed.
 				Log("Deserialization found new playing status: " + (remoteIsPlaying ? "Playing" : "Paused"), this);
@@ -555,16 +572,16 @@ namespace Synergiance.MediaPlayer {
 				localLooping = remoteLooping;
 				SetLoopingInternal();
 			}
-			if (hasNewNextNow) {
-				Log("Next Now network state changed from " + localNextNow + " to " + remoteNextNow, this);
-				localNextNow = remoteNextNow;
-				if (localNextNow) PlayNextNowInternal();
-				else CancelNextNowInternal();
+			if (hasNewQueueNow) {
+				Log("Queue Now network state changed from " + localQueueNow + " to " + remoteQueueNow, this);
+				localQueueNow = remoteQueueNow;
+				if (localQueueNow) PlayQueueNowInternal();
+				else CancelQueueNowInternal();
 			}
-			if (hasNewNextTime) {
-				float newTime = CalcWithTime(localNextTime = remoteNextTime);
-				Log("Deserialization found new sync next video time: " + newTime, this);
-				SetNextVideoLoadTimeInternal(newTime);
+			if (hasNewQueueTime) {
+				float newTime = CalcWithTime(localQueueTime = remoteQueueTime);
+				Log("Deserialization found new sync queue video time: " + newTime, this);
+				SetQueueVideoLoadTimeInternal(newTime);
 			}
 			isWakingUp = false;
 		}
@@ -585,9 +602,9 @@ namespace Synergiance.MediaPlayer {
 			}
 		}
 
-		private void SetNextVideoURLFromLocal() {
-			Log("Decode Next URL: " + localNextURL, this);
-			nextURL = localNextURL;
+		private void SetQueueVideoURLFromLocal() {
+			Log("Decode Queue URL: " + localQueueURL, this);
+			queueURL = localQueueURL;
 		}
 
 		private void SetPlayerID(int id) {
@@ -599,7 +616,7 @@ namespace Synergiance.MediaPlayer {
 		private void SeekTo(float newTime) {
 			if (masterLock && !hasPermissions && !Networking.IsOwner(gameObject)) return;
 			Log("Seek To: " + newTime, this);
-			playerTimeAtSeek = mediaPlayers.GetTime(); // Set a reference value to be able to timeout if seeking takes too long
+			playerTimeAtSeek = mediaPlayers.Time; // Set a reference value to be able to timeout if seeking takes too long
 			lastSeekTime = Time.time; // Video player will essentially pause on this time until it has finished seeking
 			isSeeking = true;
 			HardResync(newTime);
@@ -651,32 +668,32 @@ namespace Synergiance.MediaPlayer {
 			Sync();
 		}
 
-		private void SetNextURL(VRCUrl url) {
-			string localStr = localNextURL != null ? localNextURL.ToString() : "";
+		private void SetQueueURL(VRCUrl url) {
+			string localStr = localQueueURL != null ? localQueueURL.ToString() : "";
 			string urlStr = url != null ? url.ToString() : "";
-			Log("Set Next URL: " + urlStr, this);
+			Log("Set Queue URL: " + urlStr, this);
 			if (string.Equals(localStr, urlStr)) return;
-			localNextURL = url;
-			SetNextVideoURLFromLocal();
+			localQueueURL = url;
+			SetQueueVideoURLFromLocal();
 			Sync();
 		}
 
-		private void PlayNextNow() {
-			localNextNow = true;
-			PlayNextNowInternal();
+		private void PlayQueueNow() {
+			localQueueNow = true;
+			PlayQueueNowInternal();
 			Sync();
 		}
 
-		private void CancelNextNow() {
-			localNextNow = false;
-			CancelNextNowInternal();
+		private void CancelQueueNow() {
+			localQueueNow = false;
+			CancelQueueNowInternal();
 			Sync();
 		}
 
-		private void SetNextVideoTime(float time) {
-			LogVerbose("Set Next Video Time: " + time, this);
-			localNextTime = CalcWithTime(time);
-			SetNextVideoLoadTimeInternal(time);
+		private void SetQueueVideoTime(float time) {
+			LogVerbose("Set Queue Video Time: " + time, this);
+			localQueueTime = CalcWithTime(time);
+			SetQueueVideoLoadTimeInternal(time);
 			Sync();
 		}
 
@@ -685,6 +702,13 @@ namespace Synergiance.MediaPlayer {
 			Log("Set Playing: " + (playing ? "Playing" : "Pausing"), this);
 			SetPlayingInternal(localIsPlaying = playing);
 			HardResync(referencePlayhead);
+		}
+
+		private void SwapNetworkQueueToCurrent() {
+			currentURL = localURL = localQueueURL;
+			string newUrl = currentURL == null ? "" : currentURL.ToString();
+			LogVerbose("Swapping network queue URL to current: " + newUrl, this);
+			SetQueueURL(VRCUrl.Empty);
 		}
 
 		private void SetLooping(bool looping) {
@@ -704,19 +728,45 @@ namespace Synergiance.MediaPlayer {
 		private void Sync() {
 			if (masterLock && !hasPermissions && !Networking.IsOwner(gameObject)) return;
 			Log("Sync", this);
-			isWakingUp = false;
-			remotePlayerID = localPlayerID;
-			remoteURL = localURL;
-			remoteTime = localTime;
-			remoteIsPlaying = localIsPlaying;
-			remoteNextURL = localNextURL;
-			remoteLock = localLock;
-			remoteLooping = localLooping;
-			remoteNextNow = localNextNow;
-			remoteNextTime = localNextTime;
+			SetRemoteVariables();
 			if (!Networking.IsOwner(gameObject))
 				Networking.SetOwner(Networking.LocalPlayer, gameObject);
+			if (syncingNextFrame) return;
+			syncingNextFrame = true;
+			SendCustomEventDelayedFrames("Serialize", 0);
+		}
+
+		private void SetRemoteVariables() {
+			string logMsg;
+			remotePlayerID = localPlayerID;
+			logMsg = "Player: " + remotePlayerID;
+			remoteURL = localURL;
+			logMsg += ", URL: " + remoteURL;
+			remoteTime = localTime;
+			logMsg += ", Time: " + CalcWithTime(remoteTime);
+			remoteIsPlaying = localIsPlaying;
+			logMsg += ", Playing: " + remoteIsPlaying;
+			remoteQueueURL = localQueueURL;
+			logMsg += ", Queue URL: " + remoteQueueURL;
+			remoteLock = localLock;
+			logMsg += ", Lock: " + (remoteLock ? "Enabled" : "Disabled");
+			remoteLooping = localLooping;
+			logMsg += ", Looping: " + remoteLooping;
+			remoteQueueNow = localQueueNow;
+			logMsg += ", Queue Now: " + remoteQueueNow;
+			remoteQueueTime = localQueueTime;
+			logMsg += ", Queue Time: " + remoteQueueTime;
+			LogVerbose(logMsg, this);
+		}
+
+		public void Serialize() {
+			if (!Networking.IsOwner(gameObject) || !syncingNextFrame) {
+				Log("Throwing out serialization attempt", this);
+				return;
+			}
+			SetRemoteVariables();
 			RequestSerialization();
+			syncingNextFrame = false;
 		}
 
 		private float GetServerTime() {
@@ -823,8 +873,8 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void StreamLogic() {
-			if (!isPlaying || mediaPlayers.GetPlaying()) return;
-			if (mediaPlayers.GetReady()) {
+			if (!isPlaying || mediaPlayers.IsPlaying) return;
+			if (mediaPlayers.IsReady) {
 				SetPlayerStatusText("Playing Stream");
 				Log("Playing Stream", this);
 				mediaPlayers._Play();
@@ -846,49 +896,52 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void PreloadLogic() {
-			if (nextVideoReady) {
-				if (!playNextVideoNow || !(Time.time > playNextVideoTime)) return;
-				if (!mediaPlayers.GetNextReady()) {
+			if (queueVideoReady) {
+				if (!playQueueVideoNow || !(Time.time > playQueueVideoTime)) return;
+				if (!mediaPlayers.NextReady) {
 					LogWarning("Next video not actually ready!", this);
-					nextVideoLoading = false;
-					nextVideoReady = false;
+					queueVideoLoading = false;
+					queueVideoReady = false;
 					return;
 				}
-				Log("Playing next video", this);
+				Log("Playing queued video", this);
 				resyncPauseAt = Time.time;
 				if (Networking.IsOwner(gameObject)) SeekTo(-seekPeriod);
-				else HardResync(-seekPeriod);
+				else SeekInternal(-seekPeriod);
 				mediaPlayers._PlayNext();
-				playNextVideoNow = false;
-				nextVideoReady = false;
-				if (Networking.IsOwner(gameObject)) SetNextURL(VRCUrl.Empty);
 				return;
 			}
-			if (nextVideoLoading) return;
-			if (nextURL == null || nextURL.Equals(VRCUrl.Empty)) return;
-			if (!mediaPlayers.GetReady() || !isPlaying) return;
-			float mediaTime = mediaPlayers.GetTime();
-			if (!playNextVideoNow && (mediaTime < 0.01f || mediaPlayers.GetDuration() - mediaTime > preloadNextVideoTime)) return;
+			if (queueVideoLoading) return;
+			if (queueURL == null || queueURL.Equals(VRCUrl.Empty)) return;
+			if (!mediaPlayers.IsReady || !isPlaying) return;
+			float mediaTime = mediaPlayers.Time;
+			if (!playQueueVideoNow && (mediaTime < 0.01f || mediaPlayers.Duration - mediaTime > preloadNextVideoTime)) return;
 			if (Time.time - lastVideoLoadTime < videoLoadCooldown) return;
-			Log("Loading next URL: " + nextURL.ToString(), this);
-			mediaPlayers._LoadNextURL(nextURL);
-			nextVideoLoading = true;
+			Log("Loading queue URL: " + queueURL.ToString(), this);
+			mediaPlayers._LoadNextURL(queueURL);
+			queueVideoLoading = true;
 			SetLoadTimeToNow();
 		}
 
 		private void ResyncLogic() {
 			if (playFromBeginning) {
-				HardResync(-seekPeriod);
+				if (Networking.IsOwner(gameObject)) {
+					Log("Playing from beginning and syncing", this);
+					HardResync(-seekPeriod);
+				} else {
+					Log("Playing from beginning", this);
+					SeekInternal(-seekPeriod);
+				}
 				playFromBeginning = false;
 			}
 			referencePlayhead = Time.time - startTime;
-			float currentTime = mediaPlayers.GetTime();
+			float currentTime = mediaPlayers.Time;
 			deviation = currentTime - referencePlayhead;
 			float absDeviation = Mathf.Abs(deviation);
 			float timeMinusLastSoftSync = Time.time - lastSoftSyncTime;
 			if (postResync) {
 				if (Time.time < postResyncEndsAt) {
-					if (!mediaPlayers.GetPlaying()) {
+					if (!mediaPlayers.IsPlaying) {
 						if (currentTime > referencePlayhead + deviationTolerance) {
 							LogVerbose("Ending Post Resync early", this);
 							postResyncEndsAt = Time.time;
@@ -911,7 +964,7 @@ namespace Synergiance.MediaPlayer {
 				ResyncTime(currentTime, referencePlayhead + overshoot);
 				Log("Post Resync Compensation: " + overshoot, this);
 				SetPlayerStatusText("Catching Up");
-				if (!mediaPlayers.GetPlaying()) {
+				if (!mediaPlayers.IsPlaying) {
 					LogVerbose("Resuming internal player at end of Post Resync period", this);
 					mediaPlayers._Play();
 					SetPlayerStatusText("Playing");
@@ -924,12 +977,12 @@ namespace Synergiance.MediaPlayer {
 					postResync = true;
 					postResyncEndsAt = Time.time + (timeMinusLastSoftSync + checkSyncEvery * 0.5f);
 					SetPlayerStatusText("Stabilizing");
-					if (!mediaPlayers.GetPlaying()) {
+					if (!mediaPlayers.IsPlaying) {
 						LogVerbose("Resuming internal player on end of Resync", this);
 						mediaPlayers._Play();
 						SetPlayerStatusText("Playing");
 					}
-				} else if (!mediaPlayers.GetPlaying()) {
+				} else if (!mediaPlayers.IsPlaying) {
 					if (currentTime < referencePlayhead + deviationTolerance) {
 						LogVerbose("Resuming internal player during Resync", this);
 						mediaPlayers._Play();
@@ -945,7 +998,7 @@ namespace Synergiance.MediaPlayer {
 			BlackOutInternal(absDeviation > deviationTolerance * 2);
 			if (Time.time - resyncPauseAt < pauseResyncFor) return;
 			lastCheckTime = Time.time;
-			if (mediaPlayers.GetPlaying()) {
+			if (mediaPlayers.IsPlaying) {
 				if (absDeviation > deviationTolerance) {
 					ResyncTime(currentTime, referencePlayhead + videoOvershoot);
 					SetPlayerStatusText("Syncing");
@@ -970,7 +1023,7 @@ namespace Synergiance.MediaPlayer {
 			isResync = true;
 			lastSoftSyncTime = Time.time;
 			playerTimeAtResync = oldTime;
-			if (mediaPlayers.GetReady() && !mediaPlayers.GetPlaying()) {
+			if (mediaPlayers.IsReady && !mediaPlayers.IsPlaying) {
 				LogVerbose("Resuming internal player on Resync Time", this);
 				mediaPlayers._Play();
 			}
@@ -987,7 +1040,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void PauseInternal() {
-			if (!mediaPlayers.GetReady()) return;
+			if (!mediaPlayers.IsReady) return;
 			BlackOutInternal(false);
 			if (Time.time - lastResyncTime >= resyncEvery) {
 				lastResyncTime = Time.time;
@@ -996,7 +1049,7 @@ namespace Synergiance.MediaPlayer {
 				Log("Playing status corrected to: " + isPlaying, this);
 				return;
 			}
-			if (!mediaPlayers.GetPlaying()) return;
+			if (!mediaPlayers.IsPlaying) return;
 			Log("Pause Internal", this);
 			mediaPlayers._Pause();
 			SetTimeInternal(pausedTime);
@@ -1017,22 +1070,22 @@ namespace Synergiance.MediaPlayer {
 
 		private void SetLoopingInternal() {
 			Log("Set Looping Internal: " + localLooping, this);
-			mediaPlayers._SetLoop(localLooping);
+			mediaPlayers.Loop = localLooping;
 		}
 
-		private void PlayNextNowInternal() {
-			LogVerbose("Play Next Now Internal", this);
-			playNextVideoNow = true;
+		private void PlayQueueNowInternal() {
+			LogVerbose("Play Queue Now Internal", this);
+			playQueueVideoNow = true;
 		}
 
-		private void CancelNextNowInternal() {
-			LogVerbose("Cancel Next Now Internal", this);
-			playNextVideoNow = false;
+		private void CancelQueueNowInternal() {
+			LogVerbose("Cancel Queue Now Internal", this);
+			playQueueVideoNow = false;
 		}
 
-		private void SetNextVideoLoadTimeInternal(float time) {
-			LogVerbose("Set Next Video Load Time Internal: " + time, this);
-			playNextVideoTime = time;
+		private void SetQueueVideoLoadTimeInternal(float time) {
+			LogVerbose("Set Queue Video Load Time Internal: " + time, this);
+			playQueueVideoTime = time;
 		}
 
 		private void SetLoadTimeToNow() {
@@ -1088,7 +1141,7 @@ namespace Synergiance.MediaPlayer {
 			LogVerbose("Relay Video Ready", this);
 			Initialize();
 			if (!isActive) return;
-			float duration = mediaPlayers.GetDuration();
+			float duration = mediaPlayers.Duration;
 			if (duration <= 0.01f) { // Video loaded incorrectly, retry
 				Log("Video loaded incorrectly, retrying...", this);
 				ReloadVideoInternal();
@@ -1208,8 +1261,9 @@ namespace Synergiance.MediaPlayer {
 			SetTimeInternal(0);
 			if (Networking.IsOwner(gameObject)) HardResync(0);
 			// Get new duration!
-			nextVideoLoading = nextVideoReady = false;
-			if (Networking.IsOwner(gameObject)) SetNextURL(VRCUrl.Empty);
+			queueVideoLoading = queueVideoReady = playQueueVideoNow = false;
+			currentURL = queueURL;
+			if (Networking.IsOwner(gameObject)) SwapNetworkQueueToCurrent();
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoNext");
 		}
 
@@ -1219,8 +1273,8 @@ namespace Synergiance.MediaPlayer {
 			if (!isActive) return;
 			// Queued video player has thrown an error
 			SetPlayerStatusText("Error: " + GetErrorString(relayVideoError));
-			nextVideoLoading = nextVideoReady = false;
-			if (Networking.IsOwner(gameObject)) SetNextURL(VRCUrl.Empty);
+			queueVideoLoading = queueVideoReady = false;
+			if (Networking.IsOwner(gameObject)) SetQueueURL(VRCUrl.Empty);
 			// Get ready to stop?
 			// Possibly skip video?
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoQueueError");
@@ -1231,8 +1285,8 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			// Queued video has loaded
-			nextVideoLoading = false;
-			nextVideoReady = true;
+			queueVideoLoading = false;
+			queueVideoReady = true;
 			if (newVideoLoading && !isAutomaticRetry) {
 				isAutomaticRetry = true;
 				retryCount = 0;
@@ -1240,7 +1294,7 @@ namespace Synergiance.MediaPlayer {
 			}
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoQueueReady");
 			if (!Networking.IsOwner(gameObject)) return;
-			SetNextVideoTime(Time.time + syncPeriod);
+			SetQueueVideoTime(Time.time + syncPeriod);
 		}
 
 		// -------------------- Utility Methods -------------------
@@ -1338,20 +1392,20 @@ namespace Synergiance.MediaPlayer {
 		// from the paused time.
 		private float GetTimeInternal() {
 			LogVerbose("GetTimeInternal", this);
-			return isPlaying ? mediaPlayers.GetTime() : pausedTime;
+			return isPlaying ? mediaPlayers.Time : pausedTime;
 		}
 
 		private void SetTimeInternal(float time) {
 			LogVerbose("Set Time Internal: " + time, this);
 			if (isStream) return;
-			mediaPlayers._SetTime(time > 0 ? time : 0);
+			mediaPlayers.Time = time > 0 ? time : 0;
 		}
 
 		private void SwitchVideoPlayerInternal(int id) {
 			LogVerbose("Switch Video Player Internal: " + id, this);
 			mediaPlayers._SwitchPlayer(id);
 			if (isPlaying) ReloadVideoInternal();
-			isStream = mediaPlayers.GetIsStream();
+			isStream = mediaPlayers.IsStream;
 			seekBar._SetEnabled(!isStream);
 		}
 
@@ -1436,6 +1490,8 @@ namespace Synergiance.MediaPlayer {
 		private void UpdateDiagnosticString() {
 			if (!string.IsNullOrWhiteSpace(diagnosticStr)) return;
 			float uTime = Time.time;
+			float pTime = mediaPlayers.Time;
+			float pDuration = mediaPlayers.Duration;
 			string str = "Time: " + uTime.ToString("N3");
 			str += ", Player Status: " + playerStatus;
 			str += ", Start Time: " + startTime.ToString("N3");
@@ -1466,14 +1522,14 @@ namespace Synergiance.MediaPlayer {
 			str += ", Time Since Resync Pause: " + (uTime - resyncPauseAt).ToString("N3");
 			str += ", Player Time At Resync: " + playerTimeAtResync.ToString("N3");
 			str += ", Time Since Soft Sync: " + (uTime - lastSoftSyncTime).ToString("N3");
-			str += "\nPlayer Time: " + mediaPlayers.GetTime().ToString("N3");
-			str += ", Player Duration: " + mediaPlayers.GetDuration().ToString("N3");
-			str += ", Player Playing: " + mediaPlayers.GetPlaying();
-			str += ", Player Ready: " + mediaPlayers.GetReady();
-			str += "\nNext Video Now: " + playNextVideoNow;
-			str += ", Next Video Starts In: " + Mathf.Max(0, playNextVideoTime - uTime).ToString("N3");
-			str += ", Next Video Loading: " + nextVideoLoading;
-			str += ", Next Video Ready: " + nextVideoReady;
+			str += "\nPlayer Time: " + pTime.ToString("N3");
+			str += ", Player Duration: " + pDuration.ToString("N3");
+			str += ", Player Playing: " + mediaPlayers.IsPlaying;
+			str += ", Player Ready: " + mediaPlayers.IsReady;
+			str += "\nQueue Video Now: " + playQueueVideoNow;
+			str += ", Queue Video Starts In: " + Mathf.Max(0, playQueueVideoTime - uTime).ToString("N3");
+			str += ", Queue Video Loading: " + queueVideoLoading;
+			str += ", Queue Video Ready: " + queueVideoReady;
 			diagnosticStr = str;
 		}
 

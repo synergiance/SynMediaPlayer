@@ -36,53 +36,49 @@ namespace Synergiance.MediaPlayer {
 		public void _Stop() { if (isValid) videoPlayer.Stop(); }
 		public void _LoadURL(VRCUrl url) { if (isValid) videoPlayer.LoadURL(url); }
 		public void _PlayURL(VRCUrl url) { if (isValid) videoPlayer.PlayURL(url); }
-		public void _SetLoop(bool loop) { if (isValid) videoPlayer.Loop = loop; }
-		public void _SetTime(float time) { if (isValid) videoPlayer.SetTime(time); }
-		public void _SetVolume(float volume) { if (isValid) speaker.volume = volume; }
-		public bool GetLoop() { return isValid && videoPlayer.Loop; }
-		public float GetTime() { return isValid ? videoPlayer.GetTime() : 0; }
-		public float GetDuration() { return isValid ? videoPlayer.GetDuration() : 0; }
-		public float GetVolume() { return isValid ? speaker.volume : 0; }
-		public bool GetReady() { return isValid && videoPlayer.IsReady; }
-		public bool GetPlaying() { return isValid && videoPlayer.IsPlaying; }
-		public bool GetStream() { return isStream; }
-		public string GetName() { return playerName; }
-		public AudioSource GetSpeaker() { return speaker; }
+
+		public bool Loop { set { if (isValid) videoPlayer.Loop = value; } get => isValid && videoPlayer.Loop; }
+		public float Volume { set { if (isValid) speaker.volume = value; } get => isValid ? speaker.volume : 0; }
+		public float Time { set { if (isValid) videoPlayer.SetTime(value); } get => isValid ? videoPlayer.GetTime() : 0; }
+		public float Duration => isValid ? videoPlayer.GetDuration() : 0;
+		public bool IsReady => isValid && videoPlayer.IsReady;
+		public bool IsPlaying => isValid && videoPlayer.IsPlaying;
+		public string PlayerName => playerName;
+		public bool IsStream => isStream;
+		public AudioSource Speaker => speaker;
+
+		private void SendRelayEvent(string eventName) {
+			relayPoint.SetProgramVariable("relayIdentifier", identifier);
+			relayPoint.SendCustomEvent(eventName);
+		}
 
 		public override void OnVideoEnd() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoEnd");
+			SendRelayEvent("_RelayVideoEnd");
 		}
 
 		public override void OnVideoReady() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoReady");
+			SendRelayEvent("_RelayVideoReady");
 		}
 
 		public override void OnVideoError(VideoError videoError) {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
 			relayPoint.SetProgramVariable("relayVideoError", videoError);
-			relayPoint.SendCustomEvent("_RelayVideoError");
+			SendRelayEvent("_RelayVideoError");
 		}
 
 		public override void OnVideoPlay() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoPlay");
+			SendRelayEvent("_RelayVideoPlay");
 		}
 
 		public override void OnVideoStart() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoStart");
+			SendRelayEvent("_RelayVideoStart");
 		}
 
 		public override void OnVideoLoop() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoLoop");
+			SendRelayEvent("_RelayVideoLoop");
 		}
 
 		public override void OnVideoPause() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoPause");
+			SendRelayEvent("_RelayVideoPause");
 		}
 	}
 }
