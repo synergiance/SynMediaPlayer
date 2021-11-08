@@ -891,6 +891,7 @@ namespace Synergiance.MediaPlayer.UI {
 			Initialize();
 			UpdateAllButtons();
 			AdvanceQueue();
+			UpdateUrls();
 		}
 
 		public void _RelayVideoQueueLoading() {
