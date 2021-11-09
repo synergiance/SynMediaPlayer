@@ -160,6 +160,10 @@ namespace Synergiance.MediaPlayer {
 			gaplessLoaded = true;
 		}
 
+		public void _RollQueuedPlayer() {}
+
+		public void _StopQueuedPlayer() {}
+
 		public float Time {
 			set {
 				Initialize();
