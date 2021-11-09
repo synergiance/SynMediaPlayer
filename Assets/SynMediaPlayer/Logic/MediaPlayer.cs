@@ -74,71 +74,74 @@ namespace Synergiance.MediaPlayer {
 		                  private float              localQueueTime;                //
 
 		// Player Variables
-		private float    startTime;                      // Local time reference for when video began.
-		private float    pausedTime;                     // Video time at which a video is paused.
-		private float    referencePlayhead;              // Calculated time point at which a video should be.
-		private float    deviation;                      // Difference between video player time and reference time.
-		private float    lastCheckTime;                  // Last time a video time has been checked against reference
-		private float    lastResyncTime;                 // Last time local reference time was calculated from network reference time.
-		private float    postResyncEndsAt;               // Stores the time at which we disable post resync mode
-		private bool     isPlaying;                      // This determines whether a video should playing or paused.  This doesn't necessarily reflect the actual state of the video player, as it could be paused temporarily for a resync.
-		private bool     isLowLatency;                   // Reference variable for whether we're using an AVPro player in Low Latency mode
-		private bool     isStream;                       // Reference variable for whether we're playing a stream
-		private VRCUrl   currentURL;                     // URL of currently loaded video
-		private VRCUrl   queueURL;                       // URL of video set to load seemlessly after current
-		private string   playerStatus      = "No Video"; // Player status string to print to status label
-		private bool     urlValid;                       // Stores state of whether a video has been determined to be a valid video.
-		private bool     playerReady;                    // Stores state of whether the video player is ready to play.
-		private bool     isEditor;                       // Stores state of whether we're viewing world from the editor.  Disables AVPro if this is set.
-		private bool     isLoading;                      // Stores state of when we're loading a video.
-		private bool     playFromBeginning = true;       // Determines whether playing time should be reset to 0 when _Play is called.
-		private float    playerTimeAtSeek;               // Stores video player time at time of seek to determine whether seek has occurred.
-		private float    lastSeekTime;                   // Last time the video has been seeked.
-		private bool     isSeeking;                      // Stores state of whether video player is in the process of seeking.
-		private float    resyncPauseAt;                  // Stores time of last event that needs to disable resync.
-		private float    playerTimeAtResync;             // Stores video player time at time of resync to determine whether resync has occurred.
-		private float    lastSoftSyncTime;               // Last time the video player has compared network time constant to local time constant.
-		private bool     waitForNextNetworkSync;         // Stores whether the resync routine should wait for the next network sync before adjusting.
-		private bool     isResync;                       // Stores whether player is in the process of a resync.
-		private bool     postResync;                     // Stores whether we're in the post resync state
-		private bool     queueVideoReady;                // Stores state of queued video
-		private bool     queueVideoLoading;              // Stores state of whether queued video is loading
-		private bool     playQueueVideoNow;              // Stores whether we're trying to load queue video ASAP
-		private float    playQueueVideoTime;             // Stores the time at which we will load the queue video
-		private bool     isReloadingVideo;               // Stores state of whether the video is reloading.  Used for forcing the video to actually reload.
-		private float    lastVideoLoadTime;              // Stores the last time a video was loaded, to prevent any issues loading new videos
-		private int      retryCount;                     // Stores number of automatic retries that have happened
-		private bool     isAutomaticRetry;               // Stores whether this is an automatic retry
-		private bool     isPreparingForLoad;             // Stores whether we're preparing to enter a URL and to suppress other video loads
-		private bool     newVideoLoading;                // Stores whether the video we're loading is a new video
-		private bool     isWakingUp;                     // Stores whether the video player is initializing or coming out of inactive state
-		private bool     isBlackingOut;                  // Stores local variable for whether we're blacking out the video player
-		private bool     syncingNextFrame;               // Stores whether we're already calling sync
+		private float        startTime;                      // Local time reference for when video began.
+		private float        pausedTime;                     // Video time at which a video is paused.
+		private float        referencePlayhead;              // Calculated time point at which a video should be.
+		private float        deviation;                      // Difference between video player time and reference time.
+		private float        lastCheckTime;                  // Last time a video time has been checked against reference
+		private float        lastResyncTime;                 // Last time local reference time was calculated from network reference time.
+		private float        postResyncEndsAt;               // Stores the time at which we disable post resync mode
+		private bool         isPlaying;                      // This determines whether a video should playing or paused.  This doesn't necessarily reflect the actual state of the video player, as it could be paused temporarily for a resync.
+		private bool         isLowLatency;                   // Reference variable for whether we're using an AVPro player in Low Latency mode
+		private bool         isStream;                       // Reference variable for whether we're playing a stream
+		private VRCUrl       currentURL;                     // URL of currently loaded video
+		private VRCUrl       queueURL;                       // URL of video set to load seemlessly after current
+		private string       playerStatus      = "No Video"; // Player status string to print to status label
+		private bool         urlValid;                       // Stores state of whether a video has been determined to be a valid video.
+		private bool         playerReady;                    // Stores state of whether the video player is ready to play.
+		private bool         isEditor;                       // Stores state of whether we're viewing world from the editor.  Disables AVPro if this is set.
+		private bool         isLoading;                      // Stores state of when we're loading a video.
+		private bool         playFromBeginning = true;       // Determines whether playing time should be reset to 0 when _Play is called.
+		private float        playerTimeAtSeek;               // Stores video player time at time of seek to determine whether seek has occurred.
+		private float        lastSeekTime;                   // Last time the video has been seeked.
+		private bool         isSeeking;                      // Stores state of whether video player is in the process of seeking.
+		private float        resyncPauseAt;                  // Stores time of last event that needs to disable resync.
+		private float        playerTimeAtResync;             // Stores video player time at time of resync to determine whether resync has occurred.
+		private float        lastSoftSyncTime;               // Last time the video player has compared network time constant to local time constant.
+		private bool         waitForNextNetworkSync;         // Stores whether the resync routine should wait for the next network sync before adjusting.
+		private bool         isResync;                       // Stores whether player is in the process of a resync.
+		private bool         postResync;                     // Stores whether we're in the post resync state
+		private bool         queueVideoReady;                // Stores state of queued video
+		private bool         queueVideoLoading;              // Stores state of whether queued video is loading
+		private bool         playQueueVideoNow;              // Stores whether we're trying to load queue video ASAP
+		private float        playQueueVideoTime;             // Stores the time at which we will load the queue video
+		private bool         isReloadingVideo;               // Stores state of whether the video is reloading.  Used for forcing the video to actually reload.
+		private float        lastVideoLoadTime;              // Stores the last time a video was loaded, to prevent any issues loading new videos
+		private int          retryCount;                     // Stores number of automatic retries that have happened
+		private bool         isAutomaticRetry;               // Stores whether this is an automatic retry
+		private bool         isPreparingForLoad;             // Stores whether we're preparing to enter a URL and to suppress other video loads
+		private bool         newVideoLoading;                // Stores whether the video we're loading is a new video
+		private bool         isWakingUp;                     // Stores whether the video player is initializing or coming out of inactive state
+		private bool         isBlackingOut;                  // Stores local variable for whether we're blacking out the video player
+		private bool         syncingNextFrame;               // Stores whether we're already calling sync
 
-		private bool     masterLock;                     // Stores state of whether the player is locked
-		private bool     hasPermissions;                 // Cached value for whether the local user has permissions
-		private bool     suppressSecurity;               // Stores whether we're suppressing security
+		private bool         masterLock;                     // Stores state of whether the player is locked
+		private bool         hasPermissions;                 // Cached value for whether the local user has permissions
+		private bool         suppressSecurity;               // Stores whether we're suppressing security
+		private bool         ownershipTransferPending;       // Stores state of whether we need to take ownership
+		private float        takeOwnershipAfter;             // Stores calculated random value of when to take ownership if there's no ping
+		private VRCPlayerApi questionableOwner;              // Stores owner at the time of noticing the missed ping
 
-		private bool     isLoggingDiagnostics;           // Stores whether we're taking diagnostic data
-		private string[] diagnosticLog;                  // String to catch all our diagnostic data and output to the user
-		private float    diagnosticEnd;                  // Time at which diagnostics will end
-		private string   diagnosticStr;                  // String to contain diagnostic variables each capture
-		private float    lastDiagnosticsUpdate;          // Stores time of last diagnostics display update
-		private float    lastDiagnosticsLog;             // Stores time of last diagnostics log
-		private int      currentDiagLog;                 // Stores index of current log
-		private int      currentDiagUpdate;              // Stores how many updates we've added to the current log
+		private bool         isLoggingDiagnostics;           // Stores whether we're taking diagnostic data
+		private string[]     diagnosticLog;                  // String to catch all our diagnostic data and output to the user
+		private float        diagnosticEnd;                  // Time at which diagnostics will end
+		private string       diagnosticStr;                  // String to contain diagnostic variables each capture
+		private float        lastDiagnosticsUpdate;          // Stores time of last diagnostics display update
+		private float        lastDiagnosticsLog;             // Stores time of last diagnostics log
+		private int          currentDiagLog;                 // Stores index of current log
+		private int          currentDiagUpdate;              // Stores how many updates we've added to the current log
 
-		private bool     hasStatsText;                   // Cached value for whether statisticstext exists
-		private bool     hasCallback;                    // Cached value for whether callback exists
-		private bool     setStatusEnabled;               // Cached value for whether status can be set without error
-		private bool     isActive;                       // Value for whether media player is active or not. Videos will only load/play/sync while the player is active
-		private bool     initialized;                    // Value indicating whether this component has initialized or not.
-		private bool     hasActivated;                   // Value for whether player has activated for the first time
+		private bool         hasStatsText;                   // Cached value for whether statisticstext exists
+		private bool         hasCallback;                    // Cached value for whether callback exists
+		private bool         setStatusEnabled;               // Cached value for whether status can be set without error
+		private bool         isActive;                       // Value for whether media player is active or not. Videos will only load/play/sync while the player is active
+		private bool         initialized;                    // Value indicating whether this component has initialized or not.
+		private bool         hasActivated;                   // Value for whether player has activated for the first time
 		
-		private float    lastActivePing;                 // Time of last ping for who's active
-		private int      numActivePlayers;               // Number of active players
-		private int      numActivePlayersTmp;            // Number of replies to ping so far
-		private int      numReadyPlayers;                // Number of players who have the video loaded
+		private float        lastActivePing;                 // Time of last ping for who's active
+		private int          numActivePlayers;               // Number of active players
+		private int          numActivePlayersTmp;            // Number of replies to ping so far
+		private int          numReadyPlayers;                // Number of players who have the video loaded
 
 		// Video Checking
 		private string[] videoHosts          = {
@@ -158,7 +161,7 @@ namespace Synergiance.MediaPlayer {
 		private int   diagnosticUpdatesPerLog = 5;    // Number of logs per message output
 		private float diagnosticDelay = 0.25f;        // Delay between diagnostic logs
 
-		private float pingActiveEvery = 120.0f;       // How often to ping for who's active
+		private float pingActiveEvery = 15.0f;       // How often to ping for who's active
 		private float holdPingOpenFor = 5.0f;         // How long to wait after pinging to update player activity data
 
 		private float activateAfter = 0.5f;           // Amount of time to wait after loading a world to activate player
@@ -183,6 +186,8 @@ namespace Synergiance.MediaPlayer {
 			if (Networking.IsOwner(gameObject)) SetLockState(masterLock);
 			isBlackingOut = mediaPlayers.BlackOutPlayer;
 			mediaPlayers.BlackOutPlayer = true;
+			ownershipTransferPending = false;
+			takeOwnershipAfter = (1.25f + UnityEngine.Random.value) * pingActiveEvery;
 			initialized = true;
 			SetPlayerStatusText("Initializing");
 			UpdateStatus();
@@ -212,6 +217,7 @@ namespace Synergiance.MediaPlayer {
 		private void Update() {
 			if (isActive) {
 				UpdateVideoPlayer();
+				CheckOwnershipIntegrity();
 				UpdateSeek();
 			}
 			UpdateStatus();
@@ -792,12 +798,18 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 			Log("Ownership transferred to: " + player.displayName, this);
-			if (!player.isLocal) return;
-			PingActive();
+			if (player.isLocal) PingActive();
+		}
+
+		private void ResetLastPingTime() {
+			lastActivePing = Time.time;
+			takeOwnershipAfter = pingActiveEvery * (1.1f + UnityEngine.Random.value * 0.3f + (!hasPermissions && masterLock ? 0.2f : 0));
+			ownershipTransferPending = false;
 		}
 
 		private void PingActive() {
 			if (!Networking.IsOwner(gameObject)) return;
+			LogVerbose("Pinging Active", this);
 			SendCustomNetworkEvent(NetworkEventTarget.All, "PingForActive");
 			lastActivePing = Time.time;
 			numActivePlayersTmp = 1;
@@ -808,7 +820,9 @@ namespace Synergiance.MediaPlayer {
 
 		public void PingForActive() {
 			if (Networking.IsOwner(gameObject)) return;
-			lastActivePing = Time.time;
+			if (!isActive) return;
+			LogVerbose("Pinging For Active", this);
+			ResetLastPingTime();
 			SendCustomNetworkEvent(NetworkEventTarget.Owner, "ActivePing");
 			if (playerReady) SendCustomNetworkEvent(NetworkEventTarget.Owner, "VideoReadyPing");
 		}
@@ -1598,6 +1612,26 @@ namespace Synergiance.MediaPlayer {
 				if (string.Equals(playerName, moderator))
 					return true;
 			return false;
+		}
+
+		private void CheckOwnershipIntegrity() {
+			if (isEditor || Networking.IsOwner(gameObject)) return;
+			if (ownershipTransferPending) {
+				if (Time.time > lastActivePing + takeOwnershipAfter + pingActiveEvery * 0.6f) {
+					if (questionableOwner.playerId == Networking.GetOwner(gameObject).playerId) {
+						LogWarning("Taking ownership of video player!", this);
+						Networking.SetOwner(Networking.LocalPlayer, gameObject);
+					} else {
+						Log("Another owner has been assigned", this);
+					}
+					ResetLastPingTime();
+				}
+			} else if (Time.time > lastActivePing + takeOwnershipAfter) {
+				questionableOwner = Networking.GetOwner(gameObject);
+				string ownerName = questionableOwner == null ? "nobody" : questionableOwner.displayName;
+				LogWarning("Missed ping from owner " + ownerName, this);
+				ownershipTransferPending = true;
+			}
 		}
 
 		private void SetLockState(bool lockState) {

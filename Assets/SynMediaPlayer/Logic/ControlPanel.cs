@@ -343,7 +343,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private void UpdateCurrentOwner() {
 			if (!isValid || !currentOwnerField) return;
 			VRCPlayerApi owner = Networking.GetOwner(mediaPlayer.gameObject);
-			string newOwnerName = owner != null ? owner.displayName : "Nobody";
+			string newOwnerName = owner != null ? owner.displayName + (owner.isLocal ? "*" : "") : "Nobody";
 			string oldOwnerName = currentOwnerField.text;
 			if (string.Equals(newOwnerName, oldOwnerName)) return;
 			currentOwnerField.text = newOwnerName;
@@ -733,7 +733,7 @@ namespace Synergiance.MediaPlayer.UI {
 				VRCPlayerApi player = players[i];
 				if (player == null || !player.IsValid()) continue;
 				if (!mediaPlayer.CheckPrivileged(player)) continue;
-				modList[numMods] = player.displayName;
+				modList[numMods] = player.displayName + (player.isLocal ? "*" : "");
 				modIdList[numMods] = player.playerId;
 				numMods++;
 			}
