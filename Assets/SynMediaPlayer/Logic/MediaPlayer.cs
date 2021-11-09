@@ -807,6 +807,15 @@ namespace Synergiance.MediaPlayer {
 			ownershipTransferPending = false;
 		}
 
+		public void RequestPing() {
+			if (Time.time - lastActivePing < pingActiveEvery) {
+				LogVerbose("Throwing out ping request, too soon", this);
+				return;
+			}
+			LogVerbose("Ping requested", this);
+			PingActive();
+		}
+
 		private void PingActive() {
 			if (!Networking.IsOwner(gameObject)) return;
 			LogVerbose("Pinging Active", this);
@@ -1627,6 +1636,7 @@ namespace Synergiance.MediaPlayer {
 					ResetLastPingTime();
 				}
 			} else if (Time.time > lastActivePing + takeOwnershipAfter) {
+				SendCustomNetworkEvent(NetworkEventTarget.Owner, "RequestPing");
 				questionableOwner = Networking.GetOwner(gameObject);
 				string ownerName = questionableOwner == null ? "nobody" : questionableOwner.displayName;
 				LogWarning("Missed ping from owner " + ownerName, this);
