@@ -114,6 +114,7 @@ namespace Synergiance.MediaPlayer {
 		private bool         isWakingUp;                     // Stores whether the video player is initializing or coming out of inactive state
 		private bool         isBlackingOut;                  // Stores local variable for whether we're blacking out the video player
 		private bool         syncingNextFrame;               // Stores whether we're already calling sync
+		private bool         hasReachedEnd = true;           // Stores whether we've reached the end of a video
 
 		private bool         masterLock;                     // Stores state of whether the player is locked
 		private bool         hasPermissions;                 // Cached value for whether the local user has permissions
@@ -184,10 +185,10 @@ namespace Synergiance.MediaPlayer {
 			if (Networking.LocalPlayer == null) isEditor = true;
 			hasPermissions = CheckPrivilegedInternal(Networking.LocalPlayer);
 			if (Networking.IsOwner(gameObject)) SetLockState(masterLock);
-			isBlackingOut = mediaPlayers.BlackOutPlayer;
+			isBlackingOut = true;
 			mediaPlayers.BlackOutPlayer = true;
-			ownershipTransferPending = false;
-			takeOwnershipAfter = (1.25f + UnityEngine.Random.value) * pingActiveEvery;
+			mediaPlayers.ShowPlaceholder = false;
+			if (preloadNextVideoTime < 5) preloadNextVideoTime = 5;
 			initialized = true;
 			SetPlayerStatusText("Initializing");
 			UpdateStatus();
@@ -201,6 +202,8 @@ namespace Synergiance.MediaPlayer {
 			SetActiveInternal(startActive);
 			if (masterLock && !isEditor && hasPermissions) VerifyProperOwnership();
 			mediaPlayers.BlackOutPlayer = isBlackingOut;
+			mediaPlayers.ShowPlaceholder = isActive;
+			ResetLastPingTime();
 			if (!isActive) {
 				// Need to set inactive status here since the update method will be disabled
 				SetPlayerStatusText("Inactive");
@@ -310,6 +313,7 @@ namespace Synergiance.MediaPlayer {
 			if (!playerReady) return;
 			if (playFromBeginning) { // This variable is set from video stop or video end, reset it when used
 				playFromBeginning = false;
+				hasReachedEnd = false;
 				_SeekTo(0);
 			}
 		}
@@ -332,6 +336,7 @@ namespace Synergiance.MediaPlayer {
 			SetPlaying(true);
 			if (playerReady) _SeekTo(0);
 			else playFromBeginning = true;
+			hasReachedEnd = false;
 		}
 
 		// Stop a currently playing video and unload it
@@ -343,6 +348,7 @@ namespace Synergiance.MediaPlayer {
 			SeekTo(0);
 			SetPlaying(false);
 			playFromBeginning = true;
+			hasReachedEnd = true;
 			//SetURL(VRCUrl.Empty);
 		}
 
@@ -395,6 +401,8 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (isActive == active) return;
 			SetActiveInternal(active);
+			mediaPlayers.ShowPlaceholder = active;
+			mediaPlayers.BlackOutPlayer = !active || isBlackingOut;
 			Log(isActive ? "Activating" : "Deactivating", this);
 			if (isActive) {
 				isWakingUp = true;
@@ -549,7 +557,10 @@ namespace Synergiance.MediaPlayer {
 				Log("Deserialization found new URL: " + remoteStr, this);
 				Log("Old URL: " + localStr, this);
 				localURL = remoteURL;
-				if (hasNewTime) playFromBeginning = false;
+				if (hasNewTime) {
+					playFromBeginning = false;
+					hasReachedEnd = false;
+				}
 				SetVideoURLFromLocal();
 			}
 			if (hasNewQueueUrl) { // Load the new video if it has changed
@@ -957,6 +968,7 @@ namespace Synergiance.MediaPlayer {
 					SeekInternal(-seekPeriod);
 				}
 				playFromBeginning = false;
+				hasReachedEnd = false;
 			}
 			referencePlayhead = Time.time - startTime;
 			float currentTime = mediaPlayers.Time;
@@ -1056,16 +1068,18 @@ namespace Synergiance.MediaPlayer {
 		private void SetPlayingInternal(bool playing) {
 			Log("Set Playing Internal: " + (playing ? "Playing" : "Paused"), this);
 			isPlaying = playing;
+			if (isPlaying && playerReady) hasReachedEnd = false;
 			if (!isStream && playerReady) {
 				SeekInternal(playFromBeginning ? -seekPeriod : referencePlayhead);
 				playFromBeginning = false;
+				hasReachedEnd = false;
 			}
 			SetPlayerStatusText(playing ? "Waiting to Play" : "Paused");
 		}
 
 		private void PauseInternal() {
 			if (!mediaPlayers.IsReady) return;
-			BlackOutInternal(false);
+			BlackOutInternal(hasReachedEnd);
 			if (Time.time - lastResyncTime >= resyncEvery) {
 				lastResyncTime = Time.time;
 				if (isPlaying == localIsPlaying) return;
@@ -1090,6 +1104,7 @@ namespace Synergiance.MediaPlayer {
 			urlValid = false;
 			SetPlayerStatusText("No Video");
 			playFromBeginning = true;
+			hasReachedEnd = true;
 		}
 
 		private void SetLoopingInternal() {
@@ -1133,6 +1148,8 @@ namespace Synergiance.MediaPlayer {
 			else if (isAutomaticRetry) suffix = " (" + retryCount + "/" + numberOfRetries + ")";
 			isReloadingVideo = false;
 			isAutomaticRetry = false;
+			hasReachedEnd = false;
+			mediaPlayers.ShowPlaceholder = false;
 			urlValid = false;
 			currentURL = url;
 			mediaPlayers._LoadURL(url);
@@ -1202,6 +1219,9 @@ namespace Synergiance.MediaPlayer {
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoEnd");
 			if (isStream) return;
 			SeekInternal(0);
+			BlackOutInternal(true);
+			mediaPlayers.ShowPlaceholder = true;
+			hasReachedEnd = true;
 			// Finish video callback?
 		}
 
@@ -1241,6 +1261,7 @@ namespace Synergiance.MediaPlayer {
 			SetPlayerStatusText("Playing");
 			SetReadyInternal(true);
 			playFromBeginning = false;
+			hasReachedEnd = false;
 			isLoading = false;
 			newVideoLoading = false;
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoStart");
@@ -1253,6 +1274,7 @@ namespace Synergiance.MediaPlayer {
 			SetPlayerStatusText("Playing");
 			SetReadyInternal(true);
 			playFromBeginning = false;
+			hasReachedEnd = false;
 			isLoading = false;
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoPlay");
 		}
@@ -1399,7 +1421,9 @@ namespace Synergiance.MediaPlayer {
 
 		private void SetReadyInternal(bool ready) {
 			if (ready == playerReady) return;
+			mediaPlayers.ShowPlaceholder = !ready;
 			playerReady = ready;
+			if (playerReady) hasReachedEnd = false;
 			if (Networking.IsOwner(gameObject)) numReadyPlayers += playerReady ? 1 : -1;
 			else SendCustomNetworkEvent(NetworkEventTarget.Owner, ready ? "VideoReadyPing" : "VideoNotReadyPing");
 		}

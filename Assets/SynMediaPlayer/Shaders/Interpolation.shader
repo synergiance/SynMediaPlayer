@@ -9,6 +9,7 @@
 		_GaplessContrib ("Gapless Contrib", Range(0,1)) = 0
 		_StreamContrib ("Stream Contrib", Range(0,1)) = 0
 		_LowLatencyContrib ("Low Latency Contrib", Range(0,1)) = 0
+		_ShowPlaceholder ("Show Placeholder", Range(0,1)) = 1
 	}
 	SubShader {
 		Tags { "RenderType"="Opaque" }
@@ -31,6 +32,7 @@
 			float _GaplessContrib;
 			float _StreamContrib;
 			float _LowLatencyContrib;
+			float _ShowPlaceholder;
 
 			fixed4 frag (v2f_customrendertexture i) : SV_Target {
 				float fac = min(1, 1 / min(0.00001, _UnityContrib + _StreamContrib + _LowLatencyContrib + _GaplessContrib));
@@ -42,7 +44,7 @@
 				col.rgb += _GaplessTex.Sample(sampler_UnityTex, uv) * contribs.y;
 				col.rgb += _StreamTex.Sample(sampler_UnityTex, uv) * contribs.z;
 				col.rgb += _LowLatencyTex.Sample(sampler_UnityTex, uv) * contribs.w;
-				col.rgb += _PlaceholderTex.Sample(sampler_UnityTex, uv) * (1 - dot(contribs, 1));
+				col.rgb += _PlaceholderTex.Sample(sampler_UnityTex, uv) * (1 - dot(contribs, 1)) * _ShowPlaceholder;
 				return col;
 			}
 			ENDCG

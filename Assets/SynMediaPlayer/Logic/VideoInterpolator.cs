@@ -13,6 +13,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField]  private VideoPlayerRelay[] mediaPlayers;
 		[SerializeField]  private string[]           interpolationProps;
 		[SerializeField]  private Material           interpolatorMaterial;
+		[SerializeField]  private string             placeholderPropName;
 		[SerializeField]  private bool               gaplessSupport;
 		[SerializeField]  private float              volume = 0.5f;
 		[SerializeField]  private int                activeID;
@@ -29,24 +30,13 @@ namespace Synergiance.MediaPlayer {
 		[HideInInspector] public  int                relayIdentifier;
 		[HideInInspector] public  VideoError         relayVideoError;
 
-		public bool BlackOutPlayer {
-			set {
-				if (blackOutPlayer == value) return;
-				blackOutPlayer = value;
-				Log("Black out set to: " + blackOutPlayer);
-				float visibility = blackOutPlayer && !disableBlackingOut ? 0 : 1;
-				interpolatorMaterial.SetFloat(interpolationProps[activeID], visibility);
-				mediaPlayers[activeID].Volume = volume * visibility;
-			}
-			get => blackOutPlayer;
-		}
-
 		private bool   isLooping;
 		private int    nextID = -1;
 		private bool   hasAudioCallback;
 		private bool   initialized;
 		private bool   blackOutPlayer;
 		private bool   gaplessLoaded;
+		private bool   showPlaceholderTex;
 
 		private string debugPrefix = "[<color=#1FAF5F>Video Interpolator</color>] ";
 
@@ -61,7 +51,7 @@ namespace Synergiance.MediaPlayer {
 				interpolatorMaterial.SetFloat(interpolationProps[c], 0);
 			}
 			mediaPlayers[activeID].Volume = volume;
-			interpolatorMaterial.SetFloat(interpolationProps[activeID], 1);
+			interpolatorMaterial.SetFloat(interpolationProps[activeID], blackOutPlayer ? 0 : 1);
 			mediaPlayers[activeID].Loop = isLooping;
 			hasAudioCallback = audioCallback != null && !string.IsNullOrWhiteSpace(audioFieldName);
 			if (gaplessSupport) nextID = mediaPlayers.Length - 1;
@@ -113,7 +103,8 @@ namespace Synergiance.MediaPlayer {
 			int tradesies = activeID;
 			SwitchPlayerInternal(nextID);
 			nextID = tradesies;
-			mediaPlayers[nextID]._Play();
+			if (mediaPlayers[nextID].IsPlaying) mediaPlayers[nextID].Time = 0;
+			else mediaPlayers[nextID]._Play();
 			SendCallback("_RelayVideoNext");
 		}
 
@@ -160,9 +151,14 @@ namespace Synergiance.MediaPlayer {
 			gaplessLoaded = true;
 		}
 
-		public void _RollQueuedPlayer() {}
+		public void _RollQueuedPlayer() {
+			mediaPlayers[nextID]._Play();
+		}
 
-		public void _StopQueuedPlayer() {}
+		public void _StopQueuedPlayer() {
+			mediaPlayers[nextID]._Pause();
+			mediaPlayers[nextID].Time = 0;
+		}
 
 		public float Time {
 			set {
@@ -189,6 +185,28 @@ namespace Synergiance.MediaPlayer {
 				mediaPlayers[activeID].Volume = blackOutPlayer ? 0f : volume;
 			}
 			get => volume;
+		}
+
+		public bool BlackOutPlayer {
+			set {
+				if (blackOutPlayer == value) return;
+				blackOutPlayer = value;
+				Log("Black out set to: " + blackOutPlayer);
+				float visibility = blackOutPlayer && !disableBlackingOut ? 0 : 1;
+				interpolatorMaterial.SetFloat(interpolationProps[activeID], visibility);
+				mediaPlayers[activeID].Volume = volume * visibility;
+			}
+			get => blackOutPlayer;
+		}
+
+		public bool ShowPlaceholder {
+			set {
+				showPlaceholderTex = value;
+				Log((value ? "Show" : "Hide") + " placeholder texture");
+				if (string.IsNullOrWhiteSpace(placeholderPropName)) return;
+				interpolatorMaterial.SetFloat(placeholderPropName, value ? 1 : 0);
+			}
+			get => showPlaceholderTex;
 		}
 		
 		public bool IsReady => mediaPlayers[activeID].IsReady;
