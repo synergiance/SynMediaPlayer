@@ -50,6 +50,7 @@ namespace Synergiance.MediaPlayer {
 			initialized = true;
 			for (int c = 0; c < mediaPlayers.Length; c++) {
 				interpolatorMaterial.SetFloat(interpolationProps[c], 0);
+				mediaPlayers[c].Volume = 0;
 			}
 			mediaPlayers[activeID].Volume = volume;
 			interpolatorMaterial.SetFloat(interpolationProps[activeID], blackOutPlayer ? 0 : 1);
@@ -251,6 +252,8 @@ namespace Synergiance.MediaPlayer {
 		public int ActivePlayerID => GetPublicActiveID();
 		public string ActivePlayer => mediaPlayers[ActivePlayerID].PlayerName;
 		public string CurrentPlayerName => mediaPlayers[activeID].PlayerName;
+		public bool PlayingNextEarly => playingNextEarly;
+		public float PrerollTime => gaplessLoaded ? mediaPlayers[nextID].Time : 0;
 
 		public string GetPlayerName(int id) { return mediaPlayers[id].PlayerName; }
 		private string PlayerNameAndIDString(int id) { return mediaPlayers[id].PlayerName + " (" + id + ")"; }

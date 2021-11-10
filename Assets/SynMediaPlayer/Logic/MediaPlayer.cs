@@ -934,7 +934,25 @@ namespace Synergiance.MediaPlayer {
 
 		private void PreloadLogic() {
 			if (queueVideoReady) {
-				if (!playQueueVideoNow || !(Time.time > playQueueVideoTime - videoOvershoot)) return;
+				if (!playQueueVideoNow) {
+					if (referencePlayhead >= Duration - videoOvershoot) {
+						if (!mediaPlayers.PlayingNextEarly) {
+							LogVerbose("Beginning queued video early to attain sync", this);
+							mediaPlayers._PlayNextEarly();
+						}
+					} else if (!videoHasPreRolled) {
+						LogVerbose("Pre-rolling queued video to load first bit of video data", this);
+						mediaPlayers._RollQueuedPlayer();
+						videoHasPreRolled = true;
+						videoIsPreRolling = true;
+					} else if (videoIsPreRolling && mediaPlayers.PrerollTime > seekPeriod * 0.5f) {
+						LogVerbose("Stopping pre-roll of queued video", this);
+						mediaPlayers._StopQueuedPlayer();
+						videoIsPreRolling = false;
+					}
+					return;
+				}
+				if (!(Time.time > playQueueVideoTime)) return;
 				if (!mediaPlayers.NextReady) {
 					LogWarning("Next video not actually ready!", this);
 					queueVideoLoading = false;
@@ -987,6 +1005,7 @@ namespace Synergiance.MediaPlayer {
 						LogVerbose("Beginning video early to attain sync", this);
 						mediaPlayers._Play();
 					}
+					videoHasPreRolled = false;
 				} else if (!videoHasPreRolled) {
 					LogVerbose("Pre-rolling video to load first bit of video data", this);
 					mediaPlayers._Play();
@@ -998,9 +1017,6 @@ namespace Synergiance.MediaPlayer {
 					mediaPlayers.Time = 0;
 					videoIsPreRolling = false;
 				}
-			} else if (videoHasPreRolled || videoIsPreRolling) {
-				videoIsPreRolling = false;
-				videoHasPreRolled = false;
 			}
 			if (postResync) {
 				if (Time.time < postResyncEndsAt) {
