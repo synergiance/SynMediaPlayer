@@ -37,6 +37,7 @@ namespace Synergiance.MediaPlayer {
 		private bool   blackOutPlayer;
 		private bool   gaplessLoaded;
 		private bool   showPlaceholderTex;
+		private bool   playingNextEarly;
 
 		private string debugPrefix = "[<color=#1FAF5F>Video Interpolator</color>] ";
 
@@ -103,39 +104,67 @@ namespace Synergiance.MediaPlayer {
 			int tradesies = activeID;
 			SwitchPlayerInternal(nextID);
 			nextID = tradesies;
-			if (mediaPlayers[nextID].IsPlaying) mediaPlayers[nextID].Time = 0;
-			else mediaPlayers[nextID]._Play();
+			if (mediaPlayers[nextID].IsPlaying) {
+				if (playingNextEarly) playingNextEarly = false;
+				else mediaPlayers[nextID].Time = 0;
+			} else {
+				mediaPlayers[nextID]._Play();
+			}
 			SendCallback("_RelayVideoNext");
+		}
+
+		public void _PlayNextEarly() {
+			if (!gaplessSupport) {
+				Error("Attempting to access unconfigured gapless player!");
+				return;
+			}
+			Initialize();
+			if (!gaplessLoaded) return;
+			if (!mediaPlayers[nextID].IsReady) return;
+			Log("Playing " + PlayerNameAndIDString(nextID) + " early");
+			if (!mediaPlayers[nextID].IsPlaying) mediaPlayers[nextID]._Play();
+			else mediaPlayers[nextID].Time = 0;
+			playingNextEarly = true;
 		}
 
 		public void _Play() {
 			Initialize();
 			LogPlayer("Playing", activeID);
 			mediaPlayers[activeID]._Play();
+			if (gaplessLoaded) _StopQueuedPlayer();
+			playingNextEarly = false;
 		}
 
 		public void _Pause() {
 			Initialize();
 			LogPlayer("Pausing", activeID);
 			mediaPlayers[activeID]._Pause();
+			if (gaplessLoaded) _StopQueuedPlayer();
+			playingNextEarly = false;
 		}
 
 		public void _Stop() {
 			Initialize();
 			LogPlayer("Stopping", activeID);
 			mediaPlayers[activeID]._Stop();
+			if (gaplessLoaded) _StopQueuedPlayer();
+			playingNextEarly = false;
 		}
 
 		public void _PlayURL(VRCUrl url) {
 			Initialize();
 			LogPlayer("Playing URL: " + (url != null ? url.ToString() : "<NULL>"), activeID);
 			mediaPlayers[activeID]._PlayURL(url);
+			if (gaplessLoaded) _StopQueuedPlayer();
+			playingNextEarly = false;
 		}
 
 		public void _LoadURL(VRCUrl url) {
 			Initialize();
 			LogPlayer("Loading URL: " + (url != null ? url.ToString() : "<NULL>"), activeID);
 			mediaPlayers[activeID]._LoadURL(url);
+			if (gaplessLoaded) _StopQueuedPlayer();
+			playingNextEarly = false;
 		}
 
 		public void _LoadNextURL(VRCUrl url) {
@@ -149,6 +178,8 @@ namespace Synergiance.MediaPlayer {
 			}
 			mediaPlayers[nextID]._LoadURL(url);
 			gaplessLoaded = true;
+			if (gaplessLoaded) _StopQueuedPlayer();
+			playingNextEarly = false;
 		}
 
 		public void _RollQueuedPlayer() {
@@ -174,6 +205,9 @@ namespace Synergiance.MediaPlayer {
 				Initialize();
 				LogPlayer("Setting Looping: " + value, activeID);
 				mediaPlayers[activeID].Loop = isLooping = value;
+				if (!value || !gaplessLoaded) return;
+				_StopQueuedPlayer();
+				playingNextEarly = false;
 			}
 			get => mediaPlayers[activeID].Loop;
 		}

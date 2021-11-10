@@ -115,6 +115,8 @@ namespace Synergiance.MediaPlayer {
 		private bool         isBlackingOut;                  // Stores local variable for whether we're blacking out the video player
 		private bool         syncingNextFrame;               // Stores whether we're already calling sync
 		private bool         hasReachedEnd = true;           // Stores whether we've reached the end of a video
+		private bool         videoHasPreRolled;              // Stores whether a video has pre-rolled
+		private bool         videoIsPreRolling;              // Caches whether we're pre-rolling a video
 
 		private bool         masterLock;                     // Stores state of whether the player is locked
 		private bool         hasPermissions;                 // Cached value for whether the local user has permissions
@@ -932,7 +934,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void PreloadLogic() {
 			if (queueVideoReady) {
-				if (!playQueueVideoNow || !(Time.time > playQueueVideoTime)) return;
+				if (!playQueueVideoNow || !(Time.time > playQueueVideoTime - videoOvershoot)) return;
 				if (!mediaPlayers.NextReady) {
 					LogWarning("Next video not actually ready!", this);
 					queueVideoLoading = false;
@@ -975,6 +977,31 @@ namespace Synergiance.MediaPlayer {
 			deviation = currentTime - referencePlayhead;
 			float absDeviation = Mathf.Abs(deviation);
 			float timeMinusLastSoftSync = Time.time - lastSoftSyncTime;
+			if (referencePlayhead <= 0) {
+				if (referencePlayhead >= -videoOvershoot) {
+					if (videoIsPreRolling) {
+						LogVerbose("Beginning video early to attain sync", this);
+						mediaPlayers.Time = 0;
+						videoIsPreRolling = false;
+					} else if (!mediaPlayers.IsPlaying) {
+						LogVerbose("Beginning video early to attain sync", this);
+						mediaPlayers._Play();
+					}
+				} else if (!videoHasPreRolled) {
+					LogVerbose("Pre-rolling video to load first bit of video data", this);
+					mediaPlayers._Play();
+					videoHasPreRolled = true;
+					videoIsPreRolling = true;
+				} else if (videoIsPreRolling && mediaPlayers.Time > seekPeriod * 0.5f) {
+					LogVerbose("Stopping pre-roll", this);
+					mediaPlayers._Pause();
+					mediaPlayers.Time = 0;
+					videoIsPreRolling = false;
+				}
+			} else if (videoHasPreRolled || videoIsPreRolling) {
+				videoIsPreRolling = false;
+				videoHasPreRolled = false;
+			}
 			if (postResync) {
 				if (Time.time < postResyncEndsAt) {
 					if (!mediaPlayers.IsPlaying) {
@@ -1031,7 +1058,7 @@ namespace Synergiance.MediaPlayer {
 			if (isResync) return;
 			if (Time.time - lastResyncTime >= resyncEvery) SoftResync();
 			if (Time.time - lastCheckTime < checkSyncEvery) return;
-			BlackOutInternal(absDeviation > deviationTolerance * 2);
+			BlackOutInternal(referencePlayhead >= 0 && absDeviation > deviationTolerance * 2);
 			if (Time.time - resyncPauseAt < pauseResyncFor) return;
 			lastCheckTime = Time.time;
 			if (mediaPlayers.IsPlaying) {
