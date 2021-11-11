@@ -63,6 +63,7 @@ namespace Synergiance.MediaPlayer {
 		[UdonSynced]      private bool               remoteLooping;                 // Network sync player lock.
 		[UdonSynced]      private bool               remoteQueueNow;                // Network sync play queue video now
 		[UdonSynced]      private float              remoteQueueTime;               // Network sync play queue video time
+		[UdonSynced]      private ulong              remoteVersion;                 // Network sync SMP version number
 		                  private float              localTime;                     // Local variables are used for local use of network variables.
 		                  private bool               localIsPlaying;                // Before use, they will be checked against for changes.
 		                  private VRCUrl             localURL = VRCUrl.Empty;       // Upon change, the proper methods will be called.
@@ -72,6 +73,7 @@ namespace Synergiance.MediaPlayer {
 		                  private bool               localLooping;                  //
 		                  private bool               localQueueNow;                 //
 		                  private float              localQueueTime;                //
+		                  private ulong              localVersion;                  //
 
 		// Player Variables
 		private float        startTime;                      // Local time reference for when video began.
@@ -164,12 +166,24 @@ namespace Synergiance.MediaPlayer {
 		private int   diagnosticUpdatesPerLog = 5;    // Number of logs per message output
 		private float diagnosticDelay = 0.25f;        // Delay between diagnostic logs
 
-		private float pingActiveEvery = 15.0f;       // How often to ping for who's active
+		private float pingActiveEvery = 15.0f;        // How often to ping for who's active
 		private float holdPingOpenFor = 5.0f;         // How long to wait after pinging to update player activity data
 
 		private float activateAfter = 0.5f;           // Amount of time to wait after loading a world to activate player
 
 		private float videoLoadCooldown = 5.5f;       // Minimum delay between attempted video loads
+		
+		// Version number
+
+		private ushort localVersionMajor =  1; // Major version number
+		private ushort localVersionMinor =  0; // Minor version number
+		private ushort localVersionPatch =  0; // Patch version number
+		private ushort localVersionBeta  =  9; // Beta number
+
+		private ushort worldVersionMajor =  1; // Major version number
+		private ushort worldVersionMinor =  0; // Minor version number
+		private ushort worldVersionPatch =  0; // Patch version number
+		private ushort worldVersionBeta  =  9; // Beta number
 
 		private void Start() {
 			Initialize();
@@ -191,6 +205,7 @@ namespace Synergiance.MediaPlayer {
 			mediaPlayers.BlackOutPlayer = true;
 			mediaPlayers.ShowPlaceholder = false;
 			if (preloadNextVideoTime < 5) preloadNextVideoTime = 5;
+			SetNetworkVersion();
 			initialized = true;
 			SetPlayerStatusText("Initializing");
 			UpdateStatus();
@@ -549,6 +564,7 @@ namespace Synergiance.MediaPlayer {
 			bool hasNewLooping = remoteLooping != localLooping;
 			bool hasNewQueueNow = remoteQueueNow != localQueueNow;
 			bool hasNewQueueTime = Mathf.Abs(remoteQueueTime - localQueueTime) > 0.1f;
+			bool hasNewVersionNumber = localVersion != remoteVersion;
 			if (hasNewPlayerID) { // Determines whether we swapped media type
 				Log("Deserialization found new Media Player: " + mediaPlayers.GetPlayerName(remotePlayerID), this);
 				localPlayerID = remotePlayerID;
@@ -601,6 +617,11 @@ namespace Synergiance.MediaPlayer {
 				float newTime = CalcWithTime(localQueueTime = remoteQueueTime);
 				Log("Deserialization found new sync queue video time: " + newTime, this);
 				SetQueueVideoLoadTimeInternal(newTime);
+			}
+			if (hasNewVersionNumber) {
+				Log("Deserialization found new network version: " + remoteVersion.ToString("X16"), this);
+				localVersion = remoteVersion;
+				GetNetworkVersion();
 			}
 			isWakingUp = false;
 		}
@@ -739,6 +760,27 @@ namespace Synergiance.MediaPlayer {
 			SetLoopingInternal();
 		}
 
+		private void SetNetworkVersion() {
+			if (!Networking.IsMaster) return;
+			localVersion = (ulong)localVersionMajor << 48;
+			localVersion |= (ulong)localVersionMinor << 32;
+			localVersion |= (ulong)localVersionPatch << 16;
+			localVersion |= localVersionBeta;
+			string versionString = ToVersionString(localVersionMajor, localVersionMinor, localVersionPatch, localVersionBeta);
+			Log("Setting network version to: " + versionString, this);
+			GetNetworkVersion();
+			Sync();
+		}
+
+		private void GetNetworkVersion() {
+			worldVersionMajor = (ushort)(localVersion >> 48);
+			worldVersionMinor = (ushort)(localVersion >> 32 & (ulong)0xFFFF);
+			worldVersionPatch = (ushort)(localVersion >> 16 & (ulong)0xFFFF);
+			worldVersionBeta  = (ushort)(localVersion & (ulong)0xFFFF);
+			string versionString = ToVersionString(worldVersionMajor, worldVersionMinor, worldVersionPatch, worldVersionBeta);
+			Log("Retrieving network version as: " + versionString, this);
+		}
+
 		public void Resync() {
 			Initialize();
 			if (Networking.IsOwner(gameObject)) Sync();
@@ -775,6 +817,8 @@ namespace Synergiance.MediaPlayer {
 			logMsg += ", Queue Now: " + remoteQueueNow;
 			remoteQueueTime = localQueueTime;
 			logMsg += ", Queue Time: " + remoteQueueTime;
+			remoteVersion = localVersion;
+			logMsg += ", Version: " + remoteVersion.ToString("X16");
 			LogVerbose(logMsg, this);
 		}
 
@@ -1516,6 +1560,19 @@ namespace Synergiance.MediaPlayer {
 			}
 			SetPlayerStatusText("Reloading Video");
 			SetVideoURLFromLocal();
+		}
+
+		private string ToVersionString(ushort major, ushort minor, ushort patch, ushort beta) {
+			string versionString = "v" + major + "." + minor + "." + patch;
+			if (beta > 0) versionString += "b" + beta;
+			string diagnosticMessage = "To Version String: ";
+			diagnosticMessage += major.ToString("X4");
+			diagnosticMessage += "," + minor.ToString("X4");
+			diagnosticMessage += "," + patch.ToString("X4");
+			diagnosticMessage += "," + beta.ToString("X4");
+			diagnosticMessage += " -> " + versionString;
+			LogVerbose(diagnosticMessage, this);
+			return versionString;
 		}
 
 		private void UpdateUICallback() {
