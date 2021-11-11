@@ -1281,7 +1281,13 @@ namespace Synergiance.MediaPlayer {
 				} else if (relayVideoError == VideoError.AccessDenied) {
 					Log("Not retrying, user needs to allow untrusted URLs", this);
 				} else if (retryCount < numberOfRetries) {
-					retryCount++;
+					if (!isStream && relayVideoError == VideoError.PlayerError) {
+						Log("Attempting to load with stream player", this);
+						if (Networking.IsOwner(gameObject)) SwitchPlayer(1);
+						else SetPlayerID(1);
+					} else {
+						retryCount++;
+					}
 					Log("Retrying load (" + retryCount + " of " + numberOfRetries + ")", this);
 					isAutomaticRetry = true;
 					ReloadVideoInternal();

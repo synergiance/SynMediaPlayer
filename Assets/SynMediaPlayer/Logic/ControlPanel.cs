@@ -264,16 +264,11 @@ namespace Synergiance.MediaPlayer.UI {
 				return;
 			}
 			CancelDefaultPlaylist();
+			ClearQueueInternal();
 			int loadedType = mediaType;
 			VRCUrl newUrl = urlField.GetUrl();
-			if (loadGapless && mediaPlayer.IsPlaying) {
-				if (newUrl != null) Log("Load Queue URL: " + newUrl.ToString(), this);
-				mediaPlayer._LoadQueueURL(newUrl);
-				mediaPlayer._PlayNext();
-			} else {
-				if (newUrl != null) Log("Load URL: " + newUrl.ToString(), this);
-				loadedType = mediaPlayer._LoadURLAs(newUrl, mediaType);
-			}
+			if (newUrl != null) Log("Load URL: " + newUrl.ToString(), this);
+			loadedType = mediaPlayer._LoadURLAs(newUrl, mediaType);
 			urlField.SetUrl(VRCUrl.Empty);
 			if (loadedType == mediaType) return;
 			mediaType = loadedType;
