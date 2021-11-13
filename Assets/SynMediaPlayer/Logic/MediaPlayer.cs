@@ -36,6 +36,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField]  private bool               automaticRetry = true;         // If toggled on, video player will automatically retry on failed load
 		[SerializeField]  private int                numberOfRetries = 3;           // Number of automatic retries to attempt
 		[SerializeField]  private bool               allowRetryWhenLoaded;          // If toggled off, retry won't do anything if the video is successfully loaded
+		[SerializeField]  private bool               detectMediaType = true;        // If toggled on, video player will attempt to detect what type of media has been entered
 		[SerializeField]  private UdonSharpBehaviour callback;                      // Used for sending events
 		[SerializeField]  private string             setStatusMethod;               // Method name for status update events
 		[SerializeField]  private string             statusProperty = "statusText"; // Property name for status update events
@@ -172,6 +173,7 @@ namespace Synergiance.MediaPlayer {
 		private float activateAfter = 0.5f;           // Amount of time to wait after loading a world to activate player
 
 		private float videoLoadCooldown = 5.5f;       // Minimum delay between attempted video loads
+		private float missedLoadTimeout = 30.0f;      // Time for missed loads to trigger an automatic reload
 		
 		// Version number
 
@@ -944,11 +946,14 @@ namespace Synergiance.MediaPlayer {
 			}
 			if (isPlaying && !isStream) PreloadLogic();
 			if (isReloadingVideo && Time.time > lastVideoLoadTime + videoLoadCooldown) {
+				Log("Initiating automatic reload", this);
 				SetPlayerStatusText("Reloading Video");
 				SetVideoURLFromLocal();
 			}
-			if (!playerReady && !isAutomaticRetry && retryCount == 0 && !localURL.Equals(VRCUrl.Empty) && Time.time > lastVideoLoadTime + videoLoadCooldown) {
+			if (!playerReady && !isAutomaticRetry && retryCount == 0 && !localURL.Equals(VRCUrl.Empty) && Time.time > lastVideoLoadTime + missedLoadTimeout) {
+				Log("Missed Load Timeout", this);
 				isAutomaticRetry = true;
+				retryCount++;
 				ReloadVideoInternal();
 			}
 		}
@@ -1459,6 +1464,7 @@ namespace Synergiance.MediaPlayer {
 				Log("Invalid Protocol: " + urlProtocol, this);
 				return -1;
 			}
+			if (!detectMediaType) return playerID;
 			Log("URL Protocol: " + urlProtocol, this);
 			string urlHost = urlStr.Substring(colonPos + 3, prefixLength - 3 - colonPos);
 			Log("URL Host: " + urlHost, this);
