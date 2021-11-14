@@ -23,6 +23,11 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private string debugPrefix = "[<color=#2090B0>SMP Slider Select</color>] ";
 
+		public int CurrentType {
+			set => _SetType(value);
+			get => GetType();
+		}
+
 		void Start() {
 			Initialize();
 		}
@@ -52,6 +57,11 @@ namespace Synergiance.MediaPlayer.UI {
 			if (!SetTypeInternal(newType)) return;
 			UpdateSlider();
 			UpdateHandle(oldType, newType);
+		}
+
+		public int GetType() {
+			Initialize();
+			return currentType;
 		}
 
 		public void _VerifyHandle() {

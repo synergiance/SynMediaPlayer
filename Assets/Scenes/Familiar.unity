@@ -1202,6 +1202,12 @@ PrefabInstance:
       propertyPath: publicVariablesUnityEngineObjects.Array.data[3]
       value: 
       objectReference: {fileID: 402803150}
+    - target: {fileID: 2881810971668638413, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
+      propertyPath: serializationData.Prefab
+      value: 
+      objectReference: {fileID: 2881810971668638413, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
     - target: {fileID: 2960900579408273480, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -1249,6 +1255,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 4255665182421052556, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
+    - target: {fileID: 4726907355947134982, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
+      propertyPath: serializedProgramAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 4670278290543784ab5c45fc816f292d,
+        type: 2}
     - target: {fileID: 4905619786093926094, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -1357,6 +1369,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 6101567085834204608, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
+    - target: {fileID: 6260366585921695556, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
+      propertyPath: serializedProgramAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: b9550b9f6821fbd41bb225beb0f59241,
+        type: 2}
     - target: {fileID: 6623914288702310939, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -1427,6 +1445,12 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8269192055606251660, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
+      propertyPath: serializationData.Prefab
+      value: 
+      objectReference: {fileID: 8269192055606251660, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
     - target: {fileID: 8452573032741418811, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
       propertyPath: m_IsActive
