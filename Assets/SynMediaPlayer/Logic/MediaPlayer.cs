@@ -1724,6 +1724,18 @@ namespace Synergiance.MediaPlayer {
 			Networking.SetOwner(player, gameObject);
 		}
 
+		public override void OnPlayerLeft(VRCPlayerApi player) {
+			if (isEditor) return;
+			if (player == null) return;
+			if (!player.IsValid()) return;
+			if (player.isLocal && Networking.IsOwner(gameObject) && hasPermissions) {
+				ChooseNewOwner();
+			} else {
+				hasPermissions = CheckPrivilegedInternal(Networking.LocalPlayer);
+				callback.SendCustomEvent(masterLock ? "_PlayerLocked" : "_PlayerUnlocked");
+			}
+		}
+
 		private void ChooseNewOwner() {
 			if (isEditor) return;
 			int numPlayers = VRCPlayerApi.GetPlayerCount();
