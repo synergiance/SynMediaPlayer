@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -512,7 +512,6 @@ GameObject:
   - component: {fileID: 1639844753}
   - component: {fileID: 1639844755}
   - component: {fileID: 1639844754}
-  - component: {fileID: 1639844756}
   m_Layer: 0
   m_Name: Spawn
   m_TagString: Untagged
@@ -648,19 +647,6 @@ MonoBehaviour:
   RenderSkybox: {fileID: 0}
   portraitCameraPositionOffset: {x: 0, y: 0, z: 0}
   portraitCameraRotationOffset: {x: 0, y: 1, z: 0, w: -0.00000004371139}
---- !u!114 &1639844756
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1639844752}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 229740497, guid: 4ecd63eff847044b68db9453ce219299, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  contentType: 1
 --- !u!1 &1748911569
 GameObject:
   m_ObjectHideFlags: 0
@@ -856,6 +842,12 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 45254843591622740, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
+      propertyPath: serializationData.Prefab
+      value: 
+      objectReference: {fileID: 45254843591622740, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
     - target: {fileID: 102083431937366024, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -916,6 +908,27 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 273596203562010218, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 273596203562010218, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 273596203562010218, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 276913348477637544, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
+      propertyPath: serializedProgramAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 52b44b70a441a8c4caeaec8f59849738,
+        type: 2}
     - target: {fileID: 1140151199032610631, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -1013,6 +1026,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2455577814523188813, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
+    - target: {fileID: 2561613884128845585, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
+      propertyPath: serializedProgramAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: dcb6f768c62432341ae27d4bf010fec3,
+        type: 2}
     - target: {fileID: 2753174230626112418, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -1258,7 +1277,7 @@ PrefabInstance:
     - target: {fileID: 5013995919473724660, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
       propertyPath: m_RootOrder
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5170567467033705440, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
@@ -1269,8 +1288,14 @@ PrefabInstance:
     - target: {fileID: 5277246912267904198, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
       propertyPath: m_RootOrder
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 5460760527546131163, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
+      propertyPath: serializedProgramAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: b33ff5a375463f74f8058d8bf3d4e618,
+        type: 2}
     - target: {fileID: 5632309053297106625, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -1326,6 +1351,12 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6101567085834204608, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
+      propertyPath: serializationData.Prefab
+      value: 
+      objectReference: {fileID: 6101567085834204608, guid: c2fd4f0ad84721e47af77c24ea12a36e,
+        type: 3}
     - target: {fileID: 6623914288702310939, guid: c2fd4f0ad84721e47af77c24ea12a36e,
         type: 3}
       propertyPath: m_AnchorMax.y

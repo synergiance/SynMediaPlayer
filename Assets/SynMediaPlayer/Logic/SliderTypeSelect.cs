@@ -31,6 +31,9 @@ namespace Synergiance.MediaPlayer.UI {
 			if (initialized) return;
 			hasCallback = callback != null && !string.IsNullOrWhiteSpace(callbackMethod) && !string.IsNullOrWhiteSpace(callbackVar);
 			initialized = true;
+			int newType = Mathf.FloorToInt(slider.value + 0.5f);
+			UpdateHandle(currentType, newType);
+			currentType = newType;
 		}
 
 		public void _SwitchType() {
