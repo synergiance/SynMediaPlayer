@@ -36,6 +36,7 @@ namespace Synergiance.MediaPlayer.UI {
 			if (aspectRatioNames == null) LogWarning("Aspect ratio names are missing! Unable to display aspect ratio anywhere!", this);
 			if (aspectRatios != null && aspectRatioNames != null && aspectRatios.Length != aspectRatioNames.Length)
 				LogWarning("Aspect ratio name list should be the same length as aspect ratio list!", this);
+			if (!mediaPlayer) Log("Media player not set, no security will be enabled!", this);
 			if (!aspectSlider) return;
 			initialized = true;
 			int currentType = aspectSlider.CurrentType;
@@ -47,6 +48,7 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		public void _SwitchAspect() {
+			Initialize();
 			if (mediaPlayer != null && mediaPlayer.IsLocked && !mediaPlayer.HasPermissions) {
 				LogError("No permission to set ratio!", this);
 				aspectSlider._SetType(currentAspect);
@@ -83,6 +85,7 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		public override void OnDeserialization() {
+			Initialize();
 			SwitchAspectInternal(currentAspect);
 			aspectSlider._SetType(currentAspect);
 		}
