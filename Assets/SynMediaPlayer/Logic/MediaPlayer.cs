@@ -180,12 +180,12 @@ namespace Synergiance.MediaPlayer {
 		private ushort localVersionMajor =  1; // Major version number
 		private ushort localVersionMinor =  0; // Minor version number
 		private ushort localVersionPatch =  0; // Patch version number
-		private ushort localVersionBeta  =  9; // Beta number
+		private ushort localVersionBeta  = 10; // Beta number
 
-		private ushort worldVersionMajor =  1; // Major version number
-		private ushort worldVersionMinor =  0; // Minor version number
-		private ushort worldVersionPatch =  0; // Patch version number
-		private ushort worldVersionBeta  =  9; // Beta number
+		private ushort worldVersionMajor; // Major version number
+		private ushort worldVersionMinor; // Minor version number
+		private ushort worldVersionPatch; // Patch version number
+		private ushort worldVersionBeta; // Beta number
 
 		private void Start() {
 			Initialize();
