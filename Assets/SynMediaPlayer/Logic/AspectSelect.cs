@@ -10,16 +10,26 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private SliderTypeSelect aspectSlider;
 		[SerializeField] private MultiText aspectText;
 		[SerializeField] private Material screenMaterial;
+		[SerializeField] private MediaPlayer mediaPlayer;
 		[SerializeField] private string propertyName = "_Ratio";
 		[SerializeField] private string[] aspectRatioNames;
 		[SerializeField] private float[] aspectRatios;
 		[SerializeField] private bool enableDebug;
 
+		[UdonSynced] private int currentAspect;
+
 		[HideInInspector] public int selectedAspect;
+
+		private bool initialized;
 
 		private string debugPrefix = "[<color=#2080C0>SMP Aspect Select</color>] ";
 
 		void Start() {
+			Initialize();
+		}
+
+		private void Initialize() {
+			if (initialized) return;
 			if (!screenMaterial) LogWarning("Screen material missing!", this);
 			if (!aspectText) LogWarning("Aspect Text Field not set!", this);
 			if (aspectRatios == null) LogError("Aspect ratio list is missing! This behaviour will not function", this);
@@ -27,11 +37,27 @@ namespace Synergiance.MediaPlayer.UI {
 			if (aspectRatios != null && aspectRatioNames != null && aspectRatios.Length != aspectRatioNames.Length)
 				LogWarning("Aspect ratio name list should be the same length as aspect ratio list!", this);
 			if (!aspectSlider) return;
-			SwitchAspectInternal(aspectSlider.CurrentType);
+			initialized = true;
+			int currentType = aspectSlider.CurrentType;
+			SwitchAspectInternal(currentType);
+			if (!Networking.IsMaster) return;
+			currentAspect = currentType;
+			Log("Syncing", this);
+			RequestSerialization();
 		}
 
 		public void _SwitchAspect() {
+			if (mediaPlayer != null && mediaPlayer.IsLocked && !mediaPlayer.HasPermissions) {
+				LogError("No permission to set ratio!", this);
+				aspectSlider._SetType(currentAspect);
+				return;
+			}
 			SwitchAspectInternal(selectedAspect);
+			currentAspect = selectedAspect;
+			VRCPlayerApi localPlayer = Networking.LocalPlayer;
+			Networking.SetOwner(localPlayer, gameObject);
+			Log("Syncing", this);
+			RequestSerialization();
 		}
 
 		private void SwitchAspectInternal(int newAspect) {
@@ -54,6 +80,11 @@ namespace Synergiance.MediaPlayer.UI {
 			if (aspectRatioNames == null) return;
 			if (newAspect > aspectRatioNames.Length) return;
 			aspectText._SetText(aspectRatioNames[newAspect]);
+		}
+
+		public override void OnDeserialization() {
+			SwitchAspectInternal(currentAspect);
+			aspectSlider._SetType(currentAspect);
 		}
 
 		// ----------------- Debug Helper Methods -----------------
