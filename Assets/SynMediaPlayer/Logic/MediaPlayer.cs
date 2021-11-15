@@ -180,7 +180,7 @@ namespace Synergiance.MediaPlayer {
 		private ushort localVersionMajor =  1; // Major version number
 		private ushort localVersionMinor =  0; // Minor version number
 		private ushort localVersionPatch =  0; // Patch version number
-		private ushort localVersionBeta  = 10; // Beta number
+		private ushort localVersionBeta  = 11; // Beta number
 
 		private ushort worldVersionMajor; // Major version number
 		private ushort worldVersionMinor; // Minor version number
@@ -948,6 +948,7 @@ namespace Synergiance.MediaPlayer {
 			if (isReloadingVideo && Time.time > lastVideoLoadTime + videoLoadCooldown) {
 				Log("Initiating automatic reload", this);
 				SetPlayerStatusText("Reloading Video");
+				retryCount++;
 				SetVideoURLFromLocal();
 			}
 			if (!playerReady && !isAutomaticRetry && retryCount == 0 && !localURL.Equals(VRCUrl.Empty) && Time.time > lastVideoLoadTime + missedLoadTimeout) {
@@ -1334,15 +1335,17 @@ namespace Synergiance.MediaPlayer {
 						Log("Attempting to load with stream player", this);
 						if (Networking.IsOwner(gameObject)) SwitchPlayer(1);
 						else SetPlayerID(1);
-					} else {
-						retryCount++;
 					}
+					retryCount++;
 					Log("Retrying load (" + retryCount + " of " + numberOfRetries + ")", this);
 					isAutomaticRetry = true;
 					ReloadVideoInternal();
 					return;
-				} else {
+				} else if (retryCount <= numberOfRetries) {
 					Log("Not retrying, retry limit reached", this);
+					retryCount++;
+				} else {
+					LogVerbose("Not retrying, video limit exceeded", this);
 				}
 			} else {
 				Log("Not retrying, automatic retries disabled", this);
@@ -1658,10 +1661,13 @@ namespace Synergiance.MediaPlayer {
 			str += ", Paused Time: " + pausedTime.ToString("N3");
 			str += ", Reference Playhead: " + referencePlayhead.ToString("N3");
 			str += ", Is Playing: " + isPlaying;
+			str += ", Network Playing: " + remoteIsPlaying;
 			str += "\nURL Valid: " + urlValid;
 			str += ", Player Ready: " + playerReady;
 			str += ", Is Loading: " + isLoading;
 			str += ", Time Since Video Load: " + (uTime - lastVideoLoadTime).ToString("N3");
+			str += ", Network Video URL: " + (remoteURL == null ? "<Null>" : remoteURL.ToString());
+			str += ", Network Queue URL:" + (remoteQueueURL == null ? "<Null>" : remoteQueueURL.ToString());
 			str += "\nIs Automatic Retry: " + isAutomaticRetry;
 			str += ", Retry Count: " + retryCount;
 			str += ", Is Reloading Video: " + isReloadingVideo;
@@ -1699,6 +1705,8 @@ namespace Synergiance.MediaPlayer {
 			diagnosticLog = new string[(int)(diagnosticPeriod / diagnosticDelay)];
 			currentDiagLog = 0;
 			diagnosticLog[currentDiagLog] = "--- Begin SMP Diagnostic Log ---\n";
+			diagnosticLog[currentDiagLog] += "\nSMP Version: " + ToVersionString(localVersionMajor, localVersionMinor, localVersionPatch, localVersionBeta) + "\n";
+			diagnosticLog[currentDiagLog] += "Network SMP Version: " + ToVersionString(worldVersionMajor, worldVersionMinor, worldVersionPatch, worldVersionBeta) + "\n";
 			isLoggingDiagnostics = true;
 			diagnosticEnd = Time.time + diagnosticPeriod;
 		}
