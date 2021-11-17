@@ -1124,7 +1124,7 @@ namespace Synergiance.MediaPlayer {
 			if (isResync) return;
 			if (Time.time - lastResyncTime >= resyncEvery) SoftResync();
 			if (Time.time - lastCheckTime < checkSyncEvery) return;
-			BlackOutInternal(referencePlayhead >= 0 && absDeviation > deviationTolerance * 2);
+			BlackOutInternal(!waitForNextNetworkSync && Time.time - resyncPauseAt >= pauseResyncFor && referencePlayhead >= 0 && absDeviation > deviationTolerance * 2);
 			if (Time.time - resyncPauseAt < pauseResyncFor) return;
 			lastCheckTime = Time.time;
 			if (mediaPlayers.IsPlaying) {
@@ -1283,7 +1283,7 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 			bool isReallyStream = Single.IsNaN(duration) || Single.IsInfinity(duration);
-			BlackOutInternal(!isReallyStream);
+			BlackOutInternal(!waitForNextNetworkSync && !isReallyStream);
 			if (isStream != isReallyStream) {
 				isStream = isReallyStream;
 				UpdateUICallback();
@@ -1312,7 +1312,7 @@ namespace Synergiance.MediaPlayer {
 			if (hasCallback) callback.SendCustomEvent("_RelayVideoEnd");
 			if (isStream) return;
 			SeekInternal(0);
-			BlackOutInternal(true);
+			BlackOutInternal(!Loop);
 			mediaPlayers.ShowPlaceholder = true;
 			hasReachedEnd = true;
 			// Finish video callback?
@@ -1682,7 +1682,8 @@ namespace Synergiance.MediaPlayer {
 			str += "\nIs Resync: " + isResync;
 			str += ", Post Resync: " + postResync;
 			str += ", Deviation: " + deviation.ToString("N3");
-			str += ", Time Since Last Check: " + (uTime - lastCheckTime).ToString("N3");
+			str += ", Last Check: " + (uTime - lastCheckTime).ToString("N3");
+			str += ", Wait For Network: " + waitForNextNetworkSync;
 			str += "\nTime Since Resync: " + (uTime - lastResyncTime).ToString("N3");
 			str += ", Post Resync Ends In: " + Mathf.Max(postResyncEndsAt - uTime, 0).ToString("N3");
 			str += ", Time Since Resync Pause: " + (uTime - resyncPauseAt).ToString("N3");
