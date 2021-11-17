@@ -514,7 +514,8 @@ namespace Synergiance.MediaPlayer {
 				if (Mathf.Abs(mediaPlayers.Time - playerTimeAtSeek) < 0.5f) return;
 			}
 			if (!isPlaying) return;
-			seekBar._SetVal(mediaPlayers.Time / Mathf.Max(0.1f, mediaPlayers.Duration));
+			bool preRoll = referencePlayhead < 0 && !mediaPlayers.IsPlaying || videoIsPreRolling || videoHasPreRolled;
+			seekBar._SetVal(preRoll ? 0.0f : mediaPlayers.Time / Mathf.Max(0.1f, mediaPlayers.Duration));
 		}
 
 		// If anything is playing, unload it, flush buffers
@@ -1305,6 +1306,13 @@ namespace Synergiance.MediaPlayer {
 			LogVerbose("Relay Video End", this);
 			Initialize();
 			if (!isActive) return;
+			if (Time.time - startTime < 0 && videoIsPreRolling) {
+				LogVerbose("Pre-roll complete, resetting to beginning", this);
+				mediaPlayers._Pause();
+				mediaPlayers.Time = 0;
+				videoIsPreRolling = false;
+				return;
+			}
 			isPlaying = false;
 			if (Networking.IsOwner(gameObject)) SetPlaying(false);
 			SetPlayerStatusText("Stopped");
@@ -1684,6 +1692,7 @@ namespace Synergiance.MediaPlayer {
 			str += ", Deviation: " + deviation.ToString("N3");
 			str += ", Last Check: " + (uTime - lastCheckTime).ToString("N3");
 			str += ", Wait For Network: " + waitForNextNetworkSync;
+			str += ", " + (isBlackingOut ? "" : "Not ") + "Blacked Out";
 			str += "\nTime Since Resync: " + (uTime - lastResyncTime).ToString("N3");
 			str += ", Post Resync Ends In: " + Mathf.Max(postResyncEndsAt - uTime, 0).ToString("N3");
 			str += ", Time Since Resync Pause: " + (uTime - resyncPauseAt).ToString("N3");
