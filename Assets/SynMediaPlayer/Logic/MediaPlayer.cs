@@ -514,7 +514,7 @@ namespace Synergiance.MediaPlayer {
 				if (Mathf.Abs(mediaPlayers.Time - playerTimeAtSeek) < 0.5f) return;
 			}
 			if (!isPlaying) return;
-			bool preRoll = referencePlayhead < 0 && !mediaPlayers.IsPlaying || videoIsPreRolling || videoHasPreRolled;
+			bool preRoll = referencePlayhead < 0 && !mediaPlayers.IsPlaying || !queueVideoReady && (videoIsPreRolling || videoHasPreRolled);
 			seekBar._SetVal(preRoll ? 0.0f : mediaPlayers.Time / Mathf.Max(0.1f, mediaPlayers.Duration));
 		}
 
