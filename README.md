@@ -12,9 +12,10 @@ An advanced Udon based media player for VRChat.
 - Retry loading video button
 - Looping support
 - Interactive seek bar
+- Aspect ratio selection
 
 # How to set up
-1. Download the unity package from the releases page (Currently in pre-release)
+1. Download the unity package from the releases page
 2. Before dragging anything into your scene, add a TextureWorkaround component to a gameobject high in your scene hierarchy (above where you'll be placing the screen)
 3. Add the 5 render textures to the TextureWorkaround component's texture array, and disable the gameobject.
 4. Drag in the SMP Video Players prefab (any one) anywhere
@@ -23,8 +24,6 @@ An advanced Udon based media player for VRChat.
 7. Drag the video player object to the SMP Video Players callback slot
 8. Drag the SMP Video Players object to the video player's media players slot
 9. You may disable debug logging and diagnostics or enable them
-
-These steps will be simplified by the time SMP 1.0 releases
 
 # How to use this git repo
 1. Clone the repo to anyplace on your computer
