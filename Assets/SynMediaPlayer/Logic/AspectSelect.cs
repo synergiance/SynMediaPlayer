@@ -24,6 +24,8 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private string debugPrefix = "[<color=#2080C0>SMP Aspect Select</color>] ";
 
+		public int CurrentAspect => currentAspect;
+
 		void Start() {
 			Initialize();
 		}

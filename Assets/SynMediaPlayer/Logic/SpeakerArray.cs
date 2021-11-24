@@ -19,6 +19,13 @@ namespace Synergiance.MediaPlayer {
 		private bool initialized;
 		private bool isValid;
 
+		public int NumZones => isValid ? zoneNames.Length : 0;
+
+		public float Volume {
+			set => _SetVolume(value);
+			get => isValid? masterVolume : 0;
+		}
+
 		private string debugPrefix = "[<color=#27C048>Speaker Array</color>] ";
 
 		void Start() {
@@ -95,8 +102,8 @@ namespace Synergiance.MediaPlayer {
 			}
 		}
 
-		public int GetNumZones() { return isValid ? zoneNames.Length : 0; }
-		public float GetVolume() { return isValid ? masterVolume : 0; }
+		public int GetNumZones() { return NumZones; }
+		public float GetVolume() { return Volume; }
 		public float GetZoneVolume(int zone) { return isValid ? !singleZoneMode ? zone >= 0 && zone < zoneVolumes.Length ? zoneVolumes[zone] : 0 : 1 : 0; }
 		public int GetZoneIndex(string zoneName) { return Array.IndexOf(zoneNames, zoneName); }
 

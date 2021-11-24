@@ -15,6 +15,8 @@ namespace Synergiance.MediaPlayer.Helpers {
 
 		private bool stateInternal;
 
+		public bool State => stateInternal;
+
 		private void Start() {
 			SetState(state);
 		}

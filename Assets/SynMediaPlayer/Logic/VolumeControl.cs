@@ -28,6 +28,16 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private string debugPrefix = "[<color=#409080>SMP Volume Control</color>] ";
 
+		public bool IsMuted {
+			set => _SetMute(value);
+			get => isMuted;
+		}
+
+		public float Volume {
+			set => _SetVolume(value);
+			get => isMuted ? 0 : nonMutedVolume;
+		}
+
 		private void Start() {
 			Initialize();
 		}
@@ -51,7 +61,7 @@ namespace Synergiance.MediaPlayer.UI {
 		public void _SetVolume(float volume) {
 			Initialize();
 			SetVolumeInternal(volume);
-			SetVolumeSlider(volume);
+			SetVolumeSlider(isMuted ? 0 : volume);
 		}
 
 		public void _ToggleMute() {
