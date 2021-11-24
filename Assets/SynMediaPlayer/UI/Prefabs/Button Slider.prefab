@@ -121,7 +121,7 @@ PrefabInstance:
         type: 3}
       propertyPath: serializedProgramAsset
       value: 
-      objectReference: {fileID: 11400000, guid: 45cbbff20c8b3a64c9d22ad51eb54903,
+      objectReference: {fileID: 11400000, guid: 52b44b70a441a8c4caeaec8f59849738,
         type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2514ce3882e196b43898d14b960d8d36, type: 3}

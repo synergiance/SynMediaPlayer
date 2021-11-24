@@ -1,4 +1,5 @@
-﻿using UdonSharp;
+﻿using System;
+using UdonSharp;
 using UnityEngine;
 using VRC.SDK3.Components.Video;
 using VRC.SDK3.Video.Components.Base;
@@ -25,58 +26,60 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private UdonSharpBehaviour relayPoint;
 		[SerializeField] private int identifier;
 
-		public void _Play() { videoPlayer.Play(); }
-		public void _Pause() { videoPlayer.Pause(); }
-		public void _Stop() { videoPlayer.Stop(); }
-		public void _LoadURL(VRCUrl url) { videoPlayer.LoadURL(url); }
-		public void _PlayURL(VRCUrl url) { videoPlayer.PlayURL(url); }
-		public void _SetLoop(bool loop) { videoPlayer.Loop = loop; }
-		public void _SetTime(float time) { videoPlayer.SetTime(time); }
-		public void _SetVolume(float volume) { speaker.volume = volume; }
-		public bool GetLoop() { return videoPlayer.Loop; }
-		public float GetTime() { return videoPlayer.GetTime(); }
-		public float GetDuration() { return videoPlayer.GetDuration(); }
-		public float GetVolume() { return speaker.volume; }
-		public bool GetReady() { return videoPlayer.IsReady; }
-		public bool GetPlaying() { return videoPlayer.IsPlaying; }
-		public bool GetStream() { return isStream; }
-		public string GetName() { return playerName; }
-		public AudioSource GetSpeaker() { return speaker; }
+		private bool isValid;
+
+		private void Start() {
+			isValid = videoPlayer;
+		}
+
+		public void _Play() { if (isValid) videoPlayer.Play(); }
+		public void _Pause() { if (isValid) videoPlayer.Pause(); }
+		public void _Stop() { if (isValid) videoPlayer.Stop(); }
+		public void _LoadURL(VRCUrl url) { if (isValid) videoPlayer.LoadURL(url); }
+		public void _PlayURL(VRCUrl url) { if (isValid) videoPlayer.PlayURL(url); }
+
+		public bool Loop { set { if (isValid) videoPlayer.Loop = value; } get => isValid && videoPlayer.Loop; }
+		public float Volume { set { if (isValid) speaker.volume = value; } get => isValid ? speaker.volume : 0; }
+		public float Time { set { if (isValid) videoPlayer.SetTime(value); } get => isValid ? videoPlayer.GetTime() : 0; }
+		public float Duration => isValid ? videoPlayer.GetDuration() : 0;
+		public bool IsReady => isValid && videoPlayer.IsReady;
+		public bool IsPlaying => isValid && videoPlayer.IsPlaying;
+		public string PlayerName => playerName;
+		public bool IsStream => isStream;
+		public AudioSource Speaker => speaker;
+
+		private void SendRelayEvent(string eventName) {
+			relayPoint.SetProgramVariable("relayIdentifier", identifier);
+			relayPoint.SendCustomEvent(eventName);
+		}
 
 		public override void OnVideoEnd() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoEnd");
+			SendRelayEvent("_RelayVideoEnd");
 		}
 
 		public override void OnVideoReady() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoReady");
+			SendRelayEvent("_RelayVideoReady");
 		}
 
 		public override void OnVideoError(VideoError videoError) {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
 			relayPoint.SetProgramVariable("relayVideoError", videoError);
-			relayPoint.SendCustomEvent("_RelayVideoError");
+			SendRelayEvent("_RelayVideoError");
 		}
 
 		public override void OnVideoPlay() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoPlay");
+			SendRelayEvent("_RelayVideoPlay");
 		}
 
 		public override void OnVideoStart() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoStart");
+			SendRelayEvent("_RelayVideoStart");
 		}
 
 		public override void OnVideoLoop() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoLoop");
+			SendRelayEvent("_RelayVideoLoop");
 		}
 
 		public override void OnVideoPause() {
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent("_RelayVideoPause");
+			SendRelayEvent("_RelayVideoPause");
 		}
 	}
 }
