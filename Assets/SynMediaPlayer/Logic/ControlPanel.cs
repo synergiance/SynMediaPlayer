@@ -27,6 +27,7 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private InputField currentUrlField;
 		[SerializeField] private Text moderatorListField;
 		[SerializeField] private Text currentOwnerField;
+		[SerializeField] private Text playerVersionField;
 		[SerializeField] private bool combineStatusAndTime;
 		[SerializeField] private float updatesPerSecond = 5;
 		[SerializeField] private float reloadAvailableFor = 5;
@@ -66,6 +67,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private int hardQueueCap = 100;
 
 		private string debugPrefix = "[<color=#20C0A0>SMP Control Panel</color>] ";
+		private string smpVersionString = "SynMediaPlayer ";
 
 		void Start() {
 			Initialize();
@@ -89,6 +91,7 @@ namespace Synergiance.MediaPlayer.UI {
 			UpdateMethods();
 			RebuildModList();
 			UpdateModList();
+			if (isValid && playerVersionField) playerVersionField.text = smpVersionString + mediaPlayer.LocalVersion;
 		}
 
 		// This function is what will be called on first activation when the video player decides its right and
