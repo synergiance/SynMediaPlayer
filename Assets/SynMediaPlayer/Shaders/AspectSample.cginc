@@ -18,4 +18,20 @@ float4 sampleAspect(sampler2D tex, float2 uv, float aspectRatio, float nativeRat
 	return col;
 }
 
+float4 sampleAspectNoSmoothing(sampler2D tex, float2 uv, float aspectRatio, float nativeRatio) {
+	float ratio = aspectRatio / (abs(nativeRatio) > 0.0001 ? nativeRatio : 0.0001);
+	float2 aspectMod = abs(ratio) > 1 ? float2(1,ratio) * (ratio > 0 ? 1 : -1) : float2(1/ratio,1);
+	uv *= aspectMod;
+	float screenMask = 1;
+	uv += (1 - aspectMod) * 0.5;
+	screenMask *= uv.x > 0 ? 1 : 0;
+	screenMask *= uv.y > 0 ? 1 : 0;
+	screenMask *= uv.x > 1 ? 0 : 1;
+	screenMask *= uv.y > 1 ? 0 : 1;
+	// sample the texture
+	float4 col = tex2D(tex, uv);
+	col.rgb *= screenMask;
+	return col;
+}
+
 #endif
