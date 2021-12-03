@@ -187,6 +187,8 @@ namespace Synergiance.MediaPlayer {
 		private ushort worldVersionPatch; // Patch version number
 		private ushort worldVersionBeta; // Beta number
 
+		private string playerBranch = ""; // This is set if we're working on a different branch
+
 		private void Start() {
 			Initialize();
 		}
@@ -474,6 +476,7 @@ namespace Synergiance.MediaPlayer {
 		public bool Active => isActive;
 		public string LocalVersion => ToVersionString(localVersionMajor, localVersionMinor, localVersionPatch, localVersionBeta);
 		public string WorldVersion => ToVersionString(worldVersionMajor, worldVersionMinor, worldVersionPatch, worldVersionBeta);
+		public string BuildString => string.IsNullOrWhiteSpace(playerBranch) ? LocalVersion : playerBranch;
 
 		public string GetStatus() { return playerStatus; } // Deprecated
 		public float GetTime() { return CurrentTime; } // Deprecated

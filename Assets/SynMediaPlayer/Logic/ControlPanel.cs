@@ -91,7 +91,7 @@ namespace Synergiance.MediaPlayer.UI {
 			UpdateMethods();
 			RebuildModList();
 			UpdateModList();
-			if (isValid && playerVersionField) playerVersionField.text = smpVersionString + mediaPlayer.LocalVersion;
+			if (isValid && playerVersionField) playerVersionField.text = smpVersionString + mediaPlayer.BuildString;
 		}
 
 		// This function is what will be called on first activation when the video player decides its right and
