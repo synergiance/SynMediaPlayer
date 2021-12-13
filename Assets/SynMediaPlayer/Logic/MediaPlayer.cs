@@ -187,7 +187,7 @@ namespace Synergiance.MediaPlayer {
 		private ushort worldVersionPatch; // Patch version number
 		private ushort worldVersionBeta; // Beta number
 
-		private string playerBranch = ""; // This is set if we're working on a different branch
+		private string playerBranch = "MultiUI"; // This is set if we're working on a different branch
 
 		private void Start() {
 			Initialize();
