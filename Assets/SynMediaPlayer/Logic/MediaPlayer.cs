@@ -179,13 +179,15 @@ namespace Synergiance.MediaPlayer {
 
 		private ushort localVersionMajor =  1; // Major version number
 		private ushort localVersionMinor =  0; // Minor version number
-		private ushort localVersionPatch =  0; // Patch version number
+		private ushort localVersionPatch =  1; // Patch version number
 		private ushort localVersionBeta  =  0; // Beta number
 
 		private ushort worldVersionMajor; // Major version number
 		private ushort worldVersionMinor; // Minor version number
 		private ushort worldVersionPatch; // Patch version number
 		private ushort worldVersionBeta; // Beta number
+
+		private string playerBranch = ""; // This is set if we're working on a different branch
 
 		private void Start() {
 			Initialize();
@@ -472,6 +474,9 @@ namespace Synergiance.MediaPlayer {
 		public bool IsSyncing => isSeeking || isResync || postResync;
 		public bool IsLoggingDiagnostics => isLoggingDiagnostics;
 		public bool Active => isActive;
+		public string LocalVersion => ToVersionString(localVersionMajor, localVersionMinor, localVersionPatch, localVersionBeta);
+		public string WorldVersion => ToVersionString(worldVersionMajor, worldVersionMinor, worldVersionPatch, worldVersionBeta);
+		public string BuildString => string.IsNullOrWhiteSpace(playerBranch) ? LocalVersion : playerBranch;
 
 		public string GetStatus() { return playerStatus; } // Deprecated
 		public float GetTime() { return CurrentTime; } // Deprecated
