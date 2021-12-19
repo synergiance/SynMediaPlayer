@@ -542,7 +542,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: nonMutedVolume
+      Data: volume
     - Name: $v
       Entry: 7
       Data: 37|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -569,10 +569,10 @@ MonoBehaviour:
       Data: SystemSingle
     - Name: symbolOriginalName
       Entry: 1
-      Data: nonMutedVolume
+      Data: volume
     - Name: symbolUniqueName
       Entry: 1
-      Data: nonMutedVolume
+      Data: volume
     - Name: symbolDefaultValue
       Entry: 6
       Data: 

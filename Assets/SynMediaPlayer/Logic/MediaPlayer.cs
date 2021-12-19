@@ -406,7 +406,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions) return;
-			seekBar._SetVal(time / mediaPlayers.Duration);
+			seekBar._SetVal(time / mediaPlayers.Duration); // TODO: Move to Control Panel
 			SeekTo(time);
 		}
 
@@ -513,7 +513,7 @@ namespace Synergiance.MediaPlayer {
 			statisticsText.text = "Playback Time: " + timeStr + "\nStatus: " + playerStatus;
 		}
 
-		private void UpdateSeek() {
+		private void UpdateSeek() { // TODO: Move to control panel based seek bar
 			if (isSeeking) {
 				if (Time.time - lastSeekTime > seekPeriod) isSeeking = false;
 				if (Mathf.Abs(mediaPlayers.Time - playerTimeAtSeek) < 0.5f) return;
@@ -1569,7 +1569,7 @@ namespace Synergiance.MediaPlayer {
 			mediaPlayers._SwitchPlayer(id);
 			if (isPlaying) ReloadVideoInternal();
 			isStream = mediaPlayers.IsStream;
-			seekBar._SetEnabled(!isStream);
+			seekBar._SetEnabled(!isStream); // TODO: Move this to the new control panel
 		}
 
 		// Reload video properly
@@ -1824,7 +1824,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void SetLockStateInternal(bool lockState) {
 			masterLock = lockState;
-			if (seekBar) seekBar._SetLocked(masterLock && !hasPermissions);
+			if (seekBar) seekBar._SetLocked(masterLock && !hasPermissions); // TODO: Move this to the new control panel
 			if (hasCallback) callback.SendCustomEvent(masterLock ? "_PlayerLocked" : "_PlayerUnlocked");
 		}
 

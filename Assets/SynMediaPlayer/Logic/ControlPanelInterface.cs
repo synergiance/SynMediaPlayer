@@ -14,7 +14,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private bool verboseDebug;
 		[SerializeField] private bool loadGapless;
 		[SerializeField] private bool autoplay = true;
-		[Range(5,50)] [SerializeField] private int maxVideosInQueue = 20;
+		[Range(5, 50)] [SerializeField] private int maxVideosInQueue = 20;
 
 		[SerializeField] private VRCUrl[] defaultPlaylist;
 
@@ -41,11 +41,56 @@ namespace Synergiance.MediaPlayer {
 		private string[] modList;
 		private int[] modIdList;
 
+		private string playerStatus;
+		private float time;
+		private float duration;
+		private bool isPlaying;
+		private bool isReady;
+		private bool isLooping;
+
 		private ControlPanel[] controlPanels;
 
 		private int hardQueueCap = 100;
 
-		private string debugPrefix = "[<color=#20C0A0>SMP Control Panel</color>] ";
+		private string debugPrefix = "[<color=#20C0A0>SMP Control Panel Interface</color>] ";
+
+		public int MediaType => mediaPlayer.MediaType; // TODO: Add caching variable
+		public bool Active { set; get; } // TODO: Implement
+		public bool IsLocked { set; get; } // TODO: Implement
+		public float Duration => mediaPlayer.Duration; // TODO: Add caching variable
+		public bool Ready => mediaPlayer.Ready; // TODO: Add caching variable
+		public bool IsPlaying => mediaPlayer.IsPlaying; // TODO: Add caching variable
+		public string Status => playerStatus;
+		public VRCPlayerApi CurrentOwner => Networking.GetOwner(mediaPlayer.gameObject); // TODO: Add caching variable
+		public string[] ModList => modList;
+		public int[] ModIdList => modIdList;
+
+		/// <summary>
+		/// Current volume
+		/// </summary>
+		public float Volume { get; private set; }
+
+		/// <summary>
+		/// Mute status
+		/// </summary>
+		public bool Mute { get; private set; }
+
+		/// <summary>
+		/// Loop accessor and modifier
+		/// </summary>
+		public bool Loop {
+			set {
+				
+				Initialize();
+				if (!isValid) {
+					LogInvalid();
+					return;
+				}
+				mediaPlayer._SetLooping(isLooping = value);
+				// TODO: Update UI
+			}
+			get => isLooping; // TODO: This will need to be set
+		}
 
 		void Start() {
 			Initialize();
@@ -95,15 +140,103 @@ namespace Synergiance.MediaPlayer {
 			UpdateCurrentOwner();
 		}
 
-		public void _SetVolume() {
-			/* Commented out and will be reformed for Multi UI
+		/// <summary>
+		/// If playing a stream, this will send a <c>_Stop</c> command if the
+		/// stream is playing or a <c>_Play</c> command if not. Otherwise, this
+		/// will send a <c>_PlayPause</c> command.
+		/// </summary>
+		public void _PlayPauseStop() {
 			Initialize();
 			if (!isValid) {
 				LogInvalid();
 				return;
 			}
-			mediaPlayer._SetVolume(volumeVal);
-			*/
+			mediaType = mediaPlayer.MediaType;
+			if (mediaType == 0) { // Media Type 0 is video
+				mediaPlayer._PlayPause();
+			} else { // Media Type 1-2 is stream
+				if (mediaPlayer.IsPlaying) mediaPlayer._Stop();
+				else mediaPlayer._Play();
+			}
+			isPlaying = mediaPlayer.IsPlaying;
+			SendRefresh("Playback");
+			//UpdatePlayPauseStopButtons();
+		}
+
+		/// <summary>
+		/// Sends the <c>_PlayPause</c> command to the video player
+		/// </summary>
+		public void _PlayPause() {
+			Initialize();
+			if (!isValid) {
+				LogInvalid();
+				return;
+			}
+			mediaPlayer._PlayPause();
+			isPlaying = mediaPlayer.IsPlaying;
+			SendRefresh("Playback");
+			//UpdatePlayPauseStopButtons();
+		}
+
+		/// <summary>
+		/// Sends the <c>_Play</c> command to the video player
+		/// </summary>
+		public void _Play() {
+			Initialize();
+			if (!isValid) {
+				LogInvalid();
+				return;
+			}
+			mediaPlayer._Play();
+			isPlaying = mediaPlayer.IsPlaying;
+			SendRefresh("Playback");
+			//UpdatePlayPauseStopButtons();
+		}
+
+		/// <summary>
+		/// Sends the <c>_Pause</c> command to the video player
+		/// </summary>
+		public void _Pause() {
+			Initialize();
+			if (!isValid) {
+				LogInvalid();
+				return;
+			}
+			mediaPlayer._Pause();
+			isPlaying = mediaPlayer.IsPlaying;
+			SendRefresh("Playback");
+			//UpdatePlayPauseStopButtons();
+		}
+
+		/// <summary>
+		/// Sends the <c>_Stop</c> command to the video player
+		/// </summary>
+		public void _Stop() {
+			Initialize();
+			if (!isValid) {
+				LogInvalid();
+				return;
+			}
+			mediaPlayer._Stop();
+			isPlaying = mediaPlayer.IsPlaying;
+			SendRefresh("Playback");
+			//UpdatePlayPauseStopButtons();
+		}
+
+		public void _SetVolume(float volume, bool mute) {
+			Initialize();
+			if (!isValid) {
+				LogInvalid();
+				return;
+			}
+			Volume = volume;
+			Mute = mute;
+			SetVolume();
+		}
+
+		private void SetVolume() {
+			mediaPlayer._SetVolume(Mute ? 0.0f : Volume);
+			SendRefresh("Volume");
 		}
 
 		public void _ClickDiagnostics() {
@@ -246,9 +379,18 @@ namespace Synergiance.MediaPlayer {
 			LogVerbose("Suppress Security", this);
 			mediaPlayer._SuppressSecurity(Time.time);
 		}
-		
+
+		private void UpdateUI() {
+			SendCallbackEvent("_RefreshAll");
+		}
+
 		// --------------------- API Methods ----------------------
 
+		/// <summary>
+		/// Registers a control panel so it can receive updates.
+		/// </summary>
+		/// <param name="panel">The <c>ControlPanel</c> that will be registered.</param>
+		/// <returns>The registration index.</returns>
 		public int RegisterPanel(ControlPanel panel) {
 			if (controlPanels == null || controlPanels.Length <= 0) {
 				controlPanels = new ControlPanel[1];
@@ -603,6 +745,20 @@ namespace Synergiance.MediaPlayer {
 
 		// ------------------- Callback Methods -------------------
 
+		private void SendRefresh(string elements) {
+			LogVerbose("Sending refresh method for elements: " + elements, this);
+			foreach (ControlPanel controlPanel in controlPanels) {
+				controlPanel._Refresh(elements);
+			}
+		}
+
+		private void SendCallbackEvent(string eventName) {
+			LogVerbose("Sending event to all callbacks: " + eventName, this);
+			foreach (ControlPanel controlPanel in controlPanels) {
+				controlPanel.SendCustomEvent(eventName);
+			}
+		}
+
 		public override void OnPlayerJoined(VRCPlayerApi player) {
 			Log("On Player Joined", this);
 			if (player == null || !player.IsValid()) return;
@@ -639,6 +795,7 @@ namespace Synergiance.MediaPlayer {
 			// Status text has been sent to us
 			Log("Set Status Text", this);
 			Initialize();
+			playerStatus = statusText;
 			if (isValid) {
 				bool isPlaying = mediaPlayer.IsPlaying;
 				hideTime = !string.Equals(statusText, "Playing") &&
@@ -684,14 +841,14 @@ namespace Synergiance.MediaPlayer {
 			Log("Relay Video Loading", this);
 			Initialize();
 			VRCUrl currentURL = mediaPlayer.CurrentUrl;
-			//UpdateAllButtons();
+			UpdateUI();
 		}
 
 		public void _RelayVideoReady() {
 			// Video has finished loading
 			Log("Relay Video Ready", this);
 			Initialize();
-			//UpdateAllButtons();
+			UpdateUI();
 			UpdateUrls();
 		}
 
@@ -706,21 +863,21 @@ namespace Synergiance.MediaPlayer {
 			// Video has started playing
 			Log("Relay Video Start", this);
 			Initialize();
-			//UpdateAllButtons();
+			UpdateUI();
 		}
 
 		public void _RelayVideoPlay() {
 			// Video has resumed playing
 			Log("Relay Video Play", this);
 			Initialize();
-			//UpdateAllButtons();
+			UpdateUI();
 		}
 
 		public void _RelayVideoPause() {
 			// Video has paused
 			Log("Relay Video Pause", this);
 			Initialize();
-			//UpdateAllButtons();
+			UpdateUI();
 		}
 
 		public void _RelayVideoEnd() {
@@ -728,7 +885,7 @@ namespace Synergiance.MediaPlayer {
 			Log("Relay Video End", this);
 			reachedEnd = true;
 			Initialize();
-			//UpdateAllButtons();
+			UpdateUI();
 			AdvanceQueue();
 		}
 
@@ -737,7 +894,7 @@ namespace Synergiance.MediaPlayer {
 			Log("Relay Video Loop", this);
 			reachedEnd = false;
 			Initialize();
-			//UpdateAllButtons();
+			UpdateUI();
 		}
 
 		public void _RelayVideoNext() {
@@ -745,7 +902,7 @@ namespace Synergiance.MediaPlayer {
 			Log("Relay Video Next", this);
 			reachedEnd = false;
 			Initialize();
-			//UpdateAllButtons();
+			UpdateUI();
 			AdvanceQueue();
 			UpdateUrls();
 		}
@@ -754,14 +911,14 @@ namespace Synergiance.MediaPlayer {
 			// Queued video is beginning to load
 			Log("Relay Video Queue Loading", this);
 			Initialize();
-			//UpdateAllButtons();
+			UpdateUI();
 		}
 
 		public void _RelayVideoQueueReady() {
 			// Queued video has loaded
 			Log("Relay Video Queue Ready", this);
 			Initialize();
-			//UpdateAllButtons();
+			UpdateUI();
 		}
 
 		public void _RelayVideoQueueError() {

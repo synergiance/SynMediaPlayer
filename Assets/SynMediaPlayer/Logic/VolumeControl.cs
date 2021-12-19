@@ -1,4 +1,5 @@
 ﻿
+using System;
 using UdonSharp;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,11 +21,29 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private bool enableDebug;
 
 		private bool isMuted;
-		private float nonMutedVolume;
+		private float volume;
 		private bool hasCallback;
 		private bool isSettingControl;
 
 		private bool initialized;
+
+		public bool IsMuted {
+			get => isMuted;
+			set {
+				Initialize();
+				isMuted = value;
+				UpdateGraphics();
+			}
+		}
+
+		public float Volume {
+			get => volume;
+			set {
+				Initialize();
+				SetVolumeInternal(value);
+				SetVolumeSlider(value);
+			}
+		}
 
 		private string debugPrefix = "[<color=#409080>SMP Volume Control</color>] ";
 
@@ -41,6 +60,9 @@ namespace Synergiance.MediaPlayer.UI {
 			initialized = true;
 		}
 
+		/// <summary>
+		/// Callback method for when volume slider is dragged
+		/// </summary>
 		public void _DragVolume() {
 			if (isSettingControl) return;
 			Initialize();
@@ -48,10 +70,14 @@ namespace Synergiance.MediaPlayer.UI {
 			UpdateCallback();
 		}
 
+		/// <summary>
+		/// Sets volume
+		/// </summary>
+		/// <param name="volume">New volume value</param>
+		// ReSharper disable once ParameterHidesMember
+		[Obsolete("_SetVolume method is deprecated! Please use Volume field instead.")]
 		public void _SetVolume(float volume) {
-			Initialize();
-			SetVolumeInternal(volume);
-			SetVolumeSlider(volume);
+			Volume = volume;
 		}
 
 		public void _ToggleMute() {
@@ -65,11 +91,11 @@ namespace Synergiance.MediaPlayer.UI {
 			Log(isMuted ? "Muting" : "Unmuting", this);
 			UpdateCallback();
 			UpdateGraphics();
-			SetVolumeSlider(mute ? 0 : nonMutedVolume);
+			SetVolumeSlider(mute ? 0 : volume);
 		}
 
 		private void SetVolumeInternal(float volume) {
-			nonMutedVolume = volume;
+			volume = volume;
 			UpdateGraphics();
 		}
 
@@ -82,8 +108,8 @@ namespace Synergiance.MediaPlayer.UI {
 		private void UpdateGraphics() {
 			int state;
 			if (isMuted) state = 0;
-			else if (nonMutedVolume == 0) state = 1;
-			else if (nonMutedVolume <= 0.5) state = 2;
+			else if (volume == 0) state = 1;
+			else if (volume <= 0.5) state = 2;
 			else state = 3;
 			if (state == muteButton.GetCurrentMode()) return;
 			muteButton._SetMode(state);
@@ -92,13 +118,13 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private void UpdateCallback() {
 			if (!hasCallback) return;
-			callback.SetProgramVariable(callbackVar, isMuted ? 0.0f : nonMutedVolume);
+			callback.SetProgramVariable(callbackVar, isMuted ? 0.0f : volume);
 			callback.SendCustomEvent(callbackMethod);
 		}
 
 		// ----------------- Debug Helper Methods -----------------
-		private void Log(string message, Object context) { if (enableDebug) Debug.Log(debugPrefix + message, context); }
-		private void LogWarning(string message, Object context) { Debug.LogWarning(debugPrefix + message, context); }
-		private void LogError(string message, Object context) { Debug.LogError(debugPrefix + message, context); }
+		private void Log(string message, UnityEngine.Object context) { if (enableDebug) Debug.Log(debugPrefix + message, context); }
+		private void LogWarning(string message, UnityEngine.Object context) { Debug.LogWarning(debugPrefix + message, context); }
+		private void LogError(string message, UnityEngine.Object context) { Debug.LogError(debugPrefix + message, context); }
 	}
 }
