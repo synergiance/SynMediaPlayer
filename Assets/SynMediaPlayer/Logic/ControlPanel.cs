@@ -363,17 +363,24 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		private void UpdateTimeAndStatus() {
-			// TODO: Allow splitting time and status
-			string textToDisplay = "00:00:00/00:00:00";
+			if (combineStatusAndTime && hideTime) return;
+			string timeToDisplay = GenerateTimeString();
+			string statusToDisplay = status;
+			if (timeField) timeField._SetText(timeToDisplay);
+			if (combineStatusAndTime) statusToDisplay = timeToDisplay;
+			if (statusField) statusField._SetText(statusToDisplay);
+		}
+
+		private string GenerateTimeString() {
+			string timeString = "00:00:00/00:00:00";
 			if (isValid) {
-				if (hideTime) return;
-				float duration = mediaPlayerInterface.Duration;
-				float currentTime = mediaPlayer.CurrentTime;
-				textToDisplay = FormatTime(currentTime);
-				if (Single.IsNaN(duration) || Single.IsInfinity(duration)) textToDisplay = "Live";
-				else if (duration > 0.01f) textToDisplay += "/" + FormatTime(duration);
+				duration = mediaPlayerInterface.Duration;
+				time = mediaPlayer.CurrentTime;
+				timeString = FormatTime(time);
+				if (Single.IsNaN(duration) || Single.IsInfinity(duration)) timeString = "Live";
+				else if (duration > 0.01f) timeString += "/" + FormatTime(duration);
 			}
-			statusField._SetText(textToDisplay);
+			return timeString;
 		}
 
 		private void UpdateSeek() {
