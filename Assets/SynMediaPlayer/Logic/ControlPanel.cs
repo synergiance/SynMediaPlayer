@@ -363,8 +363,7 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		private void UpdateTimeAndStatus() {
-			if (combineStatusAndTime && hideTime) return;
-			string timeToDisplay = GenerateTimeString();
+			string timeToDisplay = combineStatusAndTime && hideTime ? "" : GenerateTimeString();
 			string statusToDisplay = status;
 			if (combineStatusAndTime) {
 				if (hideTime) timeToDisplay = statusToDisplay;
