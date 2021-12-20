@@ -372,14 +372,12 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		private string GenerateTimeString() {
-			string timeString = "00:00:00/00:00:00";
-			if (isValid) {
-				duration = mediaPlayerInterface.Duration;
-				time = mediaPlayer.CurrentTime;
-				timeString = FormatTime(time);
-				if (Single.IsNaN(duration) || Single.IsInfinity(duration)) timeString = "Live";
-				else if (duration > 0.01f) timeString += "/" + FormatTime(duration);
-			}
+			if (!isValid) return "00:00:00/00:00:00";
+			duration = mediaPlayerInterface.Duration;
+			time = mediaPlayerInterface.CurrentTime;
+			string timeString = FormatTime(time);
+			if (Single.IsNaN(duration) || Single.IsInfinity(duration)) timeString = "Live";
+			else if (duration > 0.01f) timeString += "/" + FormatTime(duration);
 			return timeString;
 		}
 

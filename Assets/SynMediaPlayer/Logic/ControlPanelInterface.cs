@@ -58,6 +58,7 @@ namespace Synergiance.MediaPlayer {
 		public bool Active { set; get; } // TODO: Implement
 		public bool IsLocked { set; get; } // TODO: Implement
 		public float Duration => mediaPlayer.Duration; // TODO: Add caching variable
+		public float CurrentTime => mediaPlayer.CurrentTime; // TODO: Add caching variable
 		public bool Ready => mediaPlayer.Ready; // TODO: Add caching variable
 		public bool IsPlaying => mediaPlayer.IsPlaying; // TODO: Add caching variable
 		public string Status => playerStatus;
