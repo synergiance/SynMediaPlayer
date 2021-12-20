@@ -366,15 +366,16 @@ namespace Synergiance.MediaPlayer.UI {
 			if (combineStatusAndTime && hideTime) return;
 			string timeToDisplay = GenerateTimeString();
 			string statusToDisplay = status;
+			if (combineStatusAndTime) {
+				if (hideTime) timeToDisplay = statusToDisplay;
+				statusToDisplay = timeToDisplay;
+			}
 			if (timeField) timeField._SetText(timeToDisplay);
-			if (combineStatusAndTime) statusToDisplay = timeToDisplay;
 			if (statusField) statusField._SetText(statusToDisplay);
 		}
 
 		private string GenerateTimeString() {
 			if (!isValid) return "00:00:00/00:00:00";
-			duration = mediaPlayerInterface.Duration;
-			time = mediaPlayerInterface.CurrentTime;
 			string timeString = FormatTime(time);
 			if (Single.IsNaN(duration) || Single.IsInfinity(duration)) timeString = "Live";
 			else if (duration > 0.01f) timeString += "/" + FormatTime(duration);
@@ -448,7 +449,13 @@ namespace Synergiance.MediaPlayer.UI {
 		/// </summary>
 		private void RefreshStatus() {
 			LogVerbose("Refresh Status", this);
-			string status = mediaPlayerInterface.Status;
+			if (isValid) status = mediaPlayerInterface.Status;
+			hideTime = !string.Equals(status, "Playing") &&
+			           !string.Equals(status, "Stabilizing") &&
+			           mediaPlayerInterface.MediaType == 0;
+			if (!mediaPlayerInterface.Ready) hideTime = true;
+			UpdateTimeAndStatus();
+			UpdateResyncButton();
 		}
 
 		/// <summary>
@@ -456,7 +463,8 @@ namespace Synergiance.MediaPlayer.UI {
 		/// </summary>
 		private void RefreshTime() {
 			LogVerbose("Refresh Time", this);
-			// TODO: Get time from mediaplayerinterface
+			if (isValid) time = mediaPlayerInterface.CurrentTime;
+			UpdateTimeAndStatus();
 		}
 
 		/// <summary>
@@ -464,7 +472,8 @@ namespace Synergiance.MediaPlayer.UI {
 		/// </summary>
 		private void RefreshDuration() {
 			LogVerbose("Refresh Duration", this);
-			float duration = mediaPlayerInterface.Duration;
+			if (isValid) duration = mediaPlayerInterface.Duration;
+			UpdateTimeAndStatus();
 		}
 
 		/// <summary>
@@ -530,6 +539,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		// ------------------- Callback Methods -------------------
 
+		[Obsolete("_SetStatusText is deprecated, use _Refresh instead!")]
 		public void _SetStatusText() {
 			// Status text has been sent to us
 			Log("Set Status Text", this);
