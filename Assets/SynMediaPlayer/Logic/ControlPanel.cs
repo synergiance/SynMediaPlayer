@@ -40,6 +40,7 @@ namespace Synergiance.MediaPlayer.UI {
 		[HideInInspector] public float volumeVal;
 		[HideInInspector] public int mediaTypeVal;
 		[HideInInspector] public string statusText;
+		[HideInInspector] public float seekVal; // Normalized seek bar value.  Used when seeking.
 
 		private bool initialized;
 		private bool isValid;
@@ -358,7 +359,9 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		private void UpdateSeek() {
-			// TODO: implement seek bar updating calculations
+			if (!seekControl) return;
+			float seekPos = mediaPlayerInterface.SeekPos;
+			seekControl._SetVal(seekPos);
 		}
 
 		private string FormatTime(float time) {
@@ -440,6 +443,12 @@ namespace Synergiance.MediaPlayer.UI {
 			LogVerbose("Refresh Time", this);
 			if (isValid) time = mediaPlayerInterface.CurrentTime;
 			UpdateTimeAndStatus();
+			UpdateSeek();
+		}
+
+		private void RefreshSeek() {
+			LogVerbose("Refresh Seek", this);
+			UpdateSeek();
 		}
 
 		/// <summary>
@@ -449,6 +458,7 @@ namespace Synergiance.MediaPlayer.UI {
 			LogVerbose("Refresh Duration", this);
 			if (isValid) duration = mediaPlayerInterface.Duration;
 			UpdateTimeAndStatus();
+			UpdateSeek();
 		}
 
 		/// <summary>
@@ -477,6 +487,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private void RefreshPermissions() {
 			LogVerbose("Refresh Permissions", this);
 			// TODO: Get permissions from mediaplayerinterface
+			// Seek bar too
 		}
 
 		/// <summary>

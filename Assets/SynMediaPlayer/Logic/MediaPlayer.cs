@@ -478,6 +478,7 @@ namespace Synergiance.MediaPlayer {
 		public int MediaType => isStream ? isLowLatency ? 2 : 1 : 0;
 		public bool IsPlaying { get { Initialize(); return isPlaying; } }
 		public bool IsSyncing => isSeeking || isResync || postResync;
+		public float SeekPos { get; private set; }
 		public bool IsLoggingDiagnostics => isLoggingDiagnostics;
 		public bool Active => isActive;
 		public string LocalVersion => ToVersionString(localVersionMajor, localVersionMinor, localVersionPatch, localVersionBeta);
@@ -1576,6 +1577,7 @@ namespace Synergiance.MediaPlayer {
 			if (isPlaying) ReloadVideoInternal();
 			isStream = mediaPlayers.IsStream;
 			seekBar._SetEnabled(!isStream); // TODO: Move this to the new control panel
+			// Callback for changing media type
 		}
 
 		// Reload video properly

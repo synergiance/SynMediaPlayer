@@ -93,8 +93,13 @@ namespace Synergiance.MediaPlayer {
 		} // TODO: Add caching variable
 		public float Duration => mediaPlayer.Duration; // TODO: Add caching variable
 		public float CurrentTime => mediaPlayer.CurrentTime; // TODO: Add caching variable
+		public float PreciseTime => mediaPlayer.PreciseTime; // TODO: Add caching variable
 		public bool Ready => mediaPlayer.Ready; // TODO: Add caching variable
 		public bool IsPlaying => mediaPlayer.IsPlaying; // TODO: Add caching variable
+		public bool IsSyncing => mediaPlayer.IsSyncing; // TODO: Add caching variable
+		public float SeekPos { get; private set; } // Normalized seek position
+		public bool SeekEnable { get; private set; } // Seek bar enabled
+		public bool SeekLock { get; private set; } // Seek bar locked
 		public string Status => playerStatus;
 		public VRCPlayerApi CurrentOwner => Networking.GetOwner(mediaPlayer.gameObject); // TODO: Add caching variable
 		public string[] ModList => modList;
@@ -343,19 +348,16 @@ namespace Synergiance.MediaPlayer {
 			}
 			if (url == null || string.IsNullOrWhiteSpace(url.ToString())) {
 				LogError("URL is empty!", this);
-				//UpdateMediaTypeSlider();
+				SendRefresh("MediaType");
 				return;
 			}
 			CancelDefaultPlaylist();
 			ClearQueueInternal();
-			//int loadedType = mediaType;
 			Log("Load URL: " + url.ToString(), this);
-			// TODO: Callback for emptying URL field?
-			// TODO: Callback for mediaType update
-			//loadedType = mediaPlayer._LoadURLAs(url, mediaType);
-			//if (loadedType == mediaType) return;
-			//mediaType = loadedType;
-			//UpdateMediaTypeSlider();
+			int loadedType = mediaPlayer._LoadURLAs(url, mediaType);
+			if (loadedType == mediaType) return;
+			mediaType = loadedType;
+			SendRefresh("MediaType");
 		}
 
 		private void LogInvalid() {
@@ -873,6 +875,11 @@ namespace Synergiance.MediaPlayer {
 			}
 		}
 
+		public void _RefreshSeek() {
+			SeekPos = mediaPlayer.SeekPos;
+			SendRefresh("Time");
+		}
+
 		public void _RecheckVideoPlayer() {
 			Log("Recheck Video Player", this);
 			//UpdateAllButtons();
@@ -895,6 +902,7 @@ namespace Synergiance.MediaPlayer {
 			// Video player has been unlocked
 			Log("Player Unlocked", this);
 			Initialize();
+			SeekLock = false;
 			//lockUnlockButton._SetMode(0);
 			//if (urlPlaceholderField) urlPlaceholderField.text = "Enter Video URL (Anyone)...";
 		}
