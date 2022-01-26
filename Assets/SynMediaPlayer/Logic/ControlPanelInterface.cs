@@ -55,8 +55,42 @@ namespace Synergiance.MediaPlayer {
 		private string debugPrefix = "[<color=#20C0A0>SMP Control Panel Interface</color>] ";
 
 		public int MediaType => mediaPlayer.MediaType; // TODO: Add caching variable
-		public bool Active { set; get; } // TODO: Implement
-		public bool IsLocked { set; get; } // TODO: Implement
+
+		public bool Active {
+			set {
+				Initialize();
+				if (!isValid) {
+					LogInvalid();
+					return;
+				}
+				if (value == mediaPlayer.Active) {
+					LogVerbose("Already " + (value ? "active" : "inactive") + ", ignoring request.", this);
+					return;
+				}
+				Log("Setting player state to " + (value ? "active" : "inactive"), this);
+				mediaPlayer._SetActive(value);
+				//UpdatePowerButton(); TODO: Callback?
+			}
+			get => mediaPlayer.Active;
+		} // TODO: Add caching variable
+
+		public bool IsLocked {
+			set {
+				Initialize();
+				if (!isValid) {
+					LogInvalid();
+					return;
+				}
+				if (value == mediaPlayer.IsLocked) {
+					LogVerbose("Already " + (value ? "locked" : "unlocked") + ", ignoring request.", this);
+					return;
+				}
+				// TODO: Refactor media player lock status
+				if (value) mediaPlayer._Lock();
+				else mediaPlayer._Unlock();
+			}
+			get => mediaPlayer.IsLocked;
+		} // TODO: Add caching variable
 		public float Duration => mediaPlayer.Duration; // TODO: Add caching variable
 		public float CurrentTime => mediaPlayer.CurrentTime; // TODO: Add caching variable
 		public bool Ready => mediaPlayer.Ready; // TODO: Add caching variable
@@ -236,7 +270,8 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void SetVolume() {
-			mediaPlayer._SetVolume(Mute ? 0.0f : Volume);
+			mediaPlayer._SetVolume(Volume);
+			mediaPlayer._SetMute(Mute);
 			SendRefresh("Volume");
 		}
 

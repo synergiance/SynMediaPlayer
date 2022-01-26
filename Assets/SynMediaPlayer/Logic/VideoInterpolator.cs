@@ -1,11 +1,8 @@
 ﻿
-using System;
 using UdonSharp;
 using UnityEngine;
 using VRC.SDK3.Components.Video;
-using VRC.SDK3.Video.Components.Base;
 using VRC.SDKBase;
-using VRC.Udon;
 
 namespace Synergiance.MediaPlayer {
 	public class VideoInterpolator : UdonSharpBehaviour {
@@ -16,6 +13,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField]  private string             placeholderPropName;
 		[SerializeField]  private bool               gaplessSupport;
 		[SerializeField]  private float              volume = 0.5f;
+		[SerializeField]  private bool               mute;
 		[SerializeField]  private int                activeID;
 		[SerializeField]  private bool               enableDebug;
 		[SerializeField]  private bool               disableBlackingOut;
@@ -51,8 +49,10 @@ namespace Synergiance.MediaPlayer {
 			for (int c = 0; c < mediaPlayers.Length; c++) {
 				interpolatorMaterial.SetFloat(interpolationProps[c], 0);
 				mediaPlayers[c].Volume = 0;
+				mediaPlayers[c].Mute = true;
 			}
 			mediaPlayers[activeID].Volume = volume;
+			mediaPlayers[activeID].Mute = mute;
 			interpolatorMaterial.SetFloat(interpolationProps[activeID], blackOutPlayer ? 0 : 1);
 			mediaPlayers[activeID].Loop = isLooping;
 			hasAudioCallback = audioCallback != null && !string.IsNullOrWhiteSpace(audioFieldName);
@@ -80,12 +80,14 @@ namespace Synergiance.MediaPlayer {
 				mediaPlayers[oldID]._Pause();
 				mediaPlayers[oldID]._Stop();
 				mediaPlayers[oldID].Volume = 0;
+				mediaPlayers[oldID].Mute = true;
 				interpolatorMaterial.SetFloat(interpolationProps[oldID], 0);
 			}
 			if (id >= 0) {
 				mediaPlayers[id].Loop = isLooping;
 				float visibility = blackOutPlayer ? 0 : 1;
 				mediaPlayers[id].Volume = volume * visibility;
+				mediaPlayers[id].Mute = mute || blackOutPlayer;
 				interpolatorMaterial.SetFloat(interpolationProps[id], visibility);
 				if (hasAudioCallback) audioCallback.SetProgramVariable(audioFieldName, mediaPlayers[id].Speaker);
 			}
@@ -173,7 +175,7 @@ namespace Synergiance.MediaPlayer {
 			if (!gaplessSupport) return;
 			if (GetPublicActiveID() != 0) return;
 			LogPlayer("Loading Next URL: " + (url != null ? url.ToString() : "<NULL"), nextID);
-			if (url == null || url == VRCUrl.Empty) {
+			if (url == null || url.Equals(VRCUrl.Empty)) {
 				gaplessLoaded = false;
 				return;
 			}
@@ -222,6 +224,15 @@ namespace Synergiance.MediaPlayer {
 			get => volume;
 		}
 
+		public bool Mute {
+			set {
+				Initialize();
+				mute = value;
+				mediaPlayers[activeID].Mute = mute || blackOutPlayer;
+			}
+			get => mute;
+		}
+
 		public bool BlackOutPlayer {
 			set {
 				if (blackOutPlayer == value) return;
@@ -230,6 +241,7 @@ namespace Synergiance.MediaPlayer {
 				float visibility = blackOutPlayer && !disableBlackingOut ? 0 : 1;
 				interpolatorMaterial.SetFloat(interpolationProps[activeID], visibility);
 				mediaPlayers[activeID].Volume = volume * visibility;
+				mediaPlayers[activeID].Mute = mute || blackOutPlayer;
 			}
 			get => blackOutPlayer;
 		}

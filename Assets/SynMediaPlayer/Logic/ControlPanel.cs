@@ -170,9 +170,7 @@ namespace Synergiance.MediaPlayer.UI {
 				LogInvalid();
 				return;
 			}
-			bool active = !mediaPlayer.Active;
-			Log("Setting active: " + active, this);
-			mediaPlayer._SetActive(active);
+			mediaPlayerInterface.Active = !mediaPlayerInterface.Active;
 			UpdatePowerButton();
 		}
 
@@ -198,8 +196,8 @@ namespace Synergiance.MediaPlayer.UI {
 				LogInvalid();
 				return;
 			}
-			if (mediaPlayer.IsLocked) mediaPlayer._Unlock();
-			else mediaPlayer._Lock();
+			mediaPlayerInterface.IsLocked = !mediaPlayerInterface.IsLocked;
+			// Update button?
 		}
 
 		/// <summary>

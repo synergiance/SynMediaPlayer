@@ -39,6 +39,7 @@ namespace Synergiance.MediaPlayer {
 
 		public bool Loop { set { if (isValid) videoPlayer.Loop = value; } get => isValid && videoPlayer.Loop; }
 		public float Volume { set { if (isValid) speaker.volume = value; } get => isValid ? speaker.volume : 0; }
+		public bool Mute { set { if (isValid) speaker.mute = value; } get => isValid && speaker.mute; }
 		public float Time { set { if (isValid) videoPlayer.SetTime(value); } get => isValid ? videoPlayer.GetTime() : 0; }
 		public float Duration => isValid ? videoPlayer.GetDuration() : 0;
 		public bool IsReady => isValid && videoPlayer.IsReady;

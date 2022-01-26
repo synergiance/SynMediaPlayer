@@ -393,6 +393,11 @@ namespace Synergiance.MediaPlayer {
 			mediaPlayers.Volume = volume;
 		}
 
+		public void _SetMute(bool mute) {
+			Initialize();
+			mediaPlayers.Mute = mute;
+		}
+
 		// Seek to a different position in a video if possible
 		public void _Seek() {
 			Initialize();
@@ -469,6 +474,7 @@ namespace Synergiance.MediaPlayer {
 		public float PreciseTime => mediaPlayers.Time;
 		public bool Ready => playerReady;
 		public float Volume => mediaPlayers.Volume;
+		public bool Mute => mediaPlayers.Mute;
 		public int MediaType => isStream ? isLowLatency ? 2 : 1 : 0;
 		public bool IsPlaying { get { Initialize(); return isPlaying; } }
 		public bool IsSyncing => isSeeking || isResync || postResync;
