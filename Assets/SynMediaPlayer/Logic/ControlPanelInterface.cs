@@ -69,7 +69,7 @@ namespace Synergiance.MediaPlayer {
 				}
 				Log("Setting player state to " + (value ? "active" : "inactive"), this);
 				mediaPlayer._SetActive(value);
-				//UpdatePowerButton(); TODO: Callback?
+				//UpdatePowerButton(); TODO: Callback
 			}
 			get => mediaPlayer.Active;
 		} // TODO: Add caching variable
@@ -275,7 +275,7 @@ namespace Synergiance.MediaPlayer {
 			SendRefresh("Volume");
 		}
 
-		public void _ClickDiagnostics() {
+		public void _RunOrCancelDiagnostics() {
 			if (!isValid) return;
 			if (mediaPlayer.IsLoggingDiagnostics)
 				mediaPlayer._CancelDiagnostics();
@@ -329,6 +329,33 @@ namespace Synergiance.MediaPlayer {
 			mediaType = loadedType;
 			UpdateMediaTypeSlider();
 			*/
+		}
+
+		public void _LoadUrl(VRCUrl url) {
+			Initialize();
+			if (!isValid) {
+				LogInvalid();
+				return;
+			}
+			if (mediaPlayer.IsLocked && !mediaPlayer.HasPermissions) {
+				LogWarning("Not permitted to load a new URL", this);
+				return;
+			}
+			if (url == null || string.IsNullOrWhiteSpace(url.ToString())) {
+				LogError("URL is empty!", this);
+				//UpdateMediaTypeSlider();
+				return;
+			}
+			CancelDefaultPlaylist();
+			ClearQueueInternal();
+			//int loadedType = mediaType;
+			Log("Load URL: " + url.ToString(), this);
+			// TODO: Callback for emptying URL field?
+			// TODO: Callback for mediaType update
+			//loadedType = mediaPlayer._LoadURLAs(url, mediaType);
+			//if (loadedType == mediaType) return;
+			//mediaType = loadedType;
+			//UpdateMediaTypeSlider();
 		}
 
 		private void LogInvalid() {

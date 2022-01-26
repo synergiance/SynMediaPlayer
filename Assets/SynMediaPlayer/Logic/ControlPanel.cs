@@ -45,7 +45,6 @@ namespace Synergiance.MediaPlayer.UI {
 		private bool isValid;
 		private int mediaType;
 		private bool isStream;
-		private float timeBetweenUpdates;
 		private float lastSlowUpdate;
 		private float lastResync;
 		private bool hideTime;
@@ -78,9 +77,8 @@ namespace Synergiance.MediaPlayer.UI {
 				isValid = false;
 				LogWarning("Media Player Interface not set!", this);
 			}
-			// Keep UPS to between 50 per second to one every 10 seconds
-			timeBetweenUpdates = Mathf.Max(0.02f, 1 / Mathf.Max(0.1f, updatesPerSecond));
 			if (volumeControl && isValid) volumeControl._SetVolume(mediaPlayer.Volume);
+			// TODO: Trim unnecessary code
 			// ReSharper disable once ConditionIsAlwaysTrueOrFalse
 			if (maxVideosInQueue < 1) maxVideosInQueue = 1;
 			if (maxVideosInQueue > hardQueueCap) maxVideosInQueue = hardQueueCap;
@@ -232,10 +230,7 @@ namespace Synergiance.MediaPlayer.UI {
 		/// </summary>
 		public void _ClickDiagnostics() {
 			if (!isValid) return;
-			if (mediaPlayer.IsLoggingDiagnostics)
-				mediaPlayer._CancelDiagnostics();
-			else
-				mediaPlayer._StartDiagnostics();
+			mediaPlayerInterface._RunOrCancelDiagnostics();
 		}
 
 		/// <summary>
@@ -263,29 +258,12 @@ namespace Synergiance.MediaPlayer.UI {
 				LogInvalid();
 				return;
 			}
-			if (mediaPlayer.IsLocked && !mediaPlayer.HasPermissions) {
-				LogWarning("Not permitted to load a new URL", this);
-				return;
-			}
 			if (!urlField) {
 				LogError("Url Field not set!", this);
 				return;
 			}
-			if (string.IsNullOrWhiteSpace(urlField.GetUrl().ToString())) {
-				LogError("URL is empty!", this);
-				UpdateMediaTypeSlider();
-				return;
-			}
-			//CancelDefaultPlaylist();
-			//ClearQueueInternal();
-			int loadedType = mediaType;
-			VRCUrl newUrl = urlField.GetUrl();
-			if (newUrl != null) Log("Load URL: " + newUrl.ToString(), this);
-			loadedType = mediaPlayer._LoadURLAs(newUrl, mediaType);
+			mediaPlayerInterface._LoadUrl(urlField.GetUrl());
 			urlField.SetUrl(VRCUrl.Empty);
-			if (loadedType == mediaType) return;
-			mediaType = loadedType;
-			UpdateMediaTypeSlider();
 		}
 
 		/// <summary>
