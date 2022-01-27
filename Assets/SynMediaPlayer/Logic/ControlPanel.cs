@@ -360,8 +360,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private void UpdateSeek() {
 			if (!seekControl) return;
-			float seekPos = mediaPlayerInterface.SeekPos;
-			seekControl._SetVal(seekPos);
+			seekControl._SetVal(mediaPlayerInterface.SeekPos);
 		}
 
 		private string FormatTime(float time) {
@@ -443,7 +442,6 @@ namespace Synergiance.MediaPlayer.UI {
 			LogVerbose("Refresh Time", this);
 			if (isValid) time = mediaPlayerInterface.CurrentTime;
 			UpdateTimeAndStatus();
-			UpdateSeek();
 		}
 
 		private void RefreshSeek() {
@@ -458,7 +456,6 @@ namespace Synergiance.MediaPlayer.UI {
 			LogVerbose("Refresh Duration", this);
 			if (isValid) duration = mediaPlayerInterface.Duration;
 			UpdateTimeAndStatus();
-			UpdateSeek();
 		}
 
 		/// <summary>
@@ -479,6 +476,7 @@ namespace Synergiance.MediaPlayer.UI {
 			if (mediaType == newMediaType) return;
 			mediaType = newMediaType;
 			UpdateMediaTypeSlider(); // TODO: Decide whether to replace this method
+			seekControl._SetEnabled(mediaType == 0); // Media Type 0 is video
 		}
 
 		/// <summary>
@@ -486,8 +484,10 @@ namespace Synergiance.MediaPlayer.UI {
 		/// </summary>
 		private void RefreshPermissions() {
 			LogVerbose("Refresh Permissions", this);
-			// TODO: Get permissions from mediaplayerinterface
-			// Seek bar too
+			bool hasPermissions = mediaPlayerInterface.HasPermissions;
+			bool playerLocked = mediaPlayerInterface.IsLocked;
+			// TODO: Enable and disable controls
+			seekControl._SetLocked(!hasPermissions);
 		}
 
 		/// <summary>
@@ -568,6 +568,9 @@ namespace Synergiance.MediaPlayer.UI {
 						break;
 					case "Duration":
 						RefreshDuration();
+						break;
+					case "Seek":
+						RefreshSeek();
 						break;
 					case "Volume":
 						RefreshVolume();

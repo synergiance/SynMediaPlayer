@@ -411,8 +411,10 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions) return;
-			seekBar._SetVal(time / mediaPlayers.Duration); // TODO: Move to Control Panel
+			SeekPos = time / mediaPlayers.Duration;
 			SeekTo(time);
+			if (seekBar) seekBar._SetVal(SeekPos); // TODO: Move to Control Panel
+			if (hasCallback) callback.SendCustomEvent("_RefreshSeek");
 		}
 
 		// Set whether the video should loop when it finishes
@@ -527,7 +529,9 @@ namespace Synergiance.MediaPlayer {
 			}
 			if (!isPlaying) return;
 			bool preRoll = referencePlayhead < 0 && !mediaPlayers.IsPlaying || !queueVideoReady && (videoIsPreRolling || videoHasPreRolled);
-			seekBar._SetVal(preRoll ? 0.0f : mediaPlayers.Time / Mathf.Max(0.1f, mediaPlayers.Duration));
+			SeekPos = preRoll ? 0.0f : mediaPlayers.Time / Mathf.Max(0.1f, mediaPlayers.Duration);
+			if (seekBar) seekBar._SetVal(SeekPos); // TODO: Eliminate
+			if (hasCallback) callback.SendCustomEvent("_RefreshSeek");
 		}
 
 		// If anything is playing, unload it, flush buffers
@@ -1576,8 +1580,7 @@ namespace Synergiance.MediaPlayer {
 			mediaPlayers._SwitchPlayer(id);
 			if (isPlaying) ReloadVideoInternal();
 			isStream = mediaPlayers.IsStream;
-			seekBar._SetEnabled(!isStream); // TODO: Move this to the new control panel
-			// Callback for changing media type
+			if (seekBar) seekBar._SetEnabled(!isStream); // TODO: Eliminate this in favor of control panel version
 		}
 
 		// Reload video properly
@@ -1832,7 +1835,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void SetLockStateInternal(bool lockState) {
 			masterLock = lockState;
-			if (seekBar) seekBar._SetLocked(masterLock && !hasPermissions); // TODO: Move this to the new control panel
+			if (seekBar) seekBar._SetLocked(masterLock && !hasPermissions); // TODO: Eliminate this in favor of control panel
 			if (hasCallback) callback.SendCustomEvent(masterLock ? "_PlayerLocked" : "_PlayerUnlocked");
 		}
 

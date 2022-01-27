@@ -102,6 +102,7 @@ namespace Synergiance.MediaPlayer {
 		public bool SeekLock { get; private set; } // Seek bar locked
 		public string Status => playerStatus;
 		public VRCPlayerApi CurrentOwner => Networking.GetOwner(mediaPlayer.gameObject); // TODO: Add caching variable
+		public bool HasPermissions => mediaPlayer.HasPermissions; // TODO: Add caching variable
 		public string[] ModList => modList;
 		public int[] ModIdList => modIdList;
 
@@ -877,7 +878,7 @@ namespace Synergiance.MediaPlayer {
 
 		public void _RefreshSeek() {
 			SeekPos = mediaPlayer.SeekPos;
-			SendRefresh("Time");
+			SendRefresh("Seek");
 		}
 
 		public void _RecheckVideoPlayer() {
@@ -887,6 +888,7 @@ namespace Synergiance.MediaPlayer {
 			mediaType = mediaPlayer.MediaType;
 			//UpdateMediaTypeSlider();
 			UpdateCurrentOwner();
+			SendCallbackEvent("_RefreshAll");
 		}
 
 		public void _PlayerLocked() {
