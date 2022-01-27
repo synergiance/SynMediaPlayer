@@ -25,7 +25,6 @@ namespace Synergiance.MediaPlayer {
 
 		private bool initialized;
 		private bool isValid;
-		private int mediaType;
 		private bool isStream;
 		private float timeBetweenUpdates;
 		private float lastSlowUpdate;
@@ -54,7 +53,7 @@ namespace Synergiance.MediaPlayer {
 
 		private string debugPrefix = "[<color=#20C0A0>SMP Control Panel Interface</color>] ";
 
-		public int MediaType => mediaPlayer.MediaType; // TODO: Add caching variable
+		public int MediaType { get; private set; }
 
 		public bool Active {
 			set {
@@ -192,8 +191,7 @@ namespace Synergiance.MediaPlayer {
 				LogInvalid();
 				return;
 			}
-			mediaType = mediaPlayer.MediaType;
-			if (mediaType == 0) { // Media Type 0 is video
+			if (mediaPlayer.MediaType == 0) { // Media Type 0 is video
 				mediaPlayer._PlayPause();
 			} else { // Media Type 1-2 is stream
 				if (mediaPlayer.IsPlaying) mediaPlayer._Stop();
@@ -289,55 +287,7 @@ namespace Synergiance.MediaPlayer {
 				mediaPlayer._StartDiagnostics();
 		}
 
-		public void _SetMediaType() {
-			/* Commented out and may appear in Multi UI
-			Initialize();
-			if (!isValid) {
-				LogInvalid();
-				return;
-			}
-			if (mediaTypeVal > 2 || mediaTypeVal < 0) {
-				LogError("Media Type out of bounds!", this);
-				return;
-			}
-			mediaType = mediaTypeVal;
-			*/
-		}
-
-		public void _Load() {
-			/* Commented out but will need to be reformed for Multi UI
-			Initialize();
-			if (!isValid) {
-				LogInvalid();
-				return;
-			}
-			if (mediaPlayer.IsLocked && !mediaPlayer.HasPermissions) {
-				LogWarning("Not permitted to load a new URL", this);
-				return;
-			}
-			if (!urlField) {
-				LogError("Url Field not set!", this);
-				return;
-			}
-			if (string.IsNullOrWhiteSpace(urlField.GetUrl().ToString())) {
-				LogError("URL is empty!", this);
-				UpdateMediaTypeSlider();
-				return;
-			}
-			CancelDefaultPlaylist();
-			ClearQueueInternal();
-			int loadedType = mediaType;
-			VRCUrl newUrl = urlField.GetUrl();
-			if (newUrl != null) Log("Load URL: " + newUrl.ToString(), this);
-			loadedType = mediaPlayer._LoadURLAs(newUrl, mediaType);
-			urlField.SetUrl(VRCUrl.Empty);
-			if (loadedType == mediaType) return;
-			mediaType = loadedType;
-			UpdateMediaTypeSlider();
-			*/
-		}
-
-		public void _LoadUrl(VRCUrl url) {
+		public void _LoadUrl(VRCUrl url, int newMediaType) {
 			Initialize();
 			if (!isValid) {
 				LogInvalid();
@@ -349,15 +299,16 @@ namespace Synergiance.MediaPlayer {
 			}
 			if (url == null || string.IsNullOrWhiteSpace(url.ToString())) {
 				LogError("URL is empty!", this);
+				MediaType = mediaPlayer.MediaType;
 				SendRefresh("MediaType");
 				return;
 			}
 			CancelDefaultPlaylist();
 			ClearQueueInternal();
 			Log("Load URL: " + url.ToString(), this);
-			int loadedType = mediaPlayer._LoadURLAs(url, mediaType);
-			if (loadedType == mediaType) return;
-			mediaType = loadedType;
+			int loadedType = mediaPlayer._LoadURLAs(url, newMediaType);
+			if (loadedType == newMediaType) return;
+			MediaType = mediaPlayer.MediaType;
 			SendRefresh("MediaType");
 		}
 
@@ -447,6 +398,13 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void UpdateUI() {
+			string refreshString = "";
+			int newMediaType = mediaPlayer.MediaType;
+			if (newMediaType != MediaType) {
+				MediaType = newMediaType;
+				refreshString += "MediaType ";
+			}
+			// TODO: Check all remaining variables, update local copies, reduce callbacks
 			SendCallbackEvent("_RefreshAll");
 		}
 
@@ -883,12 +841,8 @@ namespace Synergiance.MediaPlayer {
 
 		public void _RecheckVideoPlayer() {
 			Log("Recheck Video Player", this);
-			//UpdateAllButtons();
-			//if (urlField && !string.IsNullOrWhiteSpace(urlField.GetUrl().ToString())) return;
-			mediaType = mediaPlayer.MediaType;
-			//UpdateMediaTypeSlider();
 			UpdateCurrentOwner();
-			SendCallbackEvent("_RefreshAll");
+			UpdateUI();
 		}
 
 		public void _PlayerLocked() {

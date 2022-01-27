@@ -263,7 +263,7 @@ namespace Synergiance.MediaPlayer.UI {
 				LogError("Url Field not set!", this);
 				return;
 			}
-			mediaPlayerInterface._LoadUrl(urlField.GetUrl());
+			mediaPlayerInterface._LoadUrl(urlField.GetUrl(), mediaType);
 			urlField.SetUrl(VRCUrl.Empty);
 		}
 
