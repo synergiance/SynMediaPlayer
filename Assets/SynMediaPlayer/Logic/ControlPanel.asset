@@ -2810,7 +2810,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: time
+      Data: currentTime
     - Name: $v
       Entry: 7
       Data: 177|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -2831,10 +2831,10 @@ MonoBehaviour:
       Data: SystemSingle
     - Name: symbolOriginalName
       Entry: 1
-      Data: time
+      Data: currentTime
     - Name: symbolUniqueName
       Entry: 1
-      Data: time
+      Data: currentTime
     - Name: symbolDefaultValue
       Entry: 6
       Data: 

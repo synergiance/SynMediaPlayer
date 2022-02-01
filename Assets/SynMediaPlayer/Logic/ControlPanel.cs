@@ -1,11 +1,11 @@
 ﻿
 using System;
+using System.Globalization;
 using UdonSharp;
 using UnityEngine;
 using UnityEngine.UI;
 using VRC.SDK3.Components;
 using VRC.SDKBase;
-using VRC.Udon;
 
 namespace Synergiance.MediaPlayer.UI {
 	public class ControlPanel : UdonSharpBehaviour {
@@ -55,7 +55,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private int panelId = -1;
 
 		private float duration;
-		private float time;
+		private float currentTime;
 		private string status;
 
 		private string[] modList;
@@ -78,13 +78,14 @@ namespace Synergiance.MediaPlayer.UI {
 				isValid = false;
 				LogWarning("Media Player Interface not set!", this);
 			}
-			if (volumeControl && isValid) volumeControl._SetVolume(mediaPlayer.Volume);
+			if (volumeControl && isValid) volumeControl.Volume = mediaPlayer.Volume;
 			// TODO: Trim unnecessary code
 			// ReSharper disable once ConditionIsAlwaysTrueOrFalse
-			if (maxVideosInQueue < 1) maxVideosInQueue = 1;
+			if (maxVideosInQueue < 5) maxVideosInQueue = 5;
 			if (maxVideosInQueue > hardQueueCap) maxVideosInQueue = hardQueueCap;
 			initialized = true;
-			UpdateMethods();
+			Register();
+			UpdateMethods(); // TODO: Move this initialization to callback
 			if (isValid && playerVersionField) playerVersionField.text = smpVersionString + mediaPlayer.BuildString;
 		}
 
@@ -352,7 +353,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private string GenerateTimeString() {
 			if (!isValid) return "00:00:00/00:00:00";
-			string timeString = FormatTime(time);
+			string timeString = FormatTime(currentTime);
 			if (Single.IsNaN(duration) || Single.IsInfinity(duration)) timeString = "Live";
 			else if (duration > 0.01f) timeString += "/" + FormatTime(duration);
 			return timeString;
@@ -364,7 +365,7 @@ namespace Synergiance.MediaPlayer.UI {
 		}
 
 		private string FormatTime(float time) {
-			if (Single.IsInfinity(time) || Single.IsNaN(time)) return time.ToString();
+			if (float.IsInfinity(time) || float.IsNaN(time)) return time.ToString(CultureInfo.InvariantCulture);
 			float wTime = Mathf.Abs(time);
 			bool neg = time < 0;
 			string str = ((int)wTime % 60).ToString("D2");
@@ -411,6 +412,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private void RefreshLoop() {
 			LogVerbose("Refresh Loop", this);
 			bool isLooping = mediaPlayerInterface.Loop;
+			// TODO: Finish this
 		}
 
 		/// <summary>
@@ -419,6 +421,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private void RefreshActive() {
 			LogVerbose("Refresh Active", this);
 			bool isActive = mediaPlayerInterface.Active;
+			// TODO: Finish this
 		}
 
 		/// <summary>
@@ -428,9 +431,8 @@ namespace Synergiance.MediaPlayer.UI {
 			LogVerbose("Refresh Status", this);
 			if (isValid) status = mediaPlayerInterface.Status;
 			hideTime = !string.Equals(status, "Playing") &&
-			           !string.Equals(status, "Stabilizing") &&
-			           mediaPlayerInterface.MediaType == 0;
-			if (!mediaPlayerInterface.Ready) hideTime = true;
+				!string.Equals(status, "Stabilizing") &&
+				mediaPlayerInterface.MediaType == 0 || !mediaPlayerInterface.Ready;
 			UpdateTimeAndStatus();
 			UpdateResyncButton();
 		}
@@ -440,7 +442,7 @@ namespace Synergiance.MediaPlayer.UI {
 		/// </summary>
 		private void RefreshTime() {
 			LogVerbose("Refresh Time", this);
-			if (isValid) time = mediaPlayerInterface.CurrentTime;
+			if (isValid) currentTime = mediaPlayerInterface.CurrentTime;
 			UpdateTimeAndStatus();
 		}
 
@@ -463,7 +465,7 @@ namespace Synergiance.MediaPlayer.UI {
 		/// </summary>
 		private void RefreshVolume() {
 			LogVerbose("Refresh Volume", this);
-			volumeControl._SetVolume(mediaPlayerInterface.Volume);
+			volumeControl.Volume = mediaPlayerInterface.Volume;
 			volumeControl._SetMute(mediaPlayerInterface.Mute);
 		}
 
@@ -504,8 +506,8 @@ namespace Synergiance.MediaPlayer.UI {
 		/// </summary>
 		private void RefreshModList() {
 			LogVerbose("Refresh Mod List", this);
-			string[] modList = mediaPlayerInterface.ModList;
-			int[] modIdList = mediaPlayerInterface.ModIdList;
+			modList = mediaPlayerInterface.ModList;
+			modIdList = mediaPlayerInterface.ModIdList;
 			int localPlayerId = Networking.LocalPlayer.playerId;
 			// TODO: Finish method
 			for (int i = 0; i < modList.Length; i++) {
@@ -531,11 +533,10 @@ namespace Synergiance.MediaPlayer.UI {
 			Log("Set Status Text", this);
 			Initialize();
 			if (isValid) {
-				bool isPlaying = mediaPlayerInterface.IsPlaying;
+				//bool isPlaying = mediaPlayerInterface.IsPlaying;
 				hideTime = !string.Equals(statusText, "Playing") &&
-				           !string.Equals(statusText, "Stabilizing") &&
-				           mediaPlayerInterface.MediaType == 0;
-				if (!mediaPlayerInterface.Ready) hideTime = true;
+					!string.Equals(statusText, "Stabilizing") &&
+					mediaPlayerInterface.MediaType == 0 || !mediaPlayerInterface.Ready;
 				if (!hideTime) UpdateTimeAndStatus();
 				else statusField._SetText(statusText);
 				UpdateResyncButton();
