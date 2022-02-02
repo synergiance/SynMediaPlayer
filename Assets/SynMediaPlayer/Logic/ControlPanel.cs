@@ -78,7 +78,7 @@ namespace Synergiance.MediaPlayer.UI {
 				isValid = false;
 				LogWarning("Media Player Interface not set!", this);
 			}
-			if (volumeControl && isValid) volumeControl.Volume = mediaPlayer.Volume;
+			if (volumeControl && isValid) volumeControl.Volume = mediaPlayerInterface.Volume;
 			// TODO: Trim unnecessary code
 			// ReSharper disable once ConditionIsAlwaysTrueOrFalse
 			if (maxVideosInQueue < 5) maxVideosInQueue = 5;
@@ -86,7 +86,7 @@ namespace Synergiance.MediaPlayer.UI {
 			initialized = true;
 			Register();
 			UpdateMethods(); // TODO: Move this initialization to callback
-			if (isValid && playerVersionField) playerVersionField.text = smpVersionString + mediaPlayer.BuildString;
+			if (isValid && playerVersionField) playerVersionField.text = smpVersionString + mediaPlayerInterface.BuildString;
 		}
 
 		private void Register() {
@@ -209,7 +209,7 @@ namespace Synergiance.MediaPlayer.UI {
 				LogInvalid();
 				return;
 			}
-			mediaPlayerInterface._SetVolume(volumeControl.Volume, volumeControl.IsMuted);
+			mediaPlayerInterface._SetVolumeAndMute(volumeControl.Volume, volumeControl.IsMuted);
 		}
 
 		/// <summary>

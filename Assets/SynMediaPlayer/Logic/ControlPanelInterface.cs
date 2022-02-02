@@ -33,6 +33,7 @@ namespace Synergiance.MediaPlayer {
 		private bool queueCheckURL;
 		private bool reachedEnd;
 		private bool hasActivated;
+		private string buildString;
 
 		[UdonSynced] private bool isDefaultPlaylist = true;
 		[UdonSynced] private int currentDefaultIndex;
@@ -130,6 +131,13 @@ namespace Synergiance.MediaPlayer {
 				// TODO: Update UI
 			}
 			get => isLooping; // TODO: This will need to be set
+		}
+
+		public string BuildString {
+			get {
+				if (buildString == null) buildString = mediaPlayer.BuildString;
+				return buildString;
+			}
 		}
 
 		void Start() {
@@ -262,7 +270,7 @@ namespace Synergiance.MediaPlayer {
 			//UpdatePlayPauseStopButtons();
 		}
 
-		public void _SetVolume(float volume, bool mute) {
+		public void _SetVolumeAndMute(float volume, bool mute) {
 			Initialize();
 			if (!isValid) {
 				LogInvalid();
@@ -270,10 +278,10 @@ namespace Synergiance.MediaPlayer {
 			}
 			Volume = volume;
 			Mute = mute;
-			SetVolume();
+			SetVolumeAndMute();
 		}
 
-		private void SetVolume() {
+		private void SetVolumeAndMute() {
 			mediaPlayer._SetVolume(Volume);
 			mediaPlayer._SetMute(Mute);
 			SendRefresh("Volume");
