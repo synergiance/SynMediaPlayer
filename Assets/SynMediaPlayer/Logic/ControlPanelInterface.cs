@@ -41,7 +41,7 @@ namespace Synergiance.MediaPlayer {
 		private int[] modIdList;
 
 		private string playerStatus;
-		private float time;
+		private float currentTime;
 		private float duration;
 		private bool isPlaying;
 		private bool isReady;
@@ -102,8 +102,8 @@ namespace Synergiance.MediaPlayer {
 		public string Status => playerStatus;
 		public VRCPlayerApi CurrentOwner => Networking.GetOwner(mediaPlayer.gameObject); // TODO: Add caching variable
 		public bool HasPermissions => mediaPlayer.HasPermissions; // TODO: Add caching variable
-		public string[] ModList => modList;
-		public int[] ModIdList => modIdList;
+		public string[] ModList => GetModList();
+		public int[] ModIdList => GetModIdList();
 
 		/// <summary>
 		/// Current volume
@@ -534,6 +534,8 @@ namespace Synergiance.MediaPlayer {
 			}
 			LogVerbose("Add To Queue Internal: " + url, this);
 			VRCUrl[] tempUrls = new VRCUrl[videoQueueLocal == null ? 1 : videoQueueLocal.Length + 1];
+			// ReSharper disable once AssignNullToNotNullAttribute
+			// ReSharper disable once PossibleNullReferenceException
 			if (tempUrls.Length > 1) Array.Copy(videoQueueLocal, tempUrls, videoQueueLocal.Length);
 			tempUrls[tempUrls.Length - 1] = url;
 			int oldLength = videoQueueLocal != null ? videoQueueLocal.Length : 0;
@@ -583,6 +585,7 @@ namespace Synergiance.MediaPlayer {
 			LogVerbose("Remove From Queue Internal: " + index, this);
 			int oldLength = videoQueueLocal != null ? videoQueueLocal.Length : 0;
 			string logMsg = "Old queue length: " + oldLength;
+			// ReSharper disable once PossibleNullReferenceException
 			logMsg += ", New queue length: " + tempUrls.Length;
 			logMsg += ", First URL " + (index == 0 ? "changed" : "unchanged");
 			LogVerbose(logMsg, this);
@@ -631,6 +634,7 @@ namespace Synergiance.MediaPlayer {
 			int oldLen = videoQueueLocal != null ? videoQueueLocal.Length : 0;
 			int newLen = videoQueueRemote != null ? videoQueueRemote.Length : 0;
 			bool firstUrlChanged = oldLen == 0 && newLen > 0 || oldLen > 0 && newLen == 0;
+			// ReSharper disable twice PossibleNullReferenceException
 			if (oldLen > 0 && newLen > 0) firstUrlChanged = string.Equals(videoQueueLocal[0].ToString(), videoQueueRemote[0].ToString());
 			string logMsg = "Old queue length: " + oldLen;
 			logMsg += ", New queue length: " + newLen;
@@ -739,6 +743,16 @@ namespace Synergiance.MediaPlayer {
 
 		// --------------- Player Detection Methods ---------------
 
+		private string[] GetModList() {
+			if (modList == null || modList.Length == 0) RebuildModList();
+			return modList;
+		}
+
+		private int[] GetModIdList() {
+			if (modIdList == null || modIdList.Length == 0) RebuildModList();
+			return modIdList;
+		}
+
 		private void RebuildModList() {
 			if (Networking.LocalPlayer == null) {
 				modList = new[] { "Debug User" };
@@ -823,15 +837,15 @@ namespace Synergiance.MediaPlayer {
 			if (isValid) {
 				bool isPlaying = mediaPlayer.IsPlaying;
 				hideTime = !string.Equals(statusText, "Playing") &&
-				           !string.Equals(statusText, "Stabilizing") &&
-				           mediaPlayer.MediaType == 0;
-				if (!mediaPlayer.Ready) hideTime = true;
+					!string.Equals(statusText, "Stabilizing") &&
+					mediaPlayer.MediaType == 0 || !mediaPlayer.Ready;
 				//if (!hideTime) UpdateTimeAndStatus();
 				//else statusField._SetText(statusText);
 				//UpdateResyncButton();
 			} else {
 				//statusField._SetText(statusText);
 			}
+			// TODO: Finish method
 		}
 
 		public void _RefreshSeek() {
