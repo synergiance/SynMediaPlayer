@@ -179,7 +179,7 @@ namespace Synergiance.MediaPlayer {
 
 		private ushort localVersionMajor =  1; // Major version number
 		private ushort localVersionMinor =  0; // Minor version number
-		private ushort localVersionPatch =  1; // Patch version number
+		private ushort localVersionPatch =  2; // Patch version number
 		private ushort localVersionBeta  =  0; // Beta number
 
 		private ushort worldVersionMajor; // Major version number
@@ -1502,7 +1502,7 @@ namespace Synergiance.MediaPlayer {
 				string parameters = urlStr.Substring(prefixLength + 1, urlStr.Length - prefixLength - 1);
 				Log("URL Parameters: " + parameters, this);
 				foreach (string verb in new string[] { "playlist", "watch" })
-					if (parameters.IndexOf(verb, StringComparison.Ordinal) == 0) newPlayerID = 1;
+					if (parameters.IndexOf(verb, StringComparison.Ordinal) == 0) newPlayerID = Mathf.Clamp(playerID, 0, 1);
 				if (parameters.Length >= 4 && string.Equals(parameters.Substring(parameters.Length - 4, 4), "live")) newPlayerID = 1;
 			}
 			if (urlStr.Substring(urlStr.Length - 5, 5).Equals(".m3u8")) newPlayerID = 1;
