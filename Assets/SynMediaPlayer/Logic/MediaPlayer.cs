@@ -177,10 +177,10 @@ namespace Synergiance.MediaPlayer {
 		
 		// Version number
 
-		private ushort localVersionMajor =  1; // Major version number
+		private ushort localVersionMajor =  2; // Major version number
 		private ushort localVersionMinor =  0; // Minor version number
-		private ushort localVersionPatch =  2; // Patch version number
-		private ushort localVersionBeta  =  0; // Beta number
+		private ushort localVersionPatch =  0; // Patch version number
+		private ushort localVersionBeta  =  1; // Beta number
 
 		private ushort worldVersionMajor; // Major version number
 		private ushort worldVersionMinor; // Minor version number

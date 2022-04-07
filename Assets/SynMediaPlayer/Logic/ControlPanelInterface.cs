@@ -26,7 +26,7 @@ namespace Synergiance.MediaPlayer {
 		private bool initialized;
 		private bool isValid;
 		private bool isStream;
-		private float timeBetweenUpdates;
+		private float timeBetweenUpdates = 0.2f;
 		private float lastSlowUpdate;
 		private float lastResync;
 		private bool hideTime;
@@ -43,10 +43,17 @@ namespace Synergiance.MediaPlayer {
 
 		private string playerStatus;
 		private float currentTime;
+		private float preciseTime;
 		private float duration;
 		private bool isPlaying;
 		private bool isReady;
 		private bool isLooping;
+		private bool isLocked;
+		private bool hasPermissions;
+		private VRCPlayerApi currentOwner;
+
+		private float lastRefreshed = -1;
+		private float lastRefreshedRealtime = -1;
 
 		private ControlPanel[] controlPanels;
 
@@ -89,11 +96,33 @@ namespace Synergiance.MediaPlayer {
 				if (value) mediaPlayer._Lock();
 				else mediaPlayer._Unlock();
 			}
-			get => mediaPlayer.IsLocked;
-		} // TODO: Add caching variable
-		public float Duration => mediaPlayer.Duration; // TODO: Add caching variable
-		public float CurrentTime => mediaPlayer.CurrentTime; // TODO: Add caching variable
-		public float PreciseTime => mediaPlayer.PreciseTime; // TODO: Add caching variable
+			get {
+				RefreshPlayerData();
+				return isLocked;
+			}
+		}
+
+		public float Duration {
+			get {
+				RefreshPlayerData();
+				return duration;
+			}
+		}
+
+		public float CurrentTime {
+			get {
+				RefreshPlayerRealtimeData();
+				return currentTime;
+			}
+		}
+
+		public float PreciseTime {
+			get {
+				RefreshPlayerRealtimeData();
+				return preciseTime;
+			}
+		}
+
 		public bool Ready => mediaPlayer.Ready; // TODO: Add caching variable
 		public bool IsPlaying => mediaPlayer.IsPlaying; // TODO: Add caching variable
 		public bool IsSyncing => mediaPlayer.IsSyncing; // TODO: Add caching variable
@@ -101,8 +130,20 @@ namespace Synergiance.MediaPlayer {
 		public bool SeekEnable { get; private set; } // Seek bar enabled
 		public bool SeekLock { get; private set; } // Seek bar locked
 		public string Status => playerStatus;
-		public VRCPlayerApi CurrentOwner => Networking.GetOwner(mediaPlayer.gameObject); // TODO: Add caching variable
-		public bool HasPermissions => mediaPlayer.HasPermissions; // TODO: Add caching variable
+
+		public VRCPlayerApi CurrentOwner {
+			get {
+				RefreshPlayerData();
+				return currentOwner;
+			}
+		}
+
+		public bool HasPermissions {
+			get {
+				RefreshPlayerData();
+				return hasPermissions;
+			}
+		}
 		public string[] ModList => GetModList();
 		public int[] ModIdList => GetModIdList();
 
@@ -322,6 +363,24 @@ namespace Synergiance.MediaPlayer {
 
 		private void LogInvalid() {
 			LogError("Not properly initialized!", this);
+		}
+
+		private void RefreshPlayerData() {
+			if (Time.time - lastRefreshed < Time.deltaTime) return;
+			lastRefreshed = Time.time;
+			if (!isValid) return;
+			duration = mediaPlayer.Duration;
+			isLocked = mediaPlayer.IsLocked;
+			hasPermissions = mediaPlayer.HasPermissions;
+			currentOwner = Networking.GetOwner(mediaPlayer.gameObject);
+		}
+
+		private void RefreshPlayerRealtimeData() {
+			if (Time.time - lastRefreshedRealtime < Time.deltaTime) return;
+			lastRefreshedRealtime = Time.time;
+			if (!isValid) return;
+			currentTime = mediaPlayer.CurrentTime;
+			preciseTime = mediaPlayer.PreciseTime;
 		}
 
 		private void UpdateCurrentOwner() {
