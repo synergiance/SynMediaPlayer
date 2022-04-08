@@ -489,7 +489,7 @@ namespace Synergiance.MediaPlayer.UI {
 			bool hasPermissions = mediaPlayerInterface.HasPermissions;
 			bool playerLocked = mediaPlayerInterface.IsLocked;
 			// TODO: Enable and disable controls
-			seekControl._SetLocked(!hasPermissions);
+			seekControl._SetLocked(playerLocked && !hasPermissions);
 		}
 
 		/// <summary>

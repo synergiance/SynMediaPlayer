@@ -127,7 +127,6 @@ namespace Synergiance.MediaPlayer {
 		public bool IsPlaying => mediaPlayer.IsPlaying; // TODO: Add caching variable
 		public bool IsSyncing => mediaPlayer.IsSyncing; // TODO: Add caching variable
 		public float SeekPos { get; private set; } // Normalized seek position
-		public bool SeekEnable { get; private set; } // Seek bar enabled
 		public bool SeekLock { get; private set; } // Seek bar locked
 		public string Status => playerStatus;
 
@@ -342,7 +341,8 @@ namespace Synergiance.MediaPlayer {
 				LogInvalid();
 				return;
 			}
-			if (mediaPlayer.IsLocked && !mediaPlayer.HasPermissions) {
+			hasPermissions = mediaPlayer.HasPermissions;
+			if (mediaPlayer.IsLocked && !hasPermissions) {
 				LogWarning("Not permitted to load a new URL", this);
 				return;
 			}
@@ -459,7 +459,8 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void SuppressSecurity() {
-			if (mediaPlayer.HasPermissions) return;
+			hasPermissions = mediaPlayer.HasPermissions;
+			if (hasPermissions) return;
 			LogVerbose("Suppress Security", this);
 			mediaPlayer._SuppressSecurity(Time.time);
 		}
@@ -516,7 +517,8 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 			LogVerbose("Initialize Default Playlist", this);
-			if (!mediaPlayer.HasPermissions) SuppressSecurity();
+			hasPermissions = mediaPlayer.HasPermissions;
+			if (!hasPermissions) SuppressSecurity();
 			mediaPlayer._LoadURL(defaultPlaylist[0]);
 			reachedEnd = false;
 			if (autoplay) mediaPlayer._Play();
@@ -553,7 +555,8 @@ namespace Synergiance.MediaPlayer {
 		private void AddToQueue(VRCUrl url) {
 			LogVerbose("Add To Queue", this);
 			if (!isValid) return;
-			if (!mediaPlayer.HasPermissions) {
+			hasPermissions = mediaPlayer.HasPermissions;
+			if (!hasPermissions) {
 				LogWarning("Cannot add video to queue! Permission denied!", this);
 				return;
 			}
@@ -564,7 +567,8 @@ namespace Synergiance.MediaPlayer {
 		private void ClearQueue() {
 			LogVerbose("Clear Queue", this);
 			if (!isValid) return;
-			if (!mediaPlayer.HasPermissions) {
+			hasPermissions = mediaPlayer.HasPermissions;
+			if (!hasPermissions) {
 				LogWarning("Cannot clear queue! Permission denied!", this);
 				return;
 			}
@@ -575,7 +579,8 @@ namespace Synergiance.MediaPlayer {
 		private void RemoveFromQueue(int index) {
 			LogVerbose("Remove From Queue", this);
 			if (!isValid) return;
-			if (!mediaPlayer.HasPermissions) {
+			hasPermissions = mediaPlayer.HasPermissions;
+			if (!hasPermissions) {
 				LogWarning("Cannot remove video from queue! Permission denied!", this);
 				return;
 			}
@@ -586,7 +591,8 @@ namespace Synergiance.MediaPlayer {
 		private void InsertToQueue(VRCUrl url, int index) {
 			LogVerbose("Insert To Queue", this);
 			if (!isValid) return;
-			if (!mediaPlayer.HasPermissions && mediaPlayer.IsLocked) {
+			hasPermissions = mediaPlayer.HasPermissions;
+			if (!hasPermissions && mediaPlayer.IsLocked) {
 				LogWarning("Cannot insert video into queue! Permission denied!", this);
 				return;
 			}
@@ -716,26 +722,28 @@ namespace Synergiance.MediaPlayer {
 
 		private void UpdateNextUrl() {
 			if (!isValid) return;
-			if (!mediaPlayer.HasPermissions && !Networking.IsOwner(mediaPlayer.gameObject)) return;
+			hasPermissions = mediaPlayer.HasPermissions;
+			if (!hasPermissions && !Networking.IsOwner(mediaPlayer.gameObject)) return;
 			VRCUrl nextUrl = VRCUrl.Empty;
 			if (videoQueueLocal != null && videoQueueLocal.Length > 0) {
 				nextUrl = videoQueueLocal[0];
 			}
 			LogVerbose("Update Next URL: " + nextUrl, this);
-			if (!mediaPlayer.HasPermissions) SuppressSecurity();
+			if (!hasPermissions) SuppressSecurity();
 			mediaPlayer._LoadQueueURL(nextUrl);
 			mediaPlayer.EngageSecurity();
 		}
 
 		private void InsertNextUrl() {
 			if (!isValid) return;
-			if (!mediaPlayer.HasPermissions && !Networking.IsOwner(mediaPlayer.gameObject)) return;
+			hasPermissions = mediaPlayer.HasPermissions;
+			if (!hasPermissions && !Networking.IsOwner(mediaPlayer.gameObject)) return;
 			if (videoQueueLocal == null || videoQueueLocal.Length <= 0) {
 				LogWarning("Attempting to insert new URL when queue is empty!", this);
 				return;
 			}
 			LogVerbose("Insert Next URL: " + videoQueueLocal[0], this);
-			if (!mediaPlayer.HasPermissions) SuppressSecurity();
+			if (!hasPermissions) SuppressSecurity();
 			mediaPlayer._LoadURL(videoQueueLocal[0]);
 			mediaPlayer.EngageSecurity();
 			reachedEnd = false;
@@ -930,7 +938,8 @@ namespace Synergiance.MediaPlayer {
 			// Video player has been locked
 			Log("Player Locked", this);
 			Initialize();
-			bool hasPermissions = mediaPlayer.HasPermissions;
+			hasPermissions = mediaPlayer.HasPermissions;
+			SendRefresh("Permissions");
 			//lockUnlockButton._SetMode(hasPermissions ? 1 : 2);
 			//if (urlPlaceholderField) urlPlaceholderField.text = hasPermissions ? "Enter Video URL (Instance Moderators)..." : "Player locked!";
 		}
@@ -939,7 +948,7 @@ namespace Synergiance.MediaPlayer {
 			// Video player has been unlocked
 			Log("Player Unlocked", this);
 			Initialize();
-			SeekLock = false;
+			SendRefresh("Permissions");
 			//lockUnlockButton._SetMode(0);
 			//if (urlPlaceholderField) urlPlaceholderField.text = "Enter Video URL (Anyone)...";
 		}

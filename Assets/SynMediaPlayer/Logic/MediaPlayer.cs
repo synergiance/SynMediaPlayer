@@ -413,7 +413,7 @@ namespace Synergiance.MediaPlayer {
 			if (masterLock && !hasPermissions) return;
 			SeekPos = time / mediaPlayers.Duration;
 			SeekTo(time);
-			if (seekBar) seekBar._SetVal(SeekPos); // TODO: Move to Control Panel
+			if (seekBar) seekBar._SetVal(SeekPos); // TODO: Remove this line
 			if (hasCallback) callback.SendCustomEvent("_RefreshSeek");
 		}
 
