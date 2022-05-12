@@ -35,6 +35,7 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private bool verboseDebug;
 		[SerializeField] private bool loadGapless;
 		[SerializeField] private bool autoplay = true;
+		[SerializeField] private bool randomFirstVideo;
 		[Range(5,50)] [SerializeField] private int maxVideosInQueue = 20;
 
 		[SerializeField] private VRCUrl[] defaultPlaylist;
@@ -211,6 +212,7 @@ namespace Synergiance.MediaPlayer.UI {
 				LogInvalid();
 				return;
 			}
+			LogVerbose("Setting volume to: " + volumeVal, this);
 			mediaPlayer._SetVolume(volumeVal);
 		}
 
@@ -426,7 +428,11 @@ namespace Synergiance.MediaPlayer.UI {
 			}
 			LogVerbose("Initialize Default Playlist", this);
 			if (!mediaPlayer.HasPermissions) SuppressSecurity();
-			mediaPlayer._LoadURL(defaultPlaylist[0]);
+			if (randomFirstVideo) {
+				currentDefaultIndex = UnityEngine.Random.Range(0, defaultPlaylist.Length - 1);
+				LogVerbose("Random starting index is: " + currentDefaultIndex, this);
+			}
+			mediaPlayer._LoadURL(defaultPlaylist[currentDefaultIndex]);
 			reachedEnd = false;
 			if (autoplay) mediaPlayer._Play();
 			mediaPlayer.EngageSecurity();
@@ -809,7 +815,7 @@ namespace Synergiance.MediaPlayer.UI {
 			Log("Player Locked", this);
 			Initialize();
 			bool hasPermissions = mediaPlayer.HasPermissions;
-			lockUnlockButton._SetMode(hasPermissions ? 1 : 2);
+			if (lockUnlockButton) lockUnlockButton._SetMode(hasPermissions ? 1 : 2);
 			if (urlPlaceholderField) urlPlaceholderField.text = hasPermissions ? "Enter Video URL (Instance Moderators)..." : "Player locked!";
 		}
 
@@ -817,7 +823,7 @@ namespace Synergiance.MediaPlayer.UI {
 			// Video player has been unlocked
 			Log("Player Unlocked", this);
 			Initialize();
-			lockUnlockButton._SetMode(0);
+			if (lockUnlockButton) lockUnlockButton._SetMode(0);
 			if (urlPlaceholderField) urlPlaceholderField.text = "Enter Video URL (Anyone)...";
 		}
 
