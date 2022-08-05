@@ -36,6 +36,7 @@ namespace Synergiance.MediaPlayer.UI {
 		[SerializeField] private bool loadGapless;
 		[SerializeField] private bool autoplay = true;
 		[SerializeField] private bool randomFirstVideo;
+		[SerializeField] private UdonSharpBehaviour callback;
 		[Range(5,50)] [SerializeField] private int maxVideosInQueue = 20;
 
 		[SerializeField] private VRCUrl[] defaultPlaylist;
@@ -58,6 +59,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private bool queueCheckURL;
 		private bool reachedEnd;
 		private bool hasActivated;
+		private bool hasCallback;
 
 		[UdonSynced] private bool isDefaultPlaylist = true;
 		[UdonSynced] private int currentDefaultIndex;
@@ -88,6 +90,7 @@ namespace Synergiance.MediaPlayer.UI {
 			// ReSharper disable once ConditionIsAlwaysTrueOrFalse
 			if (maxVideosInQueue < 1) maxVideosInQueue = 1;
 			if (maxVideosInQueue > hardQueueCap) maxVideosInQueue = hardQueueCap;
+			hasCallback = callback != null;
 			initialized = true;
 			UpdateMethods();
 			RebuildModList();
@@ -777,6 +780,11 @@ namespace Synergiance.MediaPlayer.UI {
 			UpdateModList();
 		}
 
+		private void CallCallback(string methodName) {
+			if (!hasCallback) return;
+			callback.SendCustomEvent(methodName);
+		}
+
 		public void _Activate() {
 			if (hasActivated) return;
 			if (!mediaPlayer.Active) return;
@@ -833,6 +841,7 @@ namespace Synergiance.MediaPlayer.UI {
 			Initialize();
 			VRCUrl currentURL = mediaPlayer.CurrentUrl;
 			UpdateAllButtons();
+			CallCallback("_RelayVideoLoading");
 		}
 
 		public void _RelayVideoReady() {
@@ -841,6 +850,7 @@ namespace Synergiance.MediaPlayer.UI {
 			Initialize();
 			UpdateAllButtons();
 			UpdateUrls();
+			CallCallback("_RelayVideoReady");
 		}
 
 		public void _RelayVideoError() {
@@ -848,6 +858,7 @@ namespace Synergiance.MediaPlayer.UI {
 			Log("Relay Video Error", this);
 			reachedEnd = true;
 			Initialize();
+			CallCallback("_RelayVideoError");
 		}
 
 		public void _RelayVideoStart() {
@@ -855,6 +866,7 @@ namespace Synergiance.MediaPlayer.UI {
 			Log("Relay Video Start", this);
 			Initialize();
 			UpdateAllButtons();
+			CallCallback("_RelayVideoStart");
 		}
 
 		public void _RelayVideoPlay() {
@@ -862,6 +874,7 @@ namespace Synergiance.MediaPlayer.UI {
 			Log("Relay Video Play", this);
 			Initialize();
 			UpdateAllButtons();
+			CallCallback("_RelayVideoPlay");
 		}
 
 		public void _RelayVideoPause() {
@@ -869,6 +882,7 @@ namespace Synergiance.MediaPlayer.UI {
 			Log("Relay Video Pause", this);
 			Initialize();
 			UpdateAllButtons();
+			CallCallback("_RelayVideoPause");
 		}
 
 		public void _RelayVideoEnd() {
@@ -878,6 +892,7 @@ namespace Synergiance.MediaPlayer.UI {
 			Initialize();
 			UpdateAllButtons();
 			AdvanceQueue();
+			CallCallback("_RelayVideoEnd");
 		}
 
 		public void _RelayVideoLoop() {
@@ -886,6 +901,7 @@ namespace Synergiance.MediaPlayer.UI {
 			reachedEnd = false;
 			Initialize();
 			UpdateAllButtons();
+			CallCallback("_RelayVideoLoop");
 		}
 
 		public void _RelayVideoNext() {
@@ -896,6 +912,7 @@ namespace Synergiance.MediaPlayer.UI {
 			UpdateAllButtons();
 			AdvanceQueue();
 			UpdateUrls();
+			CallCallback("_RelayVideoNext");
 		}
 
 		public void _RelayVideoQueueLoading() {
@@ -904,6 +921,7 @@ namespace Synergiance.MediaPlayer.UI {
 			Initialize();
 			//ShowLoadingBar();
 			UpdateAllButtons();
+			CallCallback("_RelayVideoQueueLoading");
 		}
 
 		public void _RelayVideoQueueReady() {
@@ -911,12 +929,14 @@ namespace Synergiance.MediaPlayer.UI {
 			Log("Relay Video Queue Ready", this);
 			Initialize();
 			UpdateAllButtons();
+			CallCallback("_RelayVideoQueueReady");
 		}
 
 		public void _RelayVideoQueueError() {
 			// Queued video player has thrown an error
 			Log("Relay Video Queue Error", this);
 			Initialize();
+			CallCallback("_RelayVideoQueueError");
 		}
 
 		// ----------------- Debug Helper Methods -----------------
