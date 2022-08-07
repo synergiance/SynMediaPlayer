@@ -152,11 +152,12 @@ namespace Synergiance.MediaPlayer {
 		// Video Checking
 		private string[] videoHosts          = {
 			"drive.google.com", "twitter.com", "vimeo.com",
-			"youku.com", "tiktok.com", "nicovideo.jp", "facebook.com"
+			"youku.com", "tiktok.com", "nicovideo.jp", "facebook.com",
+			"vrcdn.video"
 		};
 		private string[] videoStreamHosts    = { "youtu.be", "youtube.com", "www.youtube.com" };
-		private string[] streamHosts         = { "twitch.tv" };
-		private string[] musicHosts          = { "soundcloud.com" };
+		private string[] streamHosts         = { "twitch.tv", "vrcdn.live" };
+		private string[] musicHosts          = { "soundcloud.com", "mixcloud.com" }; // TODO: Figure out what to do with streaming music hosts
 		private string[] videoProtocols      = { "http", "https", "rtmp", "rtsp", "rtspt", "rtspu", "file", "ftp", "gopher", "telnet", "data" };
 		private string[] lowLatencyProtocols = { "rtsp", "rtspt", "rtspu" };
 
