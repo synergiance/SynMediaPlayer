@@ -147,6 +147,17 @@ PrefabInstance:
       propertyPath: publicVariablesUnityEngineObjects.Array.data[0]
       value: 
       objectReference: {fileID: 3499385111716747743}
+    - target: {fileID: 6716506193763951260, guid: 94d281f37fff9144cb3eacce89038251,
+        type: 3}
+      propertyPath: speaker
+      value: 
+      objectReference: {fileID: 3499385111716747743}
+    - target: {fileID: 6716506193763951260, guid: 94d281f37fff9144cb3eacce89038251,
+        type: 3}
+      propertyPath: serializationData.Prefab
+      value: 
+      objectReference: {fileID: 6716506193763951260, guid: 94d281f37fff9144cb3eacce89038251,
+        type: 3}
     - target: {fileID: 7375495546707137748, guid: 94d281f37fff9144cb3eacce89038251,
         type: 3}
       propertyPath: m_RootOrder

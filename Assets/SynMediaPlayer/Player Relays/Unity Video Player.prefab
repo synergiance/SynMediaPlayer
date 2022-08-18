@@ -43,6 +43,17 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: ce59847887a92c14ba3e28d5baea8d3c,
         type: 2}
+    - target: {fileID: 6269273452011627789, guid: 69d06c2383f2a134e81ecc506d8c60c1,
+        type: 3}
+      propertyPath: videoPlayer
+      value: 
+      objectReference: {fileID: 7325882626291481840}
+    - target: {fileID: 6269273452011627789, guid: 69d06c2383f2a134e81ecc506d8c60c1,
+        type: 3}
+      propertyPath: serializationData.Prefab
+      value: 
+      objectReference: {fileID: 6269273452011627789, guid: 69d06c2383f2a134e81ecc506d8c60c1,
+        type: 3}
     - target: {fileID: 7813246373952099141, guid: 69d06c2383f2a134e81ecc506d8c60c1,
         type: 3}
       propertyPath: m_RootOrder

@@ -118,6 +118,12 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 6262121594878435089}
     m_Modifications:
+    - target: {fileID: -5203881636567800017, guid: 49bfe63af05df1f4e9faf9f5f0801c0b,
+        type: 3}
+      propertyPath: serializationData.Prefab
+      value: 
+      objectReference: {fileID: -5203881636567800017, guid: 49bfe63af05df1f4e9faf9f5f0801c0b,
+        type: 3}
     - target: {fileID: 1300826587374515424, guid: 49bfe63af05df1f4e9faf9f5f0801c0b,
         type: 3}
       propertyPath: m_Name
@@ -228,6 +234,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4150636548903120168, guid: 49bfe63af05df1f4e9faf9f5f0801c0b,
+        type: 3}
+      propertyPath: serializedProgramAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 52b44b70a441a8c4caeaec8f59849738,
+        type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 49bfe63af05df1f4e9faf9f5f0801c0b, type: 3}
 --- !u!224 &8078354197538449119 stripped
