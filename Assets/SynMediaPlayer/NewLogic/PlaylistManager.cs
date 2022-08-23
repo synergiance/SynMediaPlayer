@@ -8,7 +8,7 @@ namespace Synergiance.MediaPlayer {
 	[Serializable]
 	public struct Video {
 		public string name;
-		public VRCUrl link;
+		public string link;
 		public string shortName;
 	}
 
@@ -24,6 +24,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private string playlistBackup; // Saves playlist backup name
 
 		[SerializeField] private int[] playlistOffsets;
+		[SerializeField] private int[] playlistLengths;
 		[SerializeField] private string[] playlistNames;
 		[SerializeField] private string[] videoShortNames;
 		[SerializeField] private string[] videoNames;
@@ -42,42 +43,77 @@ namespace Synergiance.MediaPlayer {
 		private const int ArrayIncrement = 16;
 
 		#if !COMPILER_UDONSHARP && UNITY_EDITOR
-		public void RebuildSerialized() {
+		public void RebuildSerialized(bool _fullRebuild) {
+			// We will make numPlaylists 0 if it's null, which will prevent null data access
 			int numPlaylists = playlists?.Length ?? 0;
-			playlistOffsets = new int[numPlaylists];
-			playlistNames = new string[numPlaylists];
-			videoShortNames = Array.Empty<string>();
-			videoNames = Array.Empty<string>();
-			videoLinks = Array.Empty<VRCUrl>();
-			int dumpIndex = 0;
+			// Only make new arrays if we need a full rebuild (array sizes changing)
+			if (_fullRebuild) {
+				playlistOffsets = new int[numPlaylists];
+				playlistLengths = new int[numPlaylists];
+				playlistNames = new string[numPlaylists];
+				videoShortNames = Array.Empty<string>();
+				videoNames = Array.Empty<string>();
+				videoLinks = Array.Empty<VRCUrl>();
+			}
+			int dumpIndex = 0; // Iterator for non structured data
 			for (int playlistIndex = 0; playlistIndex < numPlaylists; playlistIndex++) {
+				// The playlist offset will be the index of its first video in the unstructured data
 				playlistOffsets[playlistIndex] = dumpIndex;
 				// ReSharper disable once PossibleNullReferenceException
 				Playlist playlist = playlists[playlistIndex];
 				playlistNames[playlistIndex] = playlist.name;
+				// We will make numVideos 0 if it's null, which will prevent null data access
 				int numVideos = playlist.videos?.Length ?? 0;
-				if (numVideos <= 0) continue;
-				Array.Resize(ref videoShortNames, videoShortNames.Length + numVideos);
-				Array.Resize(ref videoNames, videoNames.Length + numVideos);
-				Array.Resize(ref videoLinks, videoLinks.Length + numVideos);
+				// I considered leaving playlist length to be determined where needed,
+				// but having that overhead in the udon behaviour is undesired
+				playlistLengths[playlistIndex] = numVideos;
+				if (numVideos <= 0) continue; // Cancel array resize, with free lower bound check
+				if (_fullRebuild) {
+					// Add playlist length on to each array
+					Array.Resize(ref videoShortNames, videoShortNames.Length + numVideos);
+					Array.Resize(ref videoNames, videoNames.Length + numVideos);
+					Array.Resize(ref videoLinks, videoLinks.Length + numVideos);
+				}
 				for (int videoIndex = 0; videoIndex < numVideos; videoIndex++) {
 					// ReSharper disable once PossibleNullReferenceException
 					Video video = playlist.videos[videoIndex];
 					videoShortNames[dumpIndex] = video.shortName;
 					videoNames[dumpIndex] = video.name;
-					videoLinks[dumpIndex] = video.link;
+					// Creating new VRCUrl objects is legal outside of Udon, so doing it here
+					videoLinks[dumpIndex] = new VRCUrl(video.link);
 					dumpIndex++;
 				}
 			}
 		}
 
-		public bool LoadSerialized(string _path) {
+		// This is dead code but it could come in handy in the future.
+		// Seeing as it will be ignored by Udon, its harmless
+		public void DumpContents() {
+			string str = "Playlists:\n";
+			foreach (Playlist playlist in playlists) {
+				str += "Playlist: " + playlist.name + "\n";
+				foreach (Video video in playlist.videos) {
+					str += "Video Title: " + video.name + "\nVideo Short Name: ";
+					str += video.shortName + "\nVideo Link: " + video.link + "\n";
+				}
+			}
+			str += "Videos:\n";
+			for (int i = 0; i < videoNames.Length; i++) {
+				str += "Video Name: " + videoNames[i] + "\nVideo Short Name: ";
+				str += videoShortNames[i] + "\nVideo Link: " + videoLinks[i] + "\n";
+			}
+			Debug.Log(str);
+		}
+
+		public bool LoadFrom(string _path) {
 			// TODO: Implement
+			Debug.LogWarning("Load not implemented!");
 			return true;
 		}
 
-		public bool Serialize(string _path) {
+		public bool SaveTo(string _path) {
 			// TODO: Implement
+			Debug.LogWarning("Save not implemented!");
 			return true;
 		}
 		#endif

@@ -1,8 +1,8 @@
-﻿using UdonSharpEditor;
+﻿using System.Runtime.CompilerServices;
+using UdonSharpEditor;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
-using VRC.SDKBase;
 
 namespace Synergiance.MediaPlayer {
 	[CustomEditor(typeof(PlaylistManager))]
@@ -19,6 +19,9 @@ namespace Synergiance.MediaPlayer {
 
 		private SerializedProperty debugProp;
 		private SerializedProperty diagnosticsProp;
+
+		private bool hasStagedChanges;
+		private bool needsFullRebuild;
 
 		private void OnEnable() {
 			debugProp = serializedObject.FindProperty("debug");
@@ -38,20 +41,24 @@ namespace Synergiance.MediaPlayer {
 		public override void OnInspectorGUI() {
 			if (UdonSharpGUI.DrawDefaultUdonSharpBehaviourHeader(target)) return;
 			serializedObject.Update();
+			EditorGUI.BeginChangeCheck();
 			EditorGUILayout.PropertyField(debugProp);
 			EditorGUILayout.PropertyField(diagnosticsProp);
 			EditorGUILayout.Space();
 			EditorGUILayout.PropertyField(backupProp);
+			if (EditorGUI.EndChangeCheck()) serializedObject.ApplyModifiedProperties();
 			DrawSaveLoadButtons();
 			playlistNamesList.DoLayoutList();
 			RenderPlaylistDetails();
-			serializedObject.ApplyModifiedProperties();
+			FinalizeChanges();
 		}
 
 		private void RenderPlaylistDetails() {
 			if (playlistNamesList.index < 0) return;
 			EditorGUILayout.Space();
+			EditorGUI.BeginChangeCheck();
 			EditorGUILayout.PropertyField(playlistProp.FindPropertyRelative("name"));
+			if (EditorGUI.EndChangeCheck()) ApplyChanges();
 			videoList?.DoLayoutList();
 			RenderVideoDetails();
 		}
@@ -60,9 +67,11 @@ namespace Synergiance.MediaPlayer {
 			if (videoList == null) return;
 			if (videoList.index < 0) return;
 			EditorGUILayout.Space();
+			EditorGUI.BeginChangeCheck();
 			EditorGUILayout.PropertyField(videoProp.FindPropertyRelative("name"));
 			EditorGUILayout.PropertyField(videoProp.FindPropertyRelative("shortName"));
 			EditorGUILayout.PropertyField(videoProp.FindPropertyRelative("link"));
+			if (EditorGUI.EndChangeCheck()) ApplyChanges();
 		}
 
 		// ReSharper disable Unity.PerformanceAnalysis
@@ -81,6 +90,7 @@ namespace Synergiance.MediaPlayer {
 			_list.index = index;
 			SerializedProperty newElement = _list.serializedProperty.GetArrayElementAtIndex(index);
 			newElement.FindPropertyRelative("name").stringValue = "New Playlist";
+			newElement.FindPropertyRelative("videos").arraySize = 0;
 			SelectPlaylist(_list);
 		}
 
@@ -122,6 +132,8 @@ namespace Synergiance.MediaPlayer {
 			_list.index = index;
 			SerializedProperty newElement = _list.serializedProperty.GetArrayElementAtIndex(index);
 			newElement.FindPropertyRelative("name").stringValue = "New Video";
+			newElement.FindPropertyRelative("shortName").stringValue = "New Video";
+			//newElement.FindPropertyRelative("link").DeleteCommand();
 			SelectVideo(_list);
 		}
 
@@ -148,19 +160,34 @@ namespace Synergiance.MediaPlayer {
 
 		private void ListChanged(ReorderableList _list) {
 			//Debug.Log("Change: " + _list.serializedProperty.name);
+			ApplyChanges();
+			needsFullRebuild = true;
+		}
+
+		private void ApplyChanges() {
 			serializedObject.ApplyModifiedProperties();
-			((PlaylistManager)target).RebuildSerialized();
+			hasStagedChanges = true;
+		}
+
+		private void FinalizeChanges() {
+			if (!hasStagedChanges) return;
+			((PlaylistManager)target).RebuildSerialized(needsFullRebuild);
 			serializedObject.Update();
+			hasStagedChanges = false;
+			needsFullRebuild = false;
 		}
 
 		private void SavePlaylists() {
-			// TODO: Implement
-			Debug.LogWarning("Save not implemented!");
+			((PlaylistManager)target).SaveTo(CalculatePlaylistPath());
 		}
 
 		private void LoadPlaylists() {
+			((PlaylistManager)target).LoadFrom(CalculatePlaylistPath());
+		}
+
+		private string CalculatePlaylistPath() {
 			// TODO: Implement
-			Debug.LogWarning("Load not implemented!");
+			return "";
 		}
 	}
 }
