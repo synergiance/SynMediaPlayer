@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using UdonSharpEditor;
+﻿using UdonSharpEditor;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -186,8 +185,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private string CalculatePlaylistPath() {
-			// TODO: Implement
-			return "";
+			return Application.persistentDataPath + "/SMPBackups/" + backupProp.stringValue;
 		}
 	}
 }

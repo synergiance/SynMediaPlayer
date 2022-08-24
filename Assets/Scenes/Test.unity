@@ -271,17 +271,19 @@ MonoBehaviour:
   debug: 1
   diagnostics: {fileID: 584252724}
   playlists:
-  - name: Playlist!
+  - name: Arf
     videos:
-    - name: Video!
-      link: 
-      shortName: Short video name
     - name: New Video
-      link: 
-      shortName: Short video name
-  - name: New Playlist
+      link: https://example.com/meow/video.mp4
+      shortName: Boop
+  - name: Meow
     videos: []
   - name: New Playlist
+    videos:
+    - name: New Video
+      link: https://example.com/meow/video.mp4
+      shortName: Boop
+  - name: Nya
     videos:
     - name: Video!
       link: 
@@ -298,37 +300,66 @@ MonoBehaviour:
     - name: New Video
       link: 
       shortName: New Video
-  - name: New Playlist
-    videos: []
-  playlistBackup: 
-  playlistOffsets: 00000000020000000200000007000000
+  - name: Playlist!
+    videos:
+    - name: Video!
+      link: 
+      shortName: Short video name
+    - name: New Video
+      link: 
+      shortName: Short video name
+  - name: Playlist
+    videos:
+    - name: Video!
+      link: 
+      shortName: Short video name
+    - name: New Video
+      link: 
+      shortName: Short video name
+  playlistBackup: Meow
+  playlistOffsets: 000000000100000001000000020000000700000009000000
+  playlistLengths: 010000000000000001000000050000000200000002000000
   playlistNames:
+  - Arf
+  - Meow
+  - New Playlist
+  - Nya
   - Playlist!
-  - New Playlist
-  - New Playlist
-  - New Playlist
+  - Playlist
   videoShortNames:
-  - Short video name
-  - Short video name
+  - Boop
+  - Boop
   - Short video name
   - New Video
   - New Video
   - Hello
   - New Video
+  - Short video name
+  - Short video name
+  - Short video name
+  - Short video name
   videoNames:
-  - Video!
+  - New Video
   - New Video
   - Video!
   - New Video
   - Blah
   - Vid
   - New Video
+  - Video!
+  - New Video
+  - Video!
+  - New Video
   videoLinks:
-  - url: 
-  - url: 
+  - url: https://example.com/meow/video.mp4
+  - url: https://example.com/meow/video.mp4
   - url: 
   - url: https://example.com/video.mp4
   - url: https://example.com/meow.mp3
+  - url: 
+  - url: 
+  - url: 
+  - url: 
   - url: 
   - url: 
 --- !u!4 &621912734

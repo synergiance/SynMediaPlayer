@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using Synergiance.MediaPlayer.Diagnostics;
 using UdonSharp;
 using UnityEngine;
@@ -106,15 +108,84 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public bool LoadFrom(string _path) {
-			// TODO: Implement
-			Debug.LogWarning("Load not implemented!");
+			Debug.Log("Load path: " + _path);
+			if (!Directory.Exists(_path)) {
+				Debug.LogWarning("Backup doesn't exist in this project.");
+				return false;
+			}
+			string[] files = Directory.GetFiles(_path, "*.txt");
+			if (files.Length < 1) {
+				Debug.LogWarning("Backup doesn't exist in this project.");
+				return false;
+			}
+			string basePath = _path + "/";
+			Debug.Log("Working Directory: " + basePath);
+			playlists = new Playlist[files.Length];
+			for (int i = 0; i < files.Length; i++) {
+				string playlistName = files[i].Substring(files[i].LastIndexOf('\\') + 1);
+				playlistName = playlistName.Substring(0, playlistName.Length - 4);
+				playlists[i] = new Playlist {
+					name = playlistName,
+					videos = LoadPlaylistFrom(files[i])
+				};
+				Debug.Log("Loaded playlist: " + playlistName + ".txt");
+			}
+			RebuildSerialized(true);
 			return true;
 		}
 
 		public bool SaveTo(string _path) {
-			// TODO: Implement
-			Debug.LogWarning("Save not implemented!");
+			bool createDirectory = !Directory.Exists(_path);
+			if (createDirectory) Directory.CreateDirectory(_path);
+			string basePath = _path + "/";
+			Debug.Log((createDirectory ? "Created working directory: " : "Working directory: ") + basePath);
+			foreach (Playlist playlist in playlists)
+				if (SavePlaylistTo(playlist.videos, basePath + playlist.name + ".txt"))
+					Debug.Log("Saved playlist: " + playlist.name + ".txt");
 			return true;
+		}
+
+		private Video[] LoadPlaylistFrom(string _path) {
+			List<Video> videos = new List<Video>();
+			StreamReader reader = new StreamReader(_path);
+			bool reachedEnd = false;
+			string line1 = null, line2 = null, line3 = null;
+			while (!reachedEnd) {
+				if (!ReadLine(ref line1, reader)) break;
+				if (!ReadLine(ref line2, reader)) break;
+				if (!ReadLine(ref line3, reader)) break;
+				Video video = new Video {
+					name = line1,
+					shortName = line2,
+					link = line3
+				};
+				videos.Add(video);
+			}
+			reader.Close();
+			return videos.ToArray();
+		}
+
+		private bool SavePlaylistTo(Video[] _videos, string _path) {
+			if (_videos == null) return false;
+			StreamWriter writer = new StreamWriter(_path, false);
+			foreach (Video video in _videos) {
+				writer.WriteLine(video.name);
+				writer.WriteLine(video.shortName);
+				writer.WriteLine(video.link);
+			}
+			writer.Close();
+			return true;
+		}
+
+		private bool ReadLine(ref string _str, TextReader _reader) {
+			bool found = false;
+			while (!found) {
+				_str = _reader.ReadLine();
+				if (_str == null) break;
+				_str = _str.Trim();
+				found = true;
+			}
+			return found;
 		}
 		#endif
 
