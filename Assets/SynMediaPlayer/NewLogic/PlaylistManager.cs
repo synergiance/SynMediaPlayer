@@ -39,6 +39,9 @@ namespace Synergiance.MediaPlayer {
 		[UdonSynced] private int[] userPlaylistLengths;
 		[UdonSynced] private int numUserPlaylists;
 
+		protected override string DebugName => "Playlist Manager";
+		protected override string DebugColor => "#A04040";
+
 		private bool initialized;
 		private bool playlistsValid;
 
@@ -206,12 +209,14 @@ namespace Synergiance.MediaPlayer {
 			    || videoLinks == null
 			    || videoNames == null
 			    || videoShortNames == null
-			    || playlistOffsets == null) {
+			    || playlistOffsets == null
+			    || playlistLengths == null) {
 				LogError("No playlists or playlists are broken! Disabling playlists.");
 				return;
 			}
 
 			if (playlistNames.Length != playlistOffsets.Length
+			    || playlistNames.Length != playlistLengths.Length
 			    || videoNames.Length != videoLinks.Length
 			    || videoNames.Length != videoShortNames.Length
 			    || playlistOffsets[0] != 0) {
@@ -226,6 +231,21 @@ namespace Synergiance.MediaPlayer {
 					return;
 				}
 				lastOffset = offset;
+			}
+
+			lastOffset = playlistOffsets[0];
+			for (int i = 1; i < playlistLengths.Length; i++) {
+				int playlistLength = playlistLengths[i - 1];
+				lastOffset += playlistLength;
+				if (lastOffset == playlistOffsets[i] && playlistLength >= 0) continue;
+				LogError("Lengths and offsets don't match!");
+				return;
+			}
+
+			lastOffset += playlistLengths[playlistLengths.Length - 1];
+			if (lastOffset != videoNames.Length) {
+				LogError("Lengths don't add up!");
+				return;
 			}
 
 			int currentPlaylist = 0;
@@ -251,11 +271,49 @@ namespace Synergiance.MediaPlayer {
 
 		private void InitializeUserPlaylists() {
 			numUserPlaylists = 0;
+			Log("Initializing user playlists...");
 			userPlaylistNames = new string[ArrayIncrement];
 			userPlaylistLengths = new int[ArrayIncrement];
 			userPlaylistOffsets = new int[ArrayIncrement];
 			userVideoLinks = new VRCUrl[ArrayIncrement];
 			userVideoNames = new string[ArrayIncrement];
+		}
+
+		public bool _GetWorldVideo(int _playlist, int _video, ref string _name, ref string _shortName, ref VRCUrl _link) {
+			if (_playlist >= playlistNames.Length || _playlist < 0) {
+				LogError("Playlist out of bounds!");
+				return false;
+			}
+			if (_video >= playlistLengths[_playlist] || _video < 0) {
+				LogError("Video out of bounds!");
+				return false;
+			}
+			int videoIndex = playlistOffsets[_playlist] + _video;
+			Log("Fetching video information from index " + videoIndex);
+			_shortName = videoShortNames[videoIndex];
+			_name = videoNames[videoIndex];
+			_link = videoLinks[videoIndex];
+			Log("Name: \"" + _name + "\", Short Name: \"" + _shortName + "\", Link: \"" + _link + "\"");
+			return true;
+		}
+
+		public bool _GetUserVideo(int _playlist, int _video, ref string _name, ref string _shortName, ref VRCUrl _link) {
+			// TODO: Implement
+			LogError("User videos not implemented!");
+			return false;
+		}
+
+		public bool _GetVideo(int _playlistType, int _playlist, int _video, ref string _name, ref string _shortName, ref VRCUrl _link) {
+			switch (_playlistType) {
+				case 0:
+					Log("Getting video from world playlists");
+					return _GetWorldVideo(_playlist, _video, ref _name, ref _shortName, ref _link);
+				case 1:
+					Log("Getting video from user playlists");
+					return _GetUserVideo(_playlist, _video, ref _name, ref _shortName, ref _link);
+			}
+			LogError("Invalid playlist type: " + _playlistType);
+			return false;
 		}
 	}
 }
