@@ -2,6 +2,7 @@
 using System;
 using Synergiance.MediaPlayer.Diagnostics;
 using UdonSharp;
+using UnityEngine;
 
 namespace Synergiance.MediaPlayer {
 	public class VideoBehaviour : DiagnosticBehaviour {
@@ -10,6 +11,7 @@ namespace Synergiance.MediaPlayer {
 		private int numVideoCallbacks;
 		private const int CallbacksArrayIncrement = 16;
 		private bool videoBaseInitialized;
+		[SerializeField] protected SecurityManager securityManager;
 
 		private void InitializeVideoBase() {
 			if (videoBaseInitialized) return;
@@ -35,6 +37,10 @@ namespace Synergiance.MediaPlayer {
 				ExpandVideoCallbacksArray();
 			videoCallbacks[numVideoCallbacks++] = _callback;
 		}
+		
+		public virtual void _SecurityUnlocked() {}
+		public virtual void _SecurityLocked() {}
+		public virtual void _GainedPrivileges() {}
 
 		public virtual void _RelayVideoLoading() { SendVideoCallback("_RelayVideoLoading"); }
 		public virtual void _RelayVideoReady() { SendVideoCallback("_RelayVideoLoading"); }

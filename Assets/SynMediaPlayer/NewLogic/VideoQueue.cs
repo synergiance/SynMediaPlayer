@@ -8,13 +8,15 @@ namespace Synergiance.MediaPlayer {
 	public class VideoQueue : DiagnosticBehaviour {
 		[SerializeField] private int maxQueueLength = 64;
 		[UdonSynced] private VRCUrl[] queuedVideos; // This will be a ring buffer
-		[UdonSynced] private int currentIndex;
-		[UdonSynced] private int videosInQueue;
+		[UdonSynced] private int currentIndexSync;
+		[UdonSynced] private int videosInQueueSync;
+		private int currentIndex;
+		private int videosInQueue;
 
 		private bool initialized;
 
-		public VRCUrl CurrentVideo => GetVideoAtIndex(0);
-		public VRCUrl NextVideo => GetVideoAtIndex(1);
+		public VRCUrl CurrentVideo => _GetVideoAtIndex(0);
+		public VRCUrl NextVideo => _GetVideoAtIndex(1);
 		public int VideosInQueue => videosInQueue;
 
 		protected override string DebugName => "Video Queue";
@@ -39,12 +41,12 @@ namespace Synergiance.MediaPlayer {
 			return (_index + currentIndex) % maxQueueLength;
 		}
 
-		public VRCUrl GetVideoAtIndex(int _index) {
+		public VRCUrl _GetVideoAtIndex(int _index) {
 			Initialize();
 			return queuedVideos[CalcRingIndex(_index)];
 		}
 
-		public void AdvanceQueue() {
+		public void _AdvanceQueue() {
 			if (videosInQueue <= 0) {
 				LogError("Queue empty, cannot advance queue!");
 				return;
@@ -53,7 +55,7 @@ namespace Synergiance.MediaPlayer {
 			videosInQueue = Mathf.Max(videosInQueue - 1, 0);
 		}
 
-		public bool AddVideo(VRCUrl _link) {
+		public bool _AddVideo(VRCUrl _link) {
 			if (videosInQueue >= maxQueueLength) {
 				LogError("Cannot insert into queue, max queue length reached!");
 				return false;
