@@ -278,6 +278,14 @@ MonoBehaviour:
       shortName: Boop
   - name: Meow
     videos: []
+  - name: Playlist!
+    videos:
+    - name: Video!
+      link: 
+      shortName: Short video name
+    - name: New Video
+      link: 
+      shortName: Short video name
   - name: New Playlist
     videos:
     - name: New Video
@@ -291,23 +299,15 @@ MonoBehaviour:
     - name: New Video
       link: https://example.com/video.mp4
       shortName: New Video
-    - name: Blah
-      link: https://example.com/meow.mp3
-      shortName: New Video
     - name: Vid
       link: 
       shortName: Hello
+    - name: Blah
+      link: https://example.com/meow.mp3
+      shortName: New Video
     - name: New Video
       link: 
       shortName: New Video
-  - name: Playlist!
-    videos:
-    - name: Video!
-      link: 
-      shortName: Short video name
-    - name: New Video
-      link: 
-      shortName: Short video name
   - name: Playlist
     videos:
     - name: Video!
@@ -317,48 +317,48 @@ MonoBehaviour:
       link: 
       shortName: Short video name
   playlistBackup: Meow
-  playlistOffsets: 000000000100000001000000020000000700000009000000
-  playlistLengths: 010000000000000001000000050000000200000002000000
+  playlistOffsets: 000000000100000001000000030000000400000009000000
+  playlistLengths: 010000000000000002000000010000000500000002000000
   playlistNames:
   - Arf
   - Meow
+  - Playlist!
   - New Playlist
   - Nya
-  - Playlist!
   - Playlist
   videoShortNames:
   - Boop
+  - Short video name
+  - Short video name
   - Boop
   - Short video name
   - New Video
-  - New Video
   - Hello
   - New Video
-  - Short video name
-  - Short video name
+  - New Video
   - Short video name
   - Short video name
   videoNames:
   - New Video
+  - Video!
+  - New Video
   - New Video
   - Video!
   - New Video
-  - Blah
   - Vid
-  - New Video
-  - Video!
+  - Blah
   - New Video
   - Video!
   - New Video
   videoLinks:
   - url: https://example.com/meow/video.mp4
+  - url: 
+  - url: 
   - url: https://example.com/meow/video.mp4
   - url: 
   - url: https://example.com/video.mp4
+  - url: 
   - url: https://example.com/meow.mp3
-  - url: 
-  - url: 
-  - url: 
   - url: 
   - url: 
   - url: 
