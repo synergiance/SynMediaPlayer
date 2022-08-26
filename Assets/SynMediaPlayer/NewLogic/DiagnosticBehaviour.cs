@@ -4,7 +4,14 @@ using UnityEngine;
 
 namespace Synergiance.MediaPlayer.Diagnostics {
 	public class DiagnosticBehaviour : UdonSharpBehaviour {
+		/// <summary>
+		/// This is the color that the name of the behaviour will show as in the
+		/// debug log
+		/// </summary>
 		protected virtual string DebugColor => "#808080";
+		/// <summary>
+		/// This is the display name of the behaviour in the debug log
+		/// </summary>
 		protected virtual string DebugName => "Diagnostic Behaviour";
 		private const string DebugTemplate = "[<color=$color>$name</color>] ";
 		private const string DebugTplName = "$name";
@@ -17,6 +24,11 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 		private string debugPrefix;
 		private int diagnosticsID = -1;
 
+		/// <summary>
+		/// This method will initialize the diagnostic behaviour. It can either
+		/// be called from the initialization method, or it will fire the first
+		/// time its needed.
+		/// </summary>
 		protected void InitializeDiagnostics() {
 			if (diagnosticsInitialized) return;
 			hasDiagnostics = diagnostics != null;
@@ -32,6 +44,11 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 			diagnosticsID = diagnostics._Register(DebugName, DebugColor);
 		}
 
+		/// <summary>
+		/// Logs a message to the debug log if the debug checkbox is enabled.
+		/// </summary>
+		/// <param name="_message">Message to log</param>
+		/// <param name="_context">Object to attach as context, uses current object if null</param>
 		protected void Log(string _message, Object _context = null) {
 			if (!debug) return;
 			InitializeDiagnostics();
@@ -43,6 +60,11 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 			Debug.Log(debugPrefix + _message, _context);
 		}
 
+		/// <summary>
+		/// Logs a warning message to the debug log.
+		/// </summary>
+		/// <param name="_message">Message to log</param>
+		/// <param name="_context">Object to attach as context, uses current object if null</param>
 		protected void LogWarning(string _message, Object _context = null) {
 			InitializeDiagnostics();
 			if (_context == null) _context = this;
@@ -53,6 +75,11 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 			Debug.LogWarning(debugPrefix + _message, _context);
 		}
 
+		/// <summary>
+		/// Logs an error message to the debug log.
+		/// </summary>
+		/// <param name="_message">Message to log</param>
+		/// <param name="_context">Object to attach as context, uses current object if null</param>
 		protected void LogError(string _message, Object _context = null) {
 			InitializeDiagnostics();
 			if (_context == null) _context = this;

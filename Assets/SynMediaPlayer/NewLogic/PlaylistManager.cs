@@ -7,6 +7,9 @@ using UnityEngine;
 using VRC.SDKBase;
 
 namespace Synergiance.MediaPlayer {
+	/// <summary>
+	/// A struct containing the name, link, and a friendly name for a video.
+	/// </summary>
 	[Serializable]
 	public struct Video {
 		public string name;
@@ -14,12 +17,18 @@ namespace Synergiance.MediaPlayer {
 		public string shortName;
 	}
 
+	/// <summary>
+	/// A struct containing a playlist name and an array of videos
+	/// </summary>
 	[Serializable]
 	public struct Playlist {
 		public string name;
 		public Video[] videos;
 	}
 
+	/// <summary>
+	/// A class containing any number of playlists containing any number of videos.
+	/// </summary>
 	[UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
 	public class PlaylistManager : DiagnosticBehaviour {
 		[SerializeField] private Playlist[] playlists; // Currently just a helper for the UI
@@ -45,6 +54,9 @@ namespace Synergiance.MediaPlayer {
 		private bool initialized;
 		private bool playlistsValid;
 
+		/// <summary>
+		/// The user playlist allocation increment size, also the initial allocation
+		/// </summary>
 		private const int ArrayIncrement = 16;
 
 		#if !COMPILER_UDONSHARP && UNITY_EDITOR
@@ -91,8 +103,12 @@ namespace Synergiance.MediaPlayer {
 			}
 		}
 
-		// This is dead code but it could come in handy in the future.
-		// Seeing as it will be ignored by Udon, its harmless
+		/// <summary>
+		/// This dumps the contents of the serialized playlists.
+		/// 
+		/// This is dead code but it could come in handy in the future. Seeing
+		/// as it will be ignored by Udon, it's harmless.
+		/// </summary>
 		public void DumpContents() {
 			string str = "Playlists:\n";
 			foreach (Playlist playlist in playlists) {
@@ -110,6 +126,11 @@ namespace Synergiance.MediaPlayer {
 			Debug.Log(str);
 		}
 
+		/// <summary>
+		/// Helper function to load playlists from disk.
+		/// </summary>
+		/// <param name="_path">The path of the directory to load the playlists from.</param>
+		/// <returns>True on success, False on failure.</returns>
 		public bool LoadFrom(string _path) {
 			Debug.Log("Load path: " + _path);
 			if (!Directory.Exists(_path)) {
@@ -137,6 +158,11 @@ namespace Synergiance.MediaPlayer {
 			return true;
 		}
 
+		/// <summary>
+		/// Helper function to save playlists to disk.
+		/// </summary>
+		/// <param name="_path">The path of the directory to save the playlists to.</param>
+		/// <returns>True on success, False on failure.</returns>
 		public bool SaveTo(string _path) {
 			bool createDirectory = !Directory.Exists(_path);
 			if (createDirectory) Directory.CreateDirectory(_path);
@@ -148,6 +174,11 @@ namespace Synergiance.MediaPlayer {
 			return true;
 		}
 
+		/// <summary>
+		/// Helper function to load a single playlist from file.
+		/// </summary>
+		/// <param name="_path">Full path of the file to load the playlist from.</param>
+		/// <returns>An array containing all the videos that were loaded.</returns>
 		private Video[] LoadPlaylistFrom(string _path) {
 			List<Video> videos = new List<Video>();
 			StreamReader reader = new StreamReader(_path);
@@ -168,6 +199,12 @@ namespace Synergiance.MediaPlayer {
 			return videos.ToArray();
 		}
 
+		/// <summary>
+		/// Helper function to save a single playlist to file.
+		/// </summary>
+		/// <param name="_videos">An array containing all the videos to save.</param>
+		/// <param name="_path">Full path of the file to save the playlist to.</param>
+		/// <returns>True on success, false on failure.</returns>
 		private bool SavePlaylistTo(Video[] _videos, string _path) {
 			if (_videos == null) return false;
 			StreamWriter writer = new StreamWriter(_path, false);
@@ -180,6 +217,12 @@ namespace Synergiance.MediaPlayer {
 			return true;
 		}
 
+		/// <summary>
+		/// Internal function that will read the next line from a stream
+		/// </summary>
+		/// <param name="_str">String to store the line that was read.</param>
+		/// <param name="_reader">The stream reader connected to the stream.</param>
+		/// <returns>True when it reads a line successfully, False when there's no more data.</returns>
 		private bool ReadLine(ref string _str, TextReader _reader) {
 			bool found = false;
 			while (!found) {
@@ -203,6 +246,10 @@ namespace Synergiance.MediaPlayer {
 			initialized = true;
 		}
 
+		/// <summary>
+		/// Checks integrity of serialized playlists. Sets playlistsValid to
+		/// true if all checks pass.
+		/// </summary>
 		private void CheckPlaylists() {
 			Log("Checking playlist integrity");
 			if (playlistNames == null
@@ -269,6 +316,9 @@ namespace Synergiance.MediaPlayer {
 			playlistsValid = true;
 		}
 
+		/// <summary>
+		/// Initializes the user playlist arrays.
+		/// </summary>
 		private void InitializeUserPlaylists() {
 			numUserPlaylists = 0;
 			Log("Initializing user playlists...");
@@ -279,6 +329,15 @@ namespace Synergiance.MediaPlayer {
 			userVideoNames = new string[ArrayIncrement];
 		}
 
+		/// <summary>
+		/// Gets a video from any of the serialized world playlists.
+		/// </summary>
+		/// <param name="_playlist">Playlist index</param>
+		/// <param name="_video">Video index</param>
+		/// <param name="_name">Video Name return</param>
+		/// <param name="_shortName">Video Friendly Name return</param>
+		/// <param name="_link">Video Link return</param>
+		/// <returns>True on success, False if video or playlist doesn't exist.</returns>
 		public bool _GetWorldVideo(int _playlist, int _video, ref string _name, ref string _shortName, ref VRCUrl _link) {
 			if (_playlist >= playlistNames.Length || _playlist < 0) {
 				LogError("Playlist out of bounds!");
@@ -297,12 +356,31 @@ namespace Synergiance.MediaPlayer {
 			return true;
 		}
 
+		/// <summary>
+		/// Gets a video from any of the unserialized user playlists.
+		/// </summary>
+		/// <param name="_playlist">Playlist index</param>
+		/// <param name="_video">Video index</param>
+		/// <param name="_name">Video Name return</param>
+		/// <param name="_shortName">Video Friendly Name return</param>
+		/// <param name="_link">Video Link return</param>
+		/// <returns>True on success, False if video or playlist doesn't exist.</returns>
 		public bool _GetUserVideo(int _playlist, int _video, ref string _name, ref string _shortName, ref VRCUrl _link) {
 			// TODO: Implement
 			LogError("User videos not implemented!");
 			return false;
 		}
 
+		/// <summary>
+		/// Gets a video from any of the playlists.
+		/// </summary>
+		/// <param name="_playlistType">Type of playlist to fetch from</param>
+		/// <param name="_playlist">Playlist index</param>
+		/// <param name="_video">Video index</param>
+		/// <param name="_name">Video Name return</param>
+		/// <param name="_shortName">Video Friendly Name return</param>
+		/// <param name="_link">Video Link return</param>
+		/// <returns>True on success, False if video or playlist doesn't exist.</returns>
 		public bool _GetVideo(int _playlistType, int _playlist, int _video, ref string _name, ref string _shortName, ref VRCUrl _link) {
 			switch (_playlistType) {
 				case 0:

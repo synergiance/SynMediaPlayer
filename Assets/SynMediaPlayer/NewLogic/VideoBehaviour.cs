@@ -27,7 +27,11 @@ namespace Synergiance.MediaPlayer {
 			videoCallbacks = tmp;
 		}
 
-		public void RegisterVideoCallback(UdonSharpBehaviour _callback) {
+		/// <summary>
+		/// Registers a behaviour as a callback
+		/// </summary>
+		/// <param name="_callback">The behaviour to register</param>
+		public void _RegisterVideoCallback(UdonSharpBehaviour _callback) {
 			InitializeVideoBase();
 			if (Array.IndexOf(videoCallbacks, _callback) >= 0) {
 				LogWarning("Callback already exists in the callback array!", this);
@@ -37,7 +41,7 @@ namespace Synergiance.MediaPlayer {
 				ExpandVideoCallbacksArray();
 			videoCallbacks[numVideoCallbacks++] = _callback;
 		}
-		
+
 		public virtual void _SecurityUnlocked() {}
 		public virtual void _SecurityLocked() {}
 		public virtual void _GainedPrivileges() {}
@@ -55,6 +59,10 @@ namespace Synergiance.MediaPlayer {
 		public virtual void _RelayVideoQueueReady() { SendVideoCallback("_RelayVideoLoading"); }
 		public virtual void _RelayVideoQueueError() { SendVideoCallback("_RelayVideoLoading"); }
 
+		/// <summary>
+		/// Sends a callback to all registered callbacks
+		/// </summary>
+		/// <param name="_callbackName">Name of the callback to call</param>
 		protected void SendVideoCallback(string _callbackName) {
 			InitializeVideoBase();
 			foreach (UdonSharpBehaviour videoCallback in videoCallbacks)

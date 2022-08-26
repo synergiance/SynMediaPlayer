@@ -17,6 +17,10 @@ namespace Synergiance.MediaPlayer {
 
 		private bool initialized;
 
+		/// <summary>
+		/// Property telling whether the current user is able to manipulate the
+		/// video player while locked.
+		/// </summary>
 		public bool HasAccess {
 			get {
 				if (hasAccess) return true;
