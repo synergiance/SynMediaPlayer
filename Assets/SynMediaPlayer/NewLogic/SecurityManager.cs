@@ -9,11 +9,8 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private string[] moderators;
 		[SerializeField] private bool allowWorldMaster = true;
 		[SerializeField] private bool allowWorldOwner = true;
-		[SerializeField] private bool lockByDefault;
 
 		private UdonSharpBehaviour[] callbacks;
-		private bool isLocked;
-		[UdonSynced] private bool isLockedSync;
 
 		private bool hasAccess;
 		private bool hasSecurity;
@@ -41,21 +38,6 @@ namespace Synergiance.MediaPlayer {
 			}
 		}
 
-		public bool IsLocked {
-			get {
-				Initialize();
-				return isLocked;
-			}
-			private set {
-				if (isLocked == value) return;
-				isLocked = value;
-				Log((isLocked ? "Locking" : "Unlocking") + " the player");
-				CallCallbacks(isLocked ? "_SecurityLocked" : "_SecurityUnlocked");
-			}
-		}
-
-		public bool UnlockedOrHasAccess => !IsLocked || HasAccess;
-
 		void Start() {
 			Initialize();
 		}
@@ -64,7 +46,6 @@ namespace Synergiance.MediaPlayer {
 			if (initialized) return;
 			hasSecurity = !((moderators == null || moderators.Length <= 0) && !allowWorldMaster && !allowWorldOwner);
 			if (!hasSecurity) Log("No moderators, no owner and master control, security disengaged.");
-			isLocked = lockByDefault && hasSecurity;
 			if (hasSecurity) hasAccess = true;
 			initialized = true;
 		}
@@ -88,38 +69,6 @@ namespace Synergiance.MediaPlayer {
 			}
 			Log("Has no access");
 			return false;
-		}
-
-		public void _Lock() {
-			if (!hasSecurity) {
-				Log("No security, cannot lock!");
-				return;
-			}
-			if (isLocked) {
-				Log("Already locked!");
-				return;
-			}
-			if (!HasAccess) {
-				LogWarning("You don't have access to lock the player!");
-				return;
-			}
-			IsLocked = true;
-		}
-
-		public void _Unlock() {
-			if (!hasSecurity) {
-				Log("No security, already unlocked!");
-				return;
-			}
-			if (!isLocked) {
-				Log("Already unlocked!");
-				return;
-			}
-			if (!HasAccess) {
-				LogWarning("You don't have access to unlock the player!");
-				return;
-			}
-			IsLocked = false;
 		}
 
 		private void CallCallbacks(string _message) {
