@@ -20,8 +20,9 @@ namespace Synergiance.MediaPlayer {
 	/// run alongside other video player behaviours.
 	/// </summary>
 	public class VideoPlayer : VideoBehaviour {
-		[SerializeField] private SecurityManager securityManager;
 		[SerializeField] private bool lockByDefault;
+		[SerializeField] private PlaylistManager playlistManager;
+		[SerializeField] private VideoManager videoManager;
 		private bool paused;
 		[UdonSynced] private bool pausedSync;
 		private int pauseTime;
@@ -37,6 +38,10 @@ namespace Synergiance.MediaPlayer {
 		private bool initialized;
 		private UdonSharpBehaviour[] callbacks;
 
+		/// <summary>
+		/// Public interface for determining whether video player is locked or not.
+		/// Hides the internal mechanism for locking and unlocking the video player.
+		/// </summary>
 		public bool IsLocked {
 			get {
 				Initialize();
@@ -62,11 +67,11 @@ namespace Synergiance.MediaPlayer {
 			initialized = true;
 		}
 
-		public void Play() {}
+		public void _Play() {}
 
-		public void Pause() {}
+		public void _Pause() {}
 
-		public void Stop() {}
+		public void _Stop() {}
 
 		public void _Lock() {
 			if (!securityManager.HasSecurity) {
