@@ -12,6 +12,8 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private int videoType;
 		[SerializeField] private string videoName;
 
+		public int VideoType => videoType;
+
 		private VideoManager relayPoint;
 		private int identifier;
 
@@ -36,6 +38,8 @@ namespace Synergiance.MediaPlayer {
 			initialized = true;
 			return videoName;
 		}
+
+		// TODO: Actually write interface methods
 
 		private void SendRelayEvent(string _eventName) {
 			if (!initialized) {

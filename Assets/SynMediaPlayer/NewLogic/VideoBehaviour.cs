@@ -3,6 +3,7 @@ using System;
 using Synergiance.MediaPlayer.Diagnostics;
 using UdonSharp;
 using UnityEngine;
+using VRC.SDK3.Components.Video;
 
 namespace Synergiance.MediaPlayer {
 	public class VideoBehaviour : DiagnosticBehaviour {
@@ -12,6 +13,10 @@ namespace Synergiance.MediaPlayer {
 		private const int CallbacksArrayIncrement = 16;
 		private bool videoBaseInitialized;
 		[SerializeField] protected SecurityManager securityManager;
+
+		// Public Callback Variables
+		[HideInInspector] public int relayIdentifier;
+		[HideInInspector] public VideoError relayVideoError;
 
 		private void InitializeVideoBase() {
 			if (videoBaseInitialized) return;
@@ -47,17 +52,17 @@ namespace Synergiance.MediaPlayer {
 		public virtual void _GainedPrivileges() {}
 
 		public virtual void _RelayVideoLoading() { SendVideoCallback("_RelayVideoLoading"); }
-		public virtual void _RelayVideoReady() { SendVideoCallback("_RelayVideoLoading"); }
-		public virtual void _RelayVideoError() { SendVideoCallback("_RelayVideoLoading"); }
-		public virtual void _RelayVideoStart() { SendVideoCallback("_RelayVideoLoading"); }
-		public virtual void _RelayVideoPlay() { SendVideoCallback("_RelayVideoLoading"); }
-		public virtual void _RelayVideoPause() { SendVideoCallback("_RelayVideoLoading"); }
-		public virtual void _RelayVideoEnd() { SendVideoCallback("_RelayVideoLoading"); }
-		public virtual void _RelayVideoLoop() { SendVideoCallback("_RelayVideoLoading"); }
-		public virtual void _RelayVideoNext() { SendVideoCallback("_RelayVideoLoading"); }
-		public virtual void _RelayVideoQueueLoading() { SendVideoCallback("_RelayVideoLoading"); }
-		public virtual void _RelayVideoQueueReady() { SendVideoCallback("_RelayVideoLoading"); }
-		public virtual void _RelayVideoQueueError() { SendVideoCallback("_RelayVideoLoading"); }
+		public virtual void _RelayVideoReady() { SendVideoCallback("_RelayVideoReady"); }
+		public virtual void _RelayVideoError() { SendVideoCallback("_RelayVideoError"); }
+		public virtual void _RelayVideoStart() { SendVideoCallback("_RelayVideoStart"); }
+		public virtual void _RelayVideoPlay() { SendVideoCallback("_RelayVideoPlay"); }
+		public virtual void _RelayVideoPause() { SendVideoCallback("_RelayVideoPause"); }
+		public virtual void _RelayVideoEnd() { SendVideoCallback("_RelayVideoEnd"); }
+		public virtual void _RelayVideoLoop() { SendVideoCallback("_RelayVideoLoop"); }
+		public virtual void _RelayVideoNext() { SendVideoCallback("_RelayVideoNext"); }
+		public virtual void _RelayVideoQueueLoading() { SendVideoCallback("_RelayVideoQueueLoading"); }
+		public virtual void _RelayVideoQueueReady() { SendVideoCallback("_RelayVideoQueueReady"); }
+		public virtual void _RelayVideoQueueError() { SendVideoCallback("_RelayVideoQueueError"); }
 
 		/// <summary>
 		/// Sends a callback to all registered callbacks
