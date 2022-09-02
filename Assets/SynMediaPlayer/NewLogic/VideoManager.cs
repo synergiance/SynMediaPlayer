@@ -1,4 +1,5 @@
-﻿using Synergiance.MediaPlayer.Diagnostics;
+﻿using System;
+using Synergiance.MediaPlayer.Diagnostics;
 using UnityEngine;
 using VRC.SDK3.Components.Video;
 using VRC.SDKBase;
@@ -11,6 +12,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private VideoRelay[] relays;
 		private string[] videoNames; // Name of the relay video players
 		private int[] relayHandles; // Handle the relay is currently bound to
+		private bool[] relayIsSecondary; // True when this is the next video instead of the current
 
 		private VideoPlayer[] videoPlayers; // Video players assigned to each handle
 		private int[] primaryHandles; // Primary relay assigned to handle
@@ -41,9 +43,12 @@ namespace Synergiance.MediaPlayer {
 
 			videoNames = new string[relays.Length];
 			relayHandles = new int[relays.Length];
+			relayIsSecondary = new bool[relays.Length];
 
 			for (int i = 0; i < relays.Length; i++) {
 				videoNames[i] = relays[i].InitializeRelay(this, i);
+				relayHandles[i] = -1;
+				relayIsSecondary[i] = false;
 				if (videoNames[i] == null)
 					LogWarning("Video player " + i + " isn't initialized!");
 				else
@@ -61,8 +66,38 @@ namespace Synergiance.MediaPlayer {
 		/// saved to an array of players.</param>
 		/// <returns>The handle for performing actions on a video.</returns>
 		public int _RequestVideoHandle(VideoPlayer _player) {
-			//
-			return -1;
+			Initialize();
+			// Search through video handles to see if player is already registered
+			if (videoPlayers == null || videoPlayers.Length == 0) {
+				Log("Creating handle arrays, registering video player at index 0");
+				videoPlayers = new VideoPlayer[1];
+				videoPlayers[0] = _player;
+				primaryHandles = new int[1];
+				primaryHandles[0] = -1;
+				secondaryHandles = new int[1];
+				secondaryHandles[0] = -1;
+				return 0;
+			}
+			for (int i = 0; i < videoPlayers.Length; i++) {
+				if (_player != videoPlayers[i]) continue;
+				LogWarning("Video player already registered at index " + i);
+				return i;
+			}
+			int index = videoPlayers.Length;
+			Log("Registering video player at index " + index);
+			VideoPlayer[] tempPlayers = new VideoPlayer[index + 1];
+			Array.Copy(videoPlayers, tempPlayers, index);
+			videoPlayers = tempPlayers;
+			int[] tempHandles = new int[index + 1];
+			Array.Copy(primaryHandles, tempHandles, index);
+			primaryHandles = tempHandles;
+			tempHandles = new int[index + 1];
+			Array.Copy(secondaryHandles, tempHandles, index);
+			secondaryHandles = tempHandles;
+			videoPlayers[index] = _player;
+			primaryHandles[index] = -1;
+			secondaryHandles[index] = -1;
+			return index;
 		}
 
 		/// <summary>
@@ -80,7 +115,7 @@ namespace Synergiance.MediaPlayer {
 		/// incompatible and there is no free compatible relay, this will fail
 		/// and return false.</returns>
 		public bool _LoadVideo(VRCUrl _videoLink, int _videoType, int _handle, bool _playImmediately = false) {
-			if (_handle < 0 || _handle >= videoPlayers.Length) {
+			if (_handle < 0 || videoPlayers == null || _handle >= videoPlayers.Length) {
 				LogError("Invalid handle!");
 				return false;
 			}
@@ -130,7 +165,7 @@ namespace Synergiance.MediaPlayer {
 				LogError("Relay out of bounds, cannot bind!");
 				return false;
 			}
-			if (_handle < 0 || _handle >= videoPlayers.Length) {
+			if (_handle < 0 || videoPlayers == null || _handle >= videoPlayers.Length) {
 				LogError("Handle out of bounds, cannot bind!");
 				return false;
 			}
