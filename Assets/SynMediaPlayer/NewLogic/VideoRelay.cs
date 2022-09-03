@@ -13,22 +13,47 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private int videoType;
 		[SerializeField] private string videoName;
 
+		/// <summary>
+		/// Video type of the video (0 for video, 1 for stream,
+		/// and 2 for low latency)
+		/// </summary>
 		public int VideoType => videoType;
 
+		/// <summary>
+		/// Accessor for whether there is a video playing
+		/// </summary>
 		public bool IsPlaying => initialized && videoSource.IsPlaying;
+
+		/// <summary>
+		/// Accessor for whether a video is ready to be played
+		/// </summary>
 		public bool IsReady => initialized && videoSource.IsReady;
+		
+		/// <summary>
+		/// Accessor for duration of the current video. Will be NaN if relay is
+		/// not initialized.
+		/// </summary>
 		public float Duration => initialized ? videoSource.GetDuration() : float.NaN;
 
+		/// <summary>
+		/// Specifies whether a video will loop or not.
+		/// </summary>
 		public bool Loop {
 			get => initialized && videoSource.Loop;
 			set { if (initialized) videoSource.Loop = value; }
 		}
 
+		/// <summary>
+		/// Specifies whether automatic video/audio sync will be enabled.
+		/// </summary>
 		public bool AutomaticResync {
 			get => initialized && videoSource.EnableAutomaticResync;
 			set { if (initialized) videoSource.EnableAutomaticResync = value; }
 		}
 
+		/// <summary>
+		/// Current time in a video. Will be NaN if relay is not initialized.
+		/// </summary>
 		public float Time {
 			get => initialized ? videoSource.GetTime() : float.NaN;
 			set { if (initialized) videoSource.SetTime(value); }
