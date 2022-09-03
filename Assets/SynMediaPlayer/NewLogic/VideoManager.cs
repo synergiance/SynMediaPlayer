@@ -20,12 +20,20 @@ namespace Synergiance.MediaPlayer {
 		private VRCUrl[] primaryLinks; // Primary video link for handle
 		private VRCUrl[] secondaryLinks; // Secondary video link for handle
 
+		private VRCUrl[] videosToLoad; // Queue of videos to load
+		private bool[] videosPlayImmediately; // Whether video in queue should play as soon as its loaded
+		private int[] videoRelayHandles; // What relay to use to play the video
+
 		// Public Callback Variables
 		[HideInInspector] public int relayIdentifier;
 		[HideInInspector] public VideoError relayVideoError;
 
 		private bool initialized;
 		private bool isValid;
+
+		private const int MAX_QUEUE_LENGTH = 64;
+		private int videosInQueue;
+		private int firstVideoInQueue;
 
 		void Start() {
 			Initialize();
@@ -42,6 +50,10 @@ namespace Synergiance.MediaPlayer {
 				LogError("No relays set!");
 				return;
 			}
+
+			videosToLoad = new VRCUrl[MAX_QUEUE_LENGTH];
+			videosPlayImmediately = new bool[MAX_QUEUE_LENGTH];
+			videoRelayHandles = new int[MAX_QUEUE_LENGTH];
 
 			videoNames = new string[relays.Length];
 			relayHandles = new int[relays.Length];
@@ -144,8 +156,35 @@ namespace Synergiance.MediaPlayer {
 				relay = GetAndBindCompatibleRelay(_videoType, _handle);
 				if (relay < 0) return false;
 			}
+
+			relays[relay]._Stop();
+			// TODO: Put this into a queue
 			// TODO: Actually load the video with the video relay
 			return true;
+		}
+
+		private void LoadVideoInternal(VRCUrl _link, bool _playImmediately, int _relay) {
+			relays[_relay]._Load(_link, _playImmediately);
+		}
+
+		public bool _Play(int _handle) {
+			return true;
+		}
+
+		public bool _Pause(int _handle) {
+			return true;
+		}
+
+		public bool _Stop(int _handle) {
+			return true;
+		}
+
+		public bool _SetTime(int _handle, float _time) {
+			return true;
+		}
+
+		public float _GetTime(int _handle) {
+			return 0;
 		}
 
 		private int GetAndBindCompatibleRelay(int _videoType, int _handle) {

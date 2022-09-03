@@ -2,6 +2,7 @@
 using UnityEngine;
 using VRC.SDK3.Components.Video;
 using VRC.SDK3.Video.Components.Base;
+using VRC.SDKBase;
 
 namespace Synergiance.MediaPlayer {
 	public class VideoRelay : DiagnosticBehaviour {
@@ -13,6 +14,25 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private string videoName;
 
 		public int VideoType => videoType;
+
+		public bool IsPlaying => initialized && videoSource.IsPlaying;
+		public bool IsReady => initialized && videoSource.IsReady;
+		public float Duration => initialized ? videoSource.GetDuration() : float.NaN;
+
+		public bool Loop {
+			get => initialized && videoSource.Loop;
+			set { if (initialized) videoSource.Loop = value; }
+		}
+
+		public bool AutomaticResync {
+			get => initialized && videoSource.EnableAutomaticResync;
+			set { if (initialized) videoSource.EnableAutomaticResync = value; }
+		}
+
+		public float Time {
+			get => initialized ? videoSource.GetTime() : float.NaN;
+			set { if (initialized) videoSource.SetTime(value); }
+		}
 
 		private VideoManager relayPoint;
 		private int identifier;
@@ -39,7 +59,49 @@ namespace Synergiance.MediaPlayer {
 			return videoName;
 		}
 
-		// TODO: Actually write interface methods
+		/// <summary>
+		/// Plays the video
+		/// </summary>
+		/// <returns>Boolean indicating success</returns>
+		public bool _Play() {
+			if (!initialized) return false;
+			videoSource.Play();
+			return true;
+		}
+
+		/// <summary>
+		/// Pauses the video
+		/// </summary>
+		/// <returns>Boolean indicating success</returns>
+		public bool _Pause() {
+			if (!initialized) return false;
+			videoSource.Pause();
+			return true;
+		}
+
+		/// <summary>
+		/// Stops the video
+		/// </summary>
+		/// <returns>Boolean indicating success</returns>
+		public bool _Stop() {
+			if (!initialized) return false;
+			videoSource.Stop();
+			return true;
+		}
+
+		/// <summary>
+		/// Loads a video
+		/// </summary>
+		/// <param name="_link">Link to the video to load</param>
+		/// <param name="_playImmediately">If true, video player will play the
+		/// video as soon as it's loaded</param>
+		/// <returns>Boolean indicating success</returns>
+		public bool _Load(VRCUrl _link, bool _playImmediately) {
+			if (!initialized) return false;
+			if (_playImmediately) videoSource.PlayURL(_link);
+			else videoSource.LoadURL(_link);
+			return true;
+		}
 
 		private void SendRelayEvent(string _eventName) {
 			if (!initialized) {
