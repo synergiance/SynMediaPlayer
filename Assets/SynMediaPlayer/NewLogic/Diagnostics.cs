@@ -28,7 +28,7 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 			colors = new string[ArrayIncrement];
 			prefixes = new string[ArrayIncrement];
 			initialized = true;
-			if (debug) Debug.Log("[Diagnostics] Initialized arrays with length " + ArrayIncrement);
+			if (debug) Debug.Log($"[Diagnostics] Initialized arrays with length {ArrayIncrement}");
 		}
 
 		private void ExpandArrays() {
@@ -43,7 +43,7 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 			tmp = new string[newLength];
 			Array.Copy(prefixes, tmp, oldLength);
 			prefixes = tmp;
-			if (debug) Debug.Log("[Diagnostics] Expanded arrays from " + oldLength + " to " + newLength);
+			if (debug) Debug.Log($"[Diagnostics] Expanded arrays from {oldLength} to {newLength}");
 		}
 
 		public int _Register(string _name, string _color) {
@@ -57,7 +57,7 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 				.Replace(TplName, _name)
 				.Replace(TplColor, _color)
 				.Replace(TplID, id.ToString());
-			if (debug) Debug.Log("[Diagnostics] Added " + _name + " with color " + _color + " under id #" + id);
+			if (debug) Debug.Log($"[Diagnostics] Added {_name} with color {_color} under id #{id}");
 			return id;
 		}
 

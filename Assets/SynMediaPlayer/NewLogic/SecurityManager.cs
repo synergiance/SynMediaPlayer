@@ -77,7 +77,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void CallCallbacks(string _message) {
 			if (callbacks == null) return;
-			Log("Calling callbacks with method " + _message);
+			Log($"Calling callbacks with method \"{_message}\"");
 			foreach (UdonSharpBehaviour callback in callbacks)
 				callback.SendCustomEvent(_message);
 		}

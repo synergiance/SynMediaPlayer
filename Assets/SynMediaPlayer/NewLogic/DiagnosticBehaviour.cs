@@ -8,7 +8,7 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 		/// This is the color that the name of the behaviour will show as in the
 		/// debug log
 		/// </summary>
-		protected virtual string DebugColor => "#808080";
+		protected virtual Color DebugColor => new Color(0.5f, 0.5f, 0.5f);
 		/// <summary>
 		/// This is the display name of the behaviour in the debug log
 		/// </summary>
@@ -35,13 +35,21 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 			if (hasDiagnostics) RegisterDiagnostics();
 			else debugPrefix = DebugTemplate
 				.Replace(DebugTplName, DebugName)
-				.Replace(DebugTplColor, DebugColor);
+				.Replace(DebugTplColor, ColorToHtml(DebugColor));
 			diagnosticsInitialized = true;
 		}
 
 		private void RegisterDiagnostics() {
 			// Register with diagnostic class and get an ID
-			diagnosticsID = diagnostics._Register(DebugName, DebugColor);
+			diagnosticsID = diagnostics._Register(DebugName, ColorToHtml(DebugColor));
+		}
+
+		private string ColorToHtml(Color _color) {
+			return $"#{ToByte(_color.r):X2}{ToByte(_color.g):X2}{ToByte(_color.b):X2}";
+		}
+
+		private byte ToByte(float _f) {
+			return (byte)(Mathf.Clamp01(_f) * 255);
 		}
 
 		/// <summary>

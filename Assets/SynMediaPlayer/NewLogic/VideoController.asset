@@ -722,7 +722,7 @@ MonoBehaviour:
       Data: 41|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: PlayerManager, Assembly-CSharp
+      Data: Synergiance.MediaPlayer.PlayerManager, Assembly-CSharp
     - Name: 
       Entry: 8
       Data: 

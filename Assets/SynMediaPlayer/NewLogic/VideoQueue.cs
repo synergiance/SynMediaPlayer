@@ -37,7 +37,7 @@ namespace Synergiance.MediaPlayer {
 		public int VideosInQueue => videosInQueue;
 
 		protected override string DebugName => "Video Queue";
-		protected override string DebugColor => "#A08040";
+		protected override Color DebugColor => new Color(0.7f, 0.65f, 0.15f);
 
 		private void Start() {
 			Initialize();
@@ -46,10 +46,10 @@ namespace Synergiance.MediaPlayer {
 		private void Initialize() {
 			if (initialized) return;
 			if (maxQueueLength < 4) {
-				Debug.LogWarning("Max queue length (" + maxQueueLength + ") is too low! Increasing to 4.");
+				Debug.LogWarning($"Max queue length ({maxQueueLength}) is too low! Increasing to 4.");
 				maxQueueLength = 4;
 			}
-			Log("Initializing ring buffer of length " + maxQueueLength);
+			Log($"Initializing ring buffer of length {maxQueueLength}");
 			queuedVideos = new VRCUrl[maxQueueLength];
 			initialized = true;
 		}
@@ -96,7 +96,7 @@ namespace Synergiance.MediaPlayer {
 				LogError("Cannot insert into queue, max queue length reached!");
 				return false;
 			}
-			Log("Adding to queue: " + _link);
+			Log($"Adding to queue: {_link}");
 			queuedVideos[CalcRingIndex(videosInQueue++)] = _link;
 			return true;
 		}

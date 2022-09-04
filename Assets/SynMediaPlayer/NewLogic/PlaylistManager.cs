@@ -49,7 +49,7 @@ namespace Synergiance.MediaPlayer {
 		[UdonSynced] private int numUserPlaylists;
 
 		protected override string DebugName => "Playlist Manager";
-		protected override string DebugColor => "#A04040";
+		protected override Color DebugColor => new Color(0.65f, 0.15f, 0.15f);
 
 		private bool initialized;
 		private bool playlistsValid;
@@ -112,16 +112,16 @@ namespace Synergiance.MediaPlayer {
 		public void DumpContents() {
 			string str = "Playlists:\n";
 			foreach (Playlist playlist in playlists) {
-				str += "Playlist: " + playlist.name + "\n";
+				str += $"Playlist: {playlist.name}\n";
 				foreach (Video video in playlist.videos) {
-					str += "Video Title: " + video.name + "\nVideo Short Name: ";
-					str += video.shortName + "\nVideo Link: " + video.link + "\n";
+					str += $"Video Title: {video.name}\nVideo Short Name: ";
+					str += $"{video.shortName}\nVideo Link: {video.link}\n";
 				}
 			}
 			str += "Videos:\n";
 			for (int i = 0; i < videoNames.Length; i++) {
-				str += "Video Name: " + videoNames[i] + "\nVideo Short Name: ";
-				str += videoShortNames[i] + "\nVideo Link: " + videoLinks[i] + "\n";
+				str += $"Video Name: {videoNames[i]}\nVideo Short Name: ";
+				str += $"{videoShortNames[i]}\nVideo Link: {videoLinks[i]}\n";
 			}
 			Debug.Log(str);
 		}
@@ -132,7 +132,7 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_path">The path of the directory to load the playlists from.</param>
 		/// <returns>True on success, False on failure.</returns>
 		public bool LoadFrom(string _path) {
-			Debug.Log("Load path: " + _path);
+			Debug.Log($"Load path: {_path}");
 			if (!Directory.Exists(_path)) {
 				Debug.LogWarning("Backup doesn't exist in this project.");
 				return false;
@@ -143,7 +143,7 @@ namespace Synergiance.MediaPlayer {
 				return false;
 			}
 			string basePath = _path + "/";
-			Debug.Log("Working Directory: " + basePath);
+			Debug.Log($"Working Directory: {basePath}");
 			playlists = new Playlist[files.Length];
 			for (int i = 0; i < files.Length; i++) {
 				string playlistName = files[i].Substring(files[i].LastIndexOf('\\') + 1);
@@ -152,7 +152,7 @@ namespace Synergiance.MediaPlayer {
 					name = playlistName,
 					videos = LoadPlaylistFrom(files[i])
 				};
-				Debug.Log("Loaded playlist: " + playlistName + ".txt");
+				Debug.Log($"Loaded playlist: {playlistName}.txt");
 			}
 			RebuildSerialized(true);
 			return true;
@@ -170,7 +170,7 @@ namespace Synergiance.MediaPlayer {
 			Debug.Log((createDirectory ? "Created working directory: " : "Working directory: ") + basePath);
 			foreach (Playlist playlist in playlists)
 				if (SavePlaylistTo(playlist.videos, basePath + playlist.name + ".txt"))
-					Debug.Log("Saved playlist: " + playlist.name + ".txt");
+					Debug.Log($"Saved playlist: {playlist.name}.txt");
 			return true;
 		}
 
@@ -301,7 +301,7 @@ namespace Synergiance.MediaPlayer {
 				if (videoLinks[i] == null) videoLinks[i] = VRCUrl.Empty;
 				bool missingLink = String.IsNullOrWhiteSpace(videoLinks[i].ToString());
 				int videoIndex = i - playlistOffsets[currentPlaylist];
-				if (missingLink) LogWarning("Video " + videoIndex + " in playlist " + currentPlaylist + " is missing a link!");
+				if (missingLink) LogWarning($"Video {videoIndex} in playlist {currentPlaylist} is missing a link!");
 				bool missingName = string.IsNullOrWhiteSpace(videoNames[i]);
 				bool missingShortName = string.IsNullOrWhiteSpace(videoShortNames[i]);
 				if (missingName && missingShortName) {
@@ -348,11 +348,11 @@ namespace Synergiance.MediaPlayer {
 				return false;
 			}
 			int videoIndex = playlistOffsets[_playlist] + _video;
-			Log("Fetching video information from index " + videoIndex);
+			Log($"Fetching video information from index {videoIndex}");
 			_shortName = videoShortNames[videoIndex];
 			_name = videoNames[videoIndex];
 			_link = videoLinks[videoIndex];
-			Log("Name: \"" + _name + "\", Short Name: \"" + _shortName + "\", Link: \"" + _link + "\"");
+			Log($"Name: \"{_name}\", Short Name: \"{_shortName}\", Link: \"{_link}\"");
 			return true;
 		}
 
@@ -390,7 +390,7 @@ namespace Synergiance.MediaPlayer {
 					Log("Getting video from user playlists");
 					return _GetUserVideo(_playlist, _video, ref _name, ref _shortName, ref _link);
 			}
-			LogError("Invalid playlist type: " + _playlistType);
+			LogError($"Invalid playlist type: {_playlistType}");
 			return false;
 		}
 	}

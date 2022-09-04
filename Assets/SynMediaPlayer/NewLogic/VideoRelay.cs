@@ -13,6 +13,9 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private int videoType;
 		[SerializeField] private string videoName;
 
+		protected override string DebugName => "Video Relay";
+		protected override Color DebugColor => new Color(0.7f, 0.6f, 0.15f);
+
 		/// <summary>
 		/// Video type of the video (0 for video, 1 for stream,
 		/// and 2 for low latency)
@@ -130,7 +133,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void SendRelayEvent(string _eventName) {
 			if (!initialized) {
-				Log("(Uninitialized) Event ignored: " + _eventName);
+				Log($"<color=#808080>(Uninitialized)</color> Event ignored: {_eventName}");
 				return;
 			}
 			relayPoint.SetProgramVariable("relayIdentifier", identifier);

@@ -50,7 +50,7 @@ namespace Synergiance.MediaPlayer {
 			private set {
 				if (isLocked == value) return;
 				isLocked = value;
-				Log((isLocked ? "Locking" : "Unlocking") + " the player");
+				Log($"{(isLocked ? "Locking" : "Unlocking")} the player");
 				CallCallbacks(isLocked ? "_SecurityLocked" : "_SecurityUnlocked");
 			}
 		}
@@ -107,7 +107,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void CallCallbacks(string _message) {
 			if (callbacks == null) return;
-			Log("Calling callbacks with method " + _message);
+			Log($"Calling callbacks with method \"{_message}\"");
 			foreach (UdonSharpBehaviour callback in callbacks)
 				callback.SendCustomEvent(_message);
 		}

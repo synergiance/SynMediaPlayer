@@ -35,6 +35,9 @@ namespace Synergiance.MediaPlayer {
 		private int videosInQueue;
 		private int firstVideoInQueue;
 
+		protected override string DebugName => "Video Manager";
+		protected override Color DebugColor => new Color(0.65f, 0.5f, 0.1f);
+
 		void Start() {
 			Initialize();
 		}
@@ -64,9 +67,9 @@ namespace Synergiance.MediaPlayer {
 				relayHandles[i] = -1;
 				relayIsSecondary[i] = false;
 				if (videoNames[i] == null)
-					LogWarning("Video player " + i + " isn't initialized!");
+					LogWarning($"Video player {i} isn't initialized!");
 				else
-					Log("Video player " + i + " (" + videoNames[i] + ") is now initialized!");
+					Log($"Video player {i} ({videoNames[i]}) is now initialized!");
 			}
 
 			isValid = true;
@@ -97,13 +100,13 @@ namespace Synergiance.MediaPlayer {
 			// Search through video handles to see if player is already registered
 			for (int i = 0; i < videoPlayers.Length; i++) {
 				if (_player != videoPlayers[i]) continue;
-				LogWarning("Video player already registered at index " + i);
+				LogWarning($"Video player already registered at index {i}");
 				return i;
 			}
 
 			// Expand arrays by 1 to accomodate a new video player
 			int index = videoPlayers.Length;
-			Log("Registering video player at index " + index);
+			Log($"Registering video player at index {index}");
 			VideoPlayer[] tempPlayers = new VideoPlayer[index + 1];
 			Array.Copy(videoPlayers, tempPlayers, index);
 			videoPlayers = tempPlayers;
@@ -149,8 +152,7 @@ namespace Synergiance.MediaPlayer {
 				Log("Handle unbound, searching for compatible relay");
 				relay = GetAndBindCompatibleRelay(_videoType, _handle);
 				if (relay < 0) return false;
-			}
-			if (relays[relay].VideoType != _videoType) {
+			} else if (relays[relay].VideoType != _videoType) {
 				Log("Video type mismatch, searching for compatible relay");
 				UnbindRelay(relay);
 				relay = GetAndBindCompatibleRelay(_videoType, _handle);
@@ -193,7 +195,7 @@ namespace Synergiance.MediaPlayer {
 				LogError("No unbound compatible relays!");
 				return -1;
 			}
-			Log("Found unbound relay: " + relay);
+			Log($"Found unbound relay: {relay}");
 			if (!BindRelayToHandle(_handle, relay)) {
 				LogError("Unable to bind!");
 				return -1;
@@ -242,19 +244,19 @@ namespace Synergiance.MediaPlayer {
 			else primaryHandles[_handle] = _relay;
 			relayHandles[_relay] = _handle;
 			relayIsSecondary[_relay] = _secondary;
-			Log("Successfully bound relay " + _relay + " to" + (_secondary ? " secondary" : "") + " handle " + _handle);
+			Log($"Successfully bound relay {_relay} to{(_secondary ? " secondary" : "")} handle {_handle}");
 			return true;
 		}
 
 		private int GetFirstUnboundRelay(int _startOffset = 0) {
-			Log("Getting first unbound relay" + (_startOffset != 0 ? " starting at " + _startOffset : ""));
+			Log($"Getting first unbound relay{(_startOffset != 0 ? $" starting at {_startOffset}" : "")}");
 			if (_startOffset >= relayHandles.Length) {
 				LogError("Start offset out of bounds!");
 				return -1;
 			}
 			for (int i = _startOffset; i < relayHandles.Length; i++) {
 				if (relayHandles[i] >= 0) continue;
-				Log("Found unbound relay at index " + i);
+				Log($"Found unbound relay at index {i}");
 				return i;
 			}
 			Log("Found no unbound relay");
