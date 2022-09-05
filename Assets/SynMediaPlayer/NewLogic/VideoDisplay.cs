@@ -9,6 +9,9 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private AudioSource[] audioSources;
 		[SerializeField] private Collider activeZone;
 
+		protected override string DebugName => "Security Manager";
+		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.5f, 0.1f, 0.65f));
+
 		private bool initialized;
 		void Start() {}
 

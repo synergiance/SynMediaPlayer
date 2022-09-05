@@ -14,7 +14,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private string videoName;
 
 		protected override string DebugName => "Video Relay";
-		protected override Color DebugColor => new Color(0.7f, 0.6f, 0.15f);
+		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.7f, 0.6f, 0.15f));
 
 		/// <summary>
 		/// Video type of the video (0 for video, 1 for stream,

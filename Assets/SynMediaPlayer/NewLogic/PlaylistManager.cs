@@ -49,7 +49,7 @@ namespace Synergiance.MediaPlayer {
 		[UdonSynced] private int numUserPlaylists;
 
 		protected override string DebugName => "Playlist Manager";
-		protected override Color DebugColor => new Color(0.65f, 0.15f, 0.15f);
+		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.65f, 0.15f, 0.15f));
 
 		private bool initialized;
 		private bool playlistsValid;

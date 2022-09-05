@@ -36,7 +36,7 @@ namespace Synergiance.MediaPlayer {
 		private int firstVideoInQueue;
 
 		protected override string DebugName => "Video Manager";
-		protected override Color DebugColor => new Color(0.65f, 0.5f, 0.1f);
+		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.65f, 0.5f, 0.1f));
 
 		void Start() {
 			Initialize();

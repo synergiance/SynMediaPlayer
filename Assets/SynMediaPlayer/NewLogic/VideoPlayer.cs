@@ -38,6 +38,9 @@ namespace Synergiance.MediaPlayer {
 		private bool initialized;
 		private UdonSharpBehaviour[] callbacks;
 
+		protected override string DebugName => "Video Player";
+		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.25f, 0.65f, 0.1f));
+
 		/// <summary>
 		/// Public interface for determining whether video player is locked or not.
 		/// Hides the internal mechanism for locking and unlocking the video player.

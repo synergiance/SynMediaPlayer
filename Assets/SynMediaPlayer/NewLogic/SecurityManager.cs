@@ -12,6 +12,9 @@ namespace Synergiance.MediaPlayer {
 
 		private UdonSharpBehaviour[] callbacks;
 
+		protected override string DebugName => "Security Manager";
+		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.45f, 0.1f, 0.1f));
+
 		private bool hasAccess;
 		private bool hasSecurity;
 
