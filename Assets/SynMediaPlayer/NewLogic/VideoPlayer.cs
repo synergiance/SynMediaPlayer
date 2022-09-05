@@ -23,6 +23,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private bool lockByDefault;
 		[SerializeField] private PlaylistManager playlistManager;
 		[SerializeField] private VideoManager videoManager;
+		[SerializeField] private VideoQueue queue;
 		private bool paused;
 		[UdonSynced] private bool pausedSync;
 		private int pauseTime;
