@@ -26,8 +26,8 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private VideoQueue queue;
 		private bool paused;
 		[UdonSynced] private bool pausedSync;
-		private int pauseTime;
-		[UdonSynced] private int pauseTimeSync;
+		private float pauseTime;
+		[UdonSynced] private float pauseTimeSync;
 		private float beginTime;
 		private int beginNetTime;
 		[UdonSynced] private int beginNetTimeSync;
@@ -60,6 +60,9 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public bool UnlockedOrHasAccess => !IsLocked || securityManager.HasAccess;
+		public float CurrentTime => paused ? pauseTime : Time.time - beginTime;
+		public bool Playing => !paused;
+		public float VideoLength => 0; // TODO: Write implementation
 
 		private void Start() {
 			Initialize();
@@ -107,6 +110,10 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 			IsLocked = false;
+		}
+
+		private void Sync() {
+			//
 		}
 
 		private void CallCallbacks(string _message) {

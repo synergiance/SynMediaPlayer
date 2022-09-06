@@ -44,10 +44,20 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 			diagnosticsID = diagnostics._Register(DebugName, DebugColor);
 		}
 
+		/// <summary>
+		/// This converts <paramref name="_color"/> from a color to a hexadecimal HTML style color code
+		/// </summary>
+		/// <param name="_color">The color that needs to be converted</param>
+		/// <returns>Returns an HTML style color code representing <paramref name="_color"/>.</returns>
 		protected string ColorToHtmlStringRGB(Color _color) {
 			return $"#{ToByte(_color.r):X2}{ToByte(_color.g):X2}{ToByte(_color.b):X2}";
 		}
 
+		/// <summary>
+		/// This converts <paramref name="_color"/> from a color to a hexadecimal HTML style color code with alpha
+		/// </summary>
+		/// <param name="_color">The color that needs to be converted</param>
+		/// <returns>Returns an HTML style color code representing <paramref name="_color"/>.</returns>
 		protected string ColorToHtmlStringRGBA(Color _color) {
 			return $"#{ToByte(_color.r):X2}{ToByte(_color.g):X2}{ToByte(_color.b):X2}{ToByte(_color.a):X2}";
 		}
