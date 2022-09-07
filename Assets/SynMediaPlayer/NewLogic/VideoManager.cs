@@ -9,6 +9,7 @@ namespace Synergiance.MediaPlayer {
 		Video, Stream, LowLatency
 	}
 	public class VideoManager : DiagnosticBehaviour {
+		[Range(1, 10)] [SerializeField] private int loadAttempts = 3; // Number of attempts at loading a video
 		[SerializeField] private VideoRelay[] relays;
 		private string[] videoNames; // Name of the relay video players
 		private int[] relayHandles; // Handle the relay is currently bound to
@@ -19,6 +20,8 @@ namespace Synergiance.MediaPlayer {
 		private int[] secondaryHandles; // Secondary relay assigned to handle
 		private VRCUrl[] primaryLinks; // Primary video link for handle
 		private VRCUrl[] secondaryLinks; // Secondary video link for handle
+		private int[] primaryLoadAttempts; // Number of load attempts for current primary video
+		private int[] secondaryLoadAttempts; // Number of load attempts for current secondary video
 
 		private VRCUrl[] videosToLoad; // Queue of videos to load
 		private bool[] videosPlayImmediately; // Whether video in queue should play as soon as its loaded
@@ -30,6 +33,9 @@ namespace Synergiance.MediaPlayer {
 
 		private bool initialized;
 		private bool isValid;
+
+		private const float VIDEO_LOAD_COOLDOWN = 5.25f;
+		private float lastVideoLoadAttempt;
 
 		private const int MAX_QUEUE_LENGTH = 64;
 		private int videosInQueue;
@@ -72,6 +78,9 @@ namespace Synergiance.MediaPlayer {
 					Log($"Video player {i} ({videoNames[i]}) is now initialized!");
 			}
 
+			if (loadAttempts < 1) loadAttempts = 1;
+			if (loadAttempts > 10) loadAttempts = 10;
+
 			isValid = true;
 		}
 
@@ -84,6 +93,7 @@ namespace Synergiance.MediaPlayer {
 		/// <returns>The handle for performing actions on a video.</returns>
 		public int _RequestVideoHandle(VideoPlayer _player) {
 			Initialize();
+			if (!isValid) return -1;
 
 			// Check to see whether handles arrays have been initialized
 			if (videoPlayers == null || videoPlayers.Length == 0) {
@@ -93,6 +103,8 @@ namespace Synergiance.MediaPlayer {
 				secondaryHandles = new int[1];
 				primaryLinks = new VRCUrl[1];
 				secondaryLinks = new VRCUrl[1];
+				primaryLoadAttempts = new int[1];
+				secondaryLoadAttempts = new int[1];
 				InsertPlayerIntoNewHandle(_player, 0);
 				return 0;
 			}
@@ -116,6 +128,12 @@ namespace Synergiance.MediaPlayer {
 			tempHandles = new int[index + 1];
 			Array.Copy(secondaryHandles, tempHandles, index);
 			secondaryHandles = tempHandles;
+			tempHandles = new int[index + 1];
+			Array.Copy(primaryLoadAttempts, tempHandles, index);
+			primaryLoadAttempts = tempHandles;
+			tempHandles = new int[index + 1];
+			Array.Copy(secondaryLoadAttempts, tempHandles, index);
+			secondaryLoadAttempts = tempHandles;
 			InsertPlayerIntoNewHandle(_player, index);
 			return index;
 		}
@@ -126,6 +144,8 @@ namespace Synergiance.MediaPlayer {
 			secondaryHandles[_handle] = -1;
 			primaryLinks[_handle] = VRCUrl.Empty;
 			secondaryLinks[_handle] = VRCUrl.Empty;
+			primaryLoadAttempts[_handle] = 0;
+			secondaryLoadAttempts[_handle] = 0;
 		}
 
 		/// <summary>
@@ -160,33 +180,111 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			relays[relay]._Stop();
-			// TODO: Put this into a queue
-			// TODO: Actually load the video with the video relay
+			QueueVideo(_videoLink, _playImmediately, relay);
+			if (videosInQueue == 1) AttemptLoadNext();
 			return true;
+		}
+
+		private void QueueVideo(VRCUrl _link, bool _playImmediately, int _relay) {
+			if (_link == null) {
+				LogError("Link cannot be null!");
+				return;
+			}
+			if (videosInQueue >= MAX_QUEUE_LENGTH) {
+				LogError($"Cannot queue video \"{_link}\"!");
+				return;
+			}
+			if (_relay < 0 || _relay >= relays.Length) {
+				LogError("Relay index out of bounds!");
+				return;
+			}
+
+			int pushSlot = (firstVideoInQueue + videosInQueue++) % MAX_QUEUE_LENGTH;
+			videosToLoad[pushSlot] = _link;
+			videosPlayImmediately[pushSlot] = _playImmediately;
+			videoRelayHandles[pushSlot] = _relay;
+			Log($"Video loaded into slot {pushSlot}, there are now {videosInQueue} videos in the queue.");
+		}
+
+		private void AttemptLoadNext() {
+			Log("Attempting to load next video");
+			if (lastVideoLoadAttempt + VIDEO_LOAD_COOLDOWN > Time.time + float.Epsilon) {
+				LogWarning("Cooldown not reached!");
+				return;
+			}
+			if (videosInQueue <= 0) {
+				LogError("No videos to load!");
+				return;
+			}
+			// Pop from the queue
+			VRCUrl videoLink = videosToLoad[firstVideoInQueue];
+			bool playImmediately = videosPlayImmediately[firstVideoInQueue];
+			int relayHandle = videoRelayHandles[firstVideoInQueue];
+			firstVideoInQueue = (firstVideoInQueue + 1) % MAX_QUEUE_LENGTH;
+			videosInQueue--;
+			Log($"{(playImmediately ? "Playing" : "Loading")} video \"{videoLink}\" with relay {relayHandle}");
+			LoadVideoInternal(videoLink, playImmediately, relayHandle);
+			if (videosInQueue < 1) {
+				Log("No more videos in queue");
+				return;
+			}
+			Log($"{videosInQueue} more video{(videosInQueue == 1 ? "" : "s")} in queue");
+			SendCustomEventDelayedSeconds("AttemptLoadNext", VIDEO_LOAD_COOLDOWN - float.Epsilon);
 		}
 
 		private void LoadVideoInternal(VRCUrl _link, bool _playImmediately, int _relay) {
 			relays[_relay]._Load(_link, _playImmediately);
+			lastVideoLoadAttempt = Time.time;
 		}
 
 		public bool _Play(int _handle) {
-			return true;
+			int relay = GetRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			Log($"Playing video relay {relay} using handle {_handle}");
+			return relays[relay]._Play();
 		}
 
 		public bool _Pause(int _handle) {
-			return true;
+			int relay = GetRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			Log($"Pausing video relay {relay} using handle {_handle}");
+			return relays[relay]._Pause();
 		}
 
 		public bool _Stop(int _handle) {
-			return true;
+			int relay = GetRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			Log($"Stopping video relay {relay} using handle {_handle}");
+			return relays[relay]._Stop();
 		}
 
 		public bool _SetTime(int _handle, float _time) {
+			int relay = GetRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			Log($"Setting time to {_time} on video relay {relay} using handle {_handle}");
+			relays[relay].Time = _time;
 			return true;
 		}
 
 		public float _GetTime(int _handle) {
-			return 0;
+			int relay = GetRelayAtHandle(_handle);
+			if (relay < 0) return -1;
+			Log($"Getting time from video relay {relay} using handle {_handle}");
+			return relays[relay].Time;
+		}
+
+		private int GetRelayAtHandle(int _handle) {
+			if (!isValid) return -1;
+			if (_handle < 0 || _handle > videoPlayers.Length) {
+				LogError("Handle index out of bounds!");
+				return -1;
+			}
+			int relay = primaryHandles[_handle];
+			if (relay < 0) {
+				LogError("Handle not bound!");
+				return -1;
+			}
+			return relay;
 		}
 
 		private int GetAndBindCompatibleRelay(int _videoType, int _handle) {
