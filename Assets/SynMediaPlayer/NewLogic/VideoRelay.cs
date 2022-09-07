@@ -140,32 +140,46 @@ namespace Synergiance.MediaPlayer {
 			relayPoint.SendCustomEvent(_eventName);
 		}
 
+		private bool UninitializedLog(string _eventName) {
+			if (initialized) return false;
+			Log($"<color=#808080>(Uninitialized)</color> Event \"{_eventName}\" ignored on \"{gameObject.name}\"");
+			return true;
+		}
+
 		public override void OnVideoEnd() {
+			if (UninitializedLog("OnVideoEnd")) return;
+			relayPoint._RelayVideoEnd(identifier);
 			SendRelayEvent("_RelayVideoEnd");
 		}
 
 		public override void OnVideoReady() {
+			if (UninitializedLog("OnVideoReady")) return;
 			SendRelayEvent("_RelayVideoReady");
 		}
 
 		public override void OnVideoError(VideoError _videoError) {
+			if (UninitializedLog("OnVideoError")) return;
 			relayPoint.SetProgramVariable("relayVideoError", _videoError);
 			SendRelayEvent("_RelayVideoError");
 		}
 
 		public override void OnVideoPlay() {
+			if (UninitializedLog("OnVideoPlay")) return;
 			SendRelayEvent("_RelayVideoPlay");
 		}
 
 		public override void OnVideoStart() {
+			if (UninitializedLog("OnVideoStart")) return;
 			SendRelayEvent("_RelayVideoStart");
 		}
 
 		public override void OnVideoLoop() {
+			if (UninitializedLog("OnVideoLoop")) return;
 			SendRelayEvent("_RelayVideoLoop");
 		}
 
 		public override void OnVideoPause() {
+			if (UninitializedLog("OnVideoPause")) return;
 			SendRelayEvent("_RelayVideoPause");
 		}
 	}

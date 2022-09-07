@@ -238,28 +238,36 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public bool _Play(int _handle) {
-			int relay = GetRelayAtHandle(_handle);
+			int relay = GetPrimaryRelayAtHandle(_handle);
 			if (relay < 0) return false;
 			Log($"Playing video relay {relay} using handle {_handle}");
 			return relays[relay]._Play();
 		}
 
+		public bool _PlayNext(int _handle) {
+			int relay = GetSecondaryRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			Log($"Playing next video relay {relay} using handle {_handle}");
+			SwapRelayToPrimary(_handle);
+			return relays[relay]._Play();
+		}
+
 		public bool _Pause(int _handle) {
-			int relay = GetRelayAtHandle(_handle);
+			int relay = GetPrimaryRelayAtHandle(_handle);
 			if (relay < 0) return false;
 			Log($"Pausing video relay {relay} using handle {_handle}");
 			return relays[relay]._Pause();
 		}
 
 		public bool _Stop(int _handle) {
-			int relay = GetRelayAtHandle(_handle);
+			int relay = GetPrimaryRelayAtHandle(_handle);
 			if (relay < 0) return false;
 			Log($"Stopping video relay {relay} using handle {_handle}");
 			return relays[relay]._Stop();
 		}
 
 		public bool _SetTime(int _handle, float _time) {
-			int relay = GetRelayAtHandle(_handle);
+			int relay = GetPrimaryRelayAtHandle(_handle);
 			if (relay < 0) return false;
 			Log($"Setting time to {_time} on video relay {relay} using handle {_handle}");
 			relays[relay].Time = _time;
@@ -267,19 +275,33 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public float _GetTime(int _handle) {
-			int relay = GetRelayAtHandle(_handle);
+			int relay = GetPrimaryRelayAtHandle(_handle);
 			if (relay < 0) return -1;
 			Log($"Getting time from video relay {relay} using handle {_handle}");
 			return relays[relay].Time;
 		}
 
-		private int GetRelayAtHandle(int _handle) {
+		private int GetPrimaryRelayAtHandle(int _handle) {
 			if (!isValid) return -1;
 			if (_handle < 0 || _handle > videoPlayers.Length) {
 				LogError("Handle index out of bounds!");
 				return -1;
 			}
 			int relay = primaryHandles[_handle];
+			if (relay < 0) {
+				LogError("Handle not bound!");
+				return -1;
+			}
+			return relay;
+		}
+
+		private int GetSecondaryRelayAtHandle(int _handle) {
+			if (!isValid) return -1;
+			if (_handle < 0 || _handle > videoPlayers.Length) {
+				LogError("Handle index out of bounds!");
+				return -1;
+			}
+			int relay = secondaryHandles[_handle];
 			if (relay < 0) {
 				LogError("Handle not bound!");
 				return -1;
@@ -377,21 +399,61 @@ namespace Synergiance.MediaPlayer {
 			// TODO: Stop video
 		}
 
-		private void SwapRelayToPrimary(int _handle) {
-			//
+		private bool HandleHasQueue(int _handle) {
+			return secondaryHandles[_handle] >= 0;
 		}
 
-		private void ProcessRelayEvent(string _eventName) {
+		private void SwapRelayToPrimary(int _handle) {
+			relays[primaryHandles[_handle]]._Stop();
+			primaryHandles[_handle] = secondaryHandles[_handle];
+			primaryLinks[_handle] = secondaryLinks[_handle];
+		}
+
+		private void SendRelayEvent(string _eventName, int _relay) {
 			//
 		}
 
 		// Relay callbacks
-		public void _RelayVideoEnd() { ProcessRelayEvent("_RelayVideoEnd"); }
-		public void _RelayVideoReady() { ProcessRelayEvent("_RelayVideoReady"); }
-		public void _RelayVideoError() { ProcessRelayEvent("_RelayVideoError"); }
-		public void _RelayVideoPlay() { ProcessRelayEvent("_RelayVideoPlay"); }
-		public void _RelayVideoStart() { ProcessRelayEvent("_RelayVideoStart"); }
-		public void _RelayVideoLoop() { ProcessRelayEvent("_RelayVideoLoop"); }
-		public void _RelayVideoPause() { ProcessRelayEvent("_RelayVideoPause"); }
+		public void _RelayVideoEnd(int _id) {
+			Initialize();
+			int handle, nextRelay;
+			if (!isValid || (handle = relayHandles[_id]) < 0) {
+				Log($"Ignoring Video End callback from relay {_id}");
+				return;
+			}
+			relays[_id]._Stop();
+			if (!HandleHasQueue(handle)) {
+				Log($"Video End on handle {handle} with no queued video.");
+				SendRelayEvent("_RelayVideoEnd", _id);
+				return;
+			}
+			_PlayNext(handle);
+			SendRelayEvent("_RelayVideoNext", _id);
+		}
+
+		public void _RelayVideoReady(int _id) {
+			int handle = relayHandles[_id];
+			SendRelayEvent("_RelayVideoReady", _id);
+		}
+
+		public void _RelayVideoError(int _id, VideoError _err) {
+			SendRelayEvent("_RelayVideoError", _id);
+		}
+
+		public void _RelayVideoPlay(int _id) {
+			SendRelayEvent("_RelayVideoPlay", _id);
+		}
+
+		public void _RelayVideoStart(int _id) {
+			SendRelayEvent("_RelayVideoStart", _id);
+		}
+
+		public void _RelayVideoLoop(int _id) {
+			SendRelayEvent("_RelayVideoLoop", _id);
+		}
+
+		public void _RelayVideoPause(int _id) {
+			SendRelayEvent("_RelayVideoPause", _id);
+		}
 	}
 }
