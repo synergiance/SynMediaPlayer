@@ -396,7 +396,7 @@ namespace Synergiance.MediaPlayer {
 			else
 				primaryHandles[handle] = -1;
 			relayIsSecondary[_relay] = false;
-			// TODO: Stop video
+			relays[_relay]._Stop();
 		}
 
 		private bool HandleHasQueue(int _handle) {
@@ -404,8 +404,12 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void SwapRelayToPrimary(int _handle) {
-			relays[primaryHandles[_handle]]._Stop();
-			primaryHandles[_handle] = secondaryHandles[_handle];
+			int oldPrimary = primaryHandles[_handle];
+			int newPrimary = secondaryHandles[_handle];
+			relays[oldPrimary]._Stop();
+			relayHandles[oldPrimary] = -1;
+			relayIsSecondary[newPrimary] = false;
+			primaryHandles[_handle] = newPrimary;
 			primaryLinks[_handle] = secondaryLinks[_handle];
 		}
 
