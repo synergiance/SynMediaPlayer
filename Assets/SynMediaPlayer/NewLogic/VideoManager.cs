@@ -9,30 +9,35 @@ namespace Synergiance.MediaPlayer {
 		Video, Stream, LowLatency
 	}
 	public class VideoManager : DiagnosticBehaviour {
+		// Settings
 		[Range(1, 10)] [SerializeField] private int loadAttempts = 3; // Number of attempts at loading a video
+
+		// Relay cache
 		[SerializeField] private VideoRelay[] relays;
 		private string[] videoNames; // Name of the relay video players
 		private int[] relayHandles; // Handle the relay is currently bound to
 		private bool[] relayIsSecondary; // True when this is the next video instead of the current
 
+		// Video player handles
+		[SerializeField] private DisplayManager displayManager; // Handle for display manager, which displays our videos
 		private VideoPlayer[] videoPlayers; // Video players assigned to each handle
 		private int[] primaryHandles; // Primary relay assigned to handle
 		private int[] secondaryHandles; // Secondary relay assigned to handle
+
+		// Video links
 		private VRCUrl[] primaryLinks; // Primary video link for handle
 		private VRCUrl[] secondaryLinks; // Secondary video link for handle
 		private int[] primaryLoadAttempts; // Number of load attempts for current primary video
 		private int[] secondaryLoadAttempts; // Number of load attempts for current secondary video
 
+		// Cross video tracking
+		private float[] videoCrossFadeLengths; // Length of cross fade between videos
+		private float[] videoCrossFadeBegin; // Begin time for each cross fade
+
+		// Video load queue
 		private VRCUrl[] videosToLoad; // Queue of videos to load
 		private bool[] videosPlayImmediately; // Whether video in queue should play as soon as its loaded
 		private int[] videoRelayHandles; // What relay to use to play the video
-
-		// Public Callback Variables
-		[HideInInspector] public int relayIdentifier;
-		[HideInInspector] public VideoError relayVideoError;
-
-		private bool initialized;
-		private bool isValid;
 
 		private const float VIDEO_LOAD_COOLDOWN = 5.25f;
 		private float lastVideoLoadAttempt;
@@ -41,6 +46,15 @@ namespace Synergiance.MediaPlayer {
 		private int videosInQueue;
 		private int firstVideoInQueue;
 
+		// Public Callback Variables
+		[HideInInspector] public int relayIdentifier;
+		[HideInInspector] public VideoError relayVideoError;
+
+		// Behaviour integrity
+		private bool initialized;
+		private bool isValid;
+
+		// Diagnostic settings
 		protected override string DebugName => "Video Manager";
 		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.65f, 0.5f, 0.1f));
 
