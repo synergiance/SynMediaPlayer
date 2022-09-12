@@ -434,7 +434,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void SendRelayEvent(string _eventName, int _relay) {
-			//
+			// TODO: Send event
 		}
 
 		// Relay callbacks
@@ -456,32 +456,69 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoReady(int _id) {
-			int handle = relayHandles[_id];
-			SendRelayEvent("_RelayVideoReady", _id);
+			if (!isValid || relayHandles[_id] < 0) {
+				Log($"Ignoring Video Ready callback from relay {_id}");
+				return;
+			}
+			// TODO: What to do when this video is ready
+			SendRelayEvent(relayIsSecondary[_id] ? "_RelayVideoQueueReady" : "_RelayVideoReady", _id);
 		}
 
 		public void _RelayVideoError(int _id, VideoError _err) {
-			SendRelayEvent("_RelayVideoError", _id);
+			if (!isValid || relayHandles[_id] < 0) {
+				Log($"Ignoring Video Error callback from relay {_id}");
+				return;
+			}
+			// TODO: What to do when this video has an error
+			SendRelayEvent(relayIsSecondary[_id] ? "_RelayVideoQueueError" : "_RelayVideoError", _id);
 		}
 
 		public void _RelayVideoPlay(int _id) {
+			if (!isValid || relayHandles[_id] < 0) {
+				Log($"Ignoring Video Play callback from relay {_id}");
+				return;
+			}
+			// TODO: What to do when video plays
+			if (relayIsSecondary[_id]) return;
 			SendRelayEvent("_RelayVideoPlay", _id);
 		}
 
 		public void _RelayVideoStart(int _id) {
+			if (!isValid || relayHandles[_id] < 0) {
+				Log($"Ignoring Video Start callback from relay {_id}");
+				return;
+			}
+			// TODO: What to do when video starts
+			if (relayIsSecondary[_id]) return;
 			SendRelayEvent("_RelayVideoStart", _id);
 		}
 
 		public void _RelayVideoLoop(int _id) {
+			if (!isValid || relayHandles[_id] < 0) {
+				Log($"Ignoring Video Loop callback from relay {_id}");
+				return;
+			}
+			// TODO: What to do when video loops
+			if (relayIsSecondary[_id]) return;
 			SendRelayEvent("_RelayVideoLoop", _id);
 		}
 
 		public void _RelayVideoPause(int _id) {
+			if (!isValid || relayHandles[_id] < 0) {
+				Log($"Ignoring Video Pause callback from relay {_id}");
+				return;
+			}
+			// TODO: What to do when video pauses
+			if (relayIsSecondary[_id]) return;
 			SendRelayEvent("_RelayVideoPause", _id);
 		}
 
 		public void _RelayVideoTextureChange(int _id, Texture _texture) {
-			//
+			if (!isValid || relayHandles[_id] < 0) {
+				Log("Ignoring texture change since relay is unbound");
+				return;
+			}
+			// TODO: Send texture to display
 		}
 	}
 }
