@@ -23,6 +23,7 @@ namespace Synergiance.MediaPlayer {
 		private VideoPlayer[] videoPlayers; // Video players assigned to each handle
 		private int[] primaryHandles; // Primary relay assigned to handle
 		private int[] secondaryHandles; // Secondary relay assigned to handle
+		private float[] videoPlayerVolumes; // Volume the video player is set to
 
 		// Video links
 		private VRCUrl[] primaryLinks; // Primary video link for handle
@@ -31,6 +32,8 @@ namespace Synergiance.MediaPlayer {
 		private int[] secondaryVideoTypes; // Type of secondary videos
 		private int[] primaryLoadAttempts; // Number of load attempts for current primary video
 		private int[] secondaryLoadAttempts; // Number of load attempts for current secondary video
+		private float[] primaryVideoDurations; // Cache for the video duration of the primary video
+		private float[] secondaryVideoDurations; // Cache for the video duration of the secondary video
 
 		// Cross video tracking
 		private float[] videoCrossFadeLengths; // Length of cross fade between videos
@@ -323,6 +326,11 @@ namespace Synergiance.MediaPlayer {
 			return relays[relay].Time;
 		}
 
+		public float _GetDuration(int _handle, bool _secondary = false) {
+			// TODO: Implement
+			return -1;
+		}
+
 		private int GetPrimaryRelayAtHandle(int _handle) {
 			if (!isValid) return -1;
 			if (_handle < 0 || _handle > videoPlayers.Length) {
@@ -459,6 +467,11 @@ namespace Synergiance.MediaPlayer {
 			return secondaryHandles[_handle] >= 0;
 		}
 
+		private int GetHandleFromRelayId(int _id) {
+			if (!isValid || _id < 0 || _id >= relays.Length) return -1;
+			return relayHandles[_id];
+		}
+
 		private void SwapRelayToPrimary(int _handle) {
 			int oldPrimary = primaryHandles[_handle];
 			int newPrimary = secondaryHandles[_handle];
@@ -476,11 +489,12 @@ namespace Synergiance.MediaPlayer {
 		// Relay callbacks
 		public void _RelayVideoEnd(int _id) {
 			Initialize();
-			int handle, nextRelay;
-			if (!isValid || (handle = relayHandles[_id]) < 0) {
+			int handle = GetHandleFromRelayId(_id);
+			if (handle < 0) {
 				Log($"Ignoring Video End callback from relay {_id}");
 				return;
 			}
+			int nextRelay;
 			relays[_id]._Stop();
 			if (!HandleHasQueue(handle)) {
 				Log($"Video End on handle {handle} with no queued video.");
@@ -492,12 +506,17 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoReady(int _id) {
-			if (!isValid || relayHandles[_id] < 0) {
+			int handle = GetHandleFromRelayId(_id);
+			if (handle < 0) {
 				Log($"Ignoring Video Ready callback from relay {_id}");
 				return;
 			}
+
+			bool secondary = relayIsSecondary[_id];
+			if (secondary) secondaryVideoDurations[handle] = relays[_id].Duration;
+			else primaryVideoDurations[handle] = relays[_id].Duration;
 			// TODO: What to do when this video is ready
-			SendRelayEvent(relayIsSecondary[_id] ? "_RelayVideoQueueReady" : "_RelayVideoReady", _id);
+			SendRelayEvent(secondary ? "_RelayVideoQueueReady" : "_RelayVideoReady", _id);
 		}
 
 		public void _RelayVideoError(int _id, VideoError _err) {

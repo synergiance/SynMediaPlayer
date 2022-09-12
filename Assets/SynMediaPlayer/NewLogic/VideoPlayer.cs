@@ -21,9 +21,10 @@ namespace Synergiance.MediaPlayer {
 	/// </summary>
 	public class VideoPlayer : VideoBehaviour {
 		[SerializeField] private bool lockByDefault;
-		[SerializeField] private PlaylistManager playlistManager;
-		[SerializeField] private VideoManager videoManager;
+		[SerializeField] private PlayerManager playerManager;
 		[SerializeField] private VideoQueue queue;
+		private PlaylistManager playlistManager;
+		private VideoManager videoManager;
 		private bool paused;
 		[UdonSynced] private bool pausedSync;
 		private float pauseTime;
@@ -37,6 +38,7 @@ namespace Synergiance.MediaPlayer {
 		[UdonSynced] private bool isLockedSync;
 
 		private bool initialized;
+		private bool isValid;
 		private UdonSharpBehaviour[] callbacks;
 
 		protected override string DebugName => "Video Player";
@@ -49,7 +51,7 @@ namespace Synergiance.MediaPlayer {
 		public bool IsLocked {
 			get {
 				Initialize();
-				return isLocked;
+				return !isValid || isLocked;
 			}
 			private set {
 				if (isLocked == value) return;
@@ -62,7 +64,7 @@ namespace Synergiance.MediaPlayer {
 		public bool UnlockedOrHasAccess => !IsLocked || securityManager.HasAccess;
 		public float CurrentTime => paused ? pauseTime : Time.time - beginTime;
 		public bool Playing => !paused;
-		public float VideoLength => 0; // TODO: Write implementation
+		public float VideoLength => GetVideoLength();
 
 		private void Start() {
 			Initialize();
@@ -70,8 +72,35 @@ namespace Synergiance.MediaPlayer {
 
 		private void Initialize() {
 			if (initialized) return;
-			isLocked = lockByDefault && securityManager.HasSecurity;
+			CheckValid();
 			initialized = true;
+		}
+
+		private void CheckValid() {
+			if (playerManager == null) {
+				LogError("Player manager is missing!");
+				return;
+			}
+
+			videoManager = playerManager.GetVideoManager();
+			if (videoManager == null) {
+				LogError("Video manager is missing!");
+				return;
+			}
+
+			playlistManager = playerManager.GetPlaylistManager();
+			if (playlistManager == null) {
+				LogError("Playlist manager is missing!");
+				return;
+			}
+
+			if (queue == null) {
+				LogError("Queue is missing!");
+				return;
+			}
+
+			isLocked = lockByDefault && securityManager.HasSecurity;
+			isValid = true;
 		}
 
 		public void _Play() {}
@@ -110,6 +139,15 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 			IsLocked = false;
+		}
+
+		private float GetVideoLength() {
+			Initialize();
+			if (!isValid) return -1;
+			// TODO: Implementation
+			// Determine whether a video is loaded
+			//
+			return -1;
 		}
 
 		private void Sync() {

@@ -10,9 +10,9 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private Renderer videoRendererSource;
 		[SerializeField] private int videoMaterialIndex;
 		[SerializeField] private string videoTextureName = "_MainTex";
-		[SerializeField] private AudioSource[] speakers;
 		[SerializeField] private int videoType;
 		[SerializeField] private string videoName;
+		[SerializeField] private AudioSource[] speakers;
 
 		protected override string DebugName => "Video Relay";
 		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.7f, 0.6f, 0.15f));
@@ -63,10 +63,41 @@ namespace Synergiance.MediaPlayer {
 			set { if (initialized) videoSource.SetTime(value); }
 		}
 
+		/// <summary>
+		/// Whether the video is muted or not
+		/// </summary>
+		public bool Mute {
+			get => !initialized || muted;
+			set {
+				muted = value;
+				if (!initialized) return;
+				foreach (AudioSource speaker in speakers)
+					speaker.mute = value;
+			}
+		}
+
+		/// <summary>
+		/// Volume the video will play at
+		/// </summary>
+		public float Volume {
+			get => initialized ? volume : 0;
+			set {
+				volume = value;
+				if (!initialized) return;
+				foreach (AudioSource speaker in speakers)
+					speaker.volume = value * relativeVolume;
+			}
+		}
+
 		private VideoManager relayPoint;
 		private int identifier;
 		private Texture videoTextureCache;
 		private Material videoMaterial;
+
+		private bool muted;
+		private float volume;
+		private float relativeVolume;
+		private int speakersActive;
 
 		private bool initialized;
 
@@ -100,7 +131,60 @@ namespace Synergiance.MediaPlayer {
 			relayPoint = _relayPoint;
 			identifier = _identifier;
 			initialized = true;
+			UpdateSpeakers();
 			return videoName;
+		}
+
+		/// <summary>
+		/// Sets up the audio sources of this video player based on the given
+		/// template. This includes location, relative volume, number of
+		/// channels, and falloff properties.
+		/// </summary>
+		/// <param name="_sources">Array of template audio sources</param>
+		/// <param name="_volume">Relative volume</param>
+		/// <returns></returns>
+		public bool _SetAudioTemplate(AudioSource[] _sources, float _volume) {
+			if (_volume < 0) {
+				LogError("Volume cannot be negative!");
+				return false;
+			}
+
+			if (_sources == null || _sources.Length == 0) {
+				LogError("Must contain audio sources for template!");
+				return false;
+			}
+
+			int numSources = Mathf.Min(_sources.Length, speakers.Length);
+			for (int i = 0; i < numSources; i++) {
+				if (_sources[i] == null || speakers[i] == null) {
+					LogError($"Speaker {i} is null!");
+					continue;
+				}
+				speakers[i].bypassReverbZones = _sources[i].bypassReverbZones;
+				speakers[i].dopplerLevel = _sources[i].dopplerLevel;
+				speakers[i].loop = _sources[i].loop;
+				speakers[i].maxDistance = _sources[i].maxDistance;
+				speakers[i].minDistance = _sources[i].minDistance;
+				speakers[i].panStereo = _sources[i].panStereo;
+				speakers[i].pitch = _sources[i].pitch;
+				speakers[i].priority = _sources[i].priority;
+				speakers[i].reverbZoneMix = _sources[i].reverbZoneMix;
+				speakers[i].rolloffMode = _sources[i].rolloffMode;
+				speakers[i].spatialBlend = _sources[i].spatialBlend;
+				speakers[i].spatialize = _sources[i].spatialize;
+				speakers[i].spatializePostEffects = _sources[i].spatializePostEffects;
+				speakers[i].spread = _sources[i].spread;
+				speakers[i].velocityUpdateMode = _sources[i].velocityUpdateMode;
+				Transform dstTransform = speakers[i].transform;
+				Transform srcTransform = _sources[i].transform;
+				dstTransform.position = srcTransform.position;
+				dstTransform.rotation = srcTransform.rotation;
+			}
+
+			relativeVolume = _volume;
+			speakersActive = _sources.Length;
+			UpdateSpeakers();
+			return true;
 		}
 
 		/// <summary>
@@ -152,6 +236,17 @@ namespace Synergiance.MediaPlayer {
 			if (!videoSource.IsReady) return;
 			if (!videoSource.IsPlaying) return;
 			CheckTextureChange();
+		}
+
+		private void UpdateSpeakers() {
+			if (!initialized) return;
+			int numSpeakers = Mathf.Min(speakersActive, speakers.Length);
+			for (int i = 0; i < numSpeakers; i++) {
+				speakers[i].volume = volume * relativeVolume;
+				speakers[i].mute = muted;
+			}
+			for (int i = numSpeakers; i < speakers.Length; i++)
+				speakers[i].mute = true;
 		}
 
 		// ReSharper disable Unity.PerformanceAnalysis

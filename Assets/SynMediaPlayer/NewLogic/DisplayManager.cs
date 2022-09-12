@@ -45,6 +45,25 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		/// <summary>
+		/// Gets audio template from display at index <paramref name="_id"/>
+		/// </summary>
+		/// <param name="_id">ID of the display to get</param>
+		/// <param name="_sources">AudioSource array will be handed back here</param>
+		/// <param name="_volume">Relative volume will be set here</param>
+		/// <returns>If initialized, returns true on success</returns>
+		public bool _GetAudioTemplate(int _id, ref AudioSource[] _sources, float _volume) {
+			if (!initialized) {
+				LogError("Not initialized!");
+				return false;
+			}
+			if (_id < 0 || _id >= displays.Length) {
+				LogError("Display index out of range!");
+				return false;
+			}
+			return displays[_id]._GetAudioTemplate(ref _sources, ref _volume);
+		}
+
+		/// <summary>
 		/// Registers a display with the display manager
 		/// </summary>
 		/// <param name="_display">Display to register</param>
