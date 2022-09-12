@@ -27,6 +27,8 @@ namespace Synergiance.MediaPlayer {
 		// Video links
 		private VRCUrl[] primaryLinks; // Primary video link for handle
 		private VRCUrl[] secondaryLinks; // Secondary video link for handle
+		private int[] primaryVideoTypes; // Type of primary videos
+		private int[] secondaryVideoTypes; // Type of secondary videos
 		private int[] primaryLoadAttempts; // Number of load attempts for current primary video
 		private int[] secondaryLoadAttempts; // Number of load attempts for current secondary video
 
@@ -187,21 +189,41 @@ namespace Synergiance.MediaPlayer {
 				LogError("Invalid handle!");
 				return false;
 			}
-			int relay = primaryHandles[_handle];
-			if (relay < 0) {
-				Log("Handle unbound, searching for compatible relay");
-				relay = GetAndBindCompatibleRelay(_videoType, _handle);
-				if (relay < 0) return false;
-			} else if (relays[relay].VideoType != _videoType) {
-				Log("Video type mismatch, searching for compatible relay");
-				UnbindRelay(relay);
-				relay = GetAndBindCompatibleRelay(_videoType, _handle);
-				if (relay < 0) return false;
+
+			int videoType = _videoType;
+			if (videoType < 0 || videoType > 2) {
+				LogWarning("Invalid video type! Defaulting to video");
+				videoType = 0;
 			}
+
+			primaryLinks[_handle] = _videoLink;
+			primaryVideoTypes[_handle] = videoType;
+
+			int relay = GetOrBindRelayAtHandle(_handle);
+			// TODO: If no valid relay just make sure to attempt to bind again
+			if (relay < 0) return false;
 
 			relays[relay]._Stop();
 			QueueVideo(_videoLink, _playImmediately, relay);
 			if (videosInQueue == 1) AttemptLoadNext();
+			return true;
+		}
+
+		public bool _LoadNextVideo(VRCUrl _videoLink, int _videoType, int _handle) {
+			if (_handle < 0 || videoPlayers == null || _handle >= videoPlayers.Length) {
+				LogError("Invalid handle!");
+				return false;
+			}
+
+			int videoType = _videoType;
+			if (videoType < 0 || videoType > 2) {
+				LogWarning("Invalid video type! Defaulting to video");
+				videoType = 0;
+			}
+
+			secondaryLinks[_handle] = _videoLink;
+			secondaryVideoTypes[_handle] = videoType;
+			// TODO: Queue up a video
 			return true;
 		}
 
@@ -329,14 +351,28 @@ namespace Synergiance.MediaPlayer {
 			return relay;
 		}
 
-		private int GetAndBindCompatibleRelay(int _videoType, int _handle) {
+		private int GetOrBindRelayAtHandle(int _handle, bool _secondary = false) {
+			int relay = _secondary ? secondaryHandles[_handle] : primaryHandles[_handle];
+			int videoType = _secondary ? secondaryVideoTypes[_handle] : primaryVideoTypes[_handle];
+			if (relay < 0) {
+				Log("Handle unbound, searching for compatible relay");
+				relay = GetAndBindCompatibleRelay(videoType, _handle, _secondary);
+			} else if (relays[relay].VideoType != videoType) {
+				Log("Video type mismatch, searching for compatible relay");
+				UnbindRelay(relay);
+				relay = GetAndBindCompatibleRelay(videoType, _handle, _secondary);
+			}
+			return relay;
+		}
+
+		private int GetAndBindCompatibleRelay(int _videoType, int _handle, bool _secondary = false) {
 			int relay = GetCompatibleRelay(_videoType);
 			if (relay < 0) {
 				LogError("No unbound compatible relays!");
 				return -1;
 			}
 			Log($"Found unbound relay: {relay}");
-			if (!BindRelayToHandle(_handle, relay)) {
+			if (!BindRelayToHandle(_handle, relay, _secondary)) {
 				LogError("Unable to bind!");
 				return -1;
 			}
