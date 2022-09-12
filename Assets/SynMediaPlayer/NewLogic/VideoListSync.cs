@@ -12,6 +12,7 @@ namespace Synergiance.MediaPlayer {
 	[UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
 	public class VideoListSync : DiagnosticBehaviour {
 		[UdonSynced] private VRCUrl[] videos;
+		[UdonSynced] private int[] syncIndex;
 
 		private bool initialized;
 		public int Length => videos != null ? videos.Length : -1;

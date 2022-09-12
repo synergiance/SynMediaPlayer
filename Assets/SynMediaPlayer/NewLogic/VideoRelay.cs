@@ -8,6 +8,7 @@ namespace Synergiance.MediaPlayer {
 	public class VideoRelay : DiagnosticBehaviour {
 		[SerializeField] private BaseVRCVideoPlayer videoSource;
 		[SerializeField] private Renderer videoRendererSource;
+		[SerializeField] private int videoMaterialIndex;
 		[SerializeField] private string videoTextureName = "_MainTex";
 		[SerializeField] private AudioSource[] speakers;
 		[SerializeField] private int videoType;
@@ -64,6 +65,8 @@ namespace Synergiance.MediaPlayer {
 
 		private VideoManager relayPoint;
 		private int identifier;
+		private Texture videoTextureCache;
+		private Material videoMaterial;
 
 		private bool initialized;
 
@@ -78,6 +81,19 @@ namespace Synergiance.MediaPlayer {
 		public string InitializeRelay(VideoManager _relayPoint, int _identifier) {
 			if (initialized) {
 				LogError("Already initialized!");
+				return null;
+			}
+			if (videoRendererSource == null) {
+				LogError("No renderer!");
+				return null;
+			}
+			if (videoRendererSource.materials == null || videoMaterialIndex >= videoRendererSource.materials.Length || videoMaterialIndex < 0) {
+				LogError("Video Material Index out of bounds!");
+				return null;
+			}
+			videoMaterial = videoRendererSource.materials[videoMaterialIndex];
+			if (videoMaterial == null) {
+				LogError("There is no material in that slot!");
 				return null;
 			}
 			if (string.IsNullOrWhiteSpace(videoName)) videoName = gameObject.name;
@@ -131,13 +147,20 @@ namespace Synergiance.MediaPlayer {
 			return true;
 		}
 
-		private void SendRelayEvent(string _eventName) {
-			if (!initialized) {
-				Log($"<color=#808080>(Uninitialized)</color> Event ignored: {_eventName}");
-				return;
-			}
-			relayPoint.SetProgramVariable("relayIdentifier", identifier);
-			relayPoint.SendCustomEvent(_eventName);
+		private void Update() {
+			if (!initialized) return;
+			if (!videoSource.IsReady) return;
+			if (!videoSource.IsPlaying) return;
+			CheckTextureChange();
+		}
+
+		// ReSharper disable Unity.PerformanceAnalysis
+		private void CheckTextureChange() {
+			Texture tempTexture = videoMaterial.GetTexture(videoTextureName);
+			if (tempTexture != videoTextureCache) return;
+			Log("New Video Texture!");
+			videoTextureCache = tempTexture;
+			relayPoint._RelayVideoTextureChange(identifier, videoTextureCache);
 		}
 
 		private bool UninitializedLog(string _eventName) {
@@ -149,38 +172,43 @@ namespace Synergiance.MediaPlayer {
 		public override void OnVideoEnd() {
 			if (UninitializedLog("OnVideoEnd")) return;
 			relayPoint._RelayVideoEnd(identifier);
-			SendRelayEvent("_RelayVideoEnd");
+			CheckTextureChange();
 		}
 
 		public override void OnVideoReady() {
 			if (UninitializedLog("OnVideoReady")) return;
-			SendRelayEvent("_RelayVideoReady");
+			relayPoint._RelayVideoReady(identifier);
+			CheckTextureChange();
 		}
 
 		public override void OnVideoError(VideoError _videoError) {
 			if (UninitializedLog("OnVideoError")) return;
-			relayPoint.SetProgramVariable("relayVideoError", _videoError);
-			SendRelayEvent("_RelayVideoError");
+			relayPoint._RelayVideoError(identifier, _videoError);
+			CheckTextureChange();
 		}
 
 		public override void OnVideoPlay() {
 			if (UninitializedLog("OnVideoPlay")) return;
-			SendRelayEvent("_RelayVideoPlay");
+			relayPoint._RelayVideoPlay(identifier);
+			CheckTextureChange();
 		}
 
 		public override void OnVideoStart() {
 			if (UninitializedLog("OnVideoStart")) return;
-			SendRelayEvent("_RelayVideoStart");
+			relayPoint._RelayVideoStart(identifier);
+			CheckTextureChange();
 		}
 
 		public override void OnVideoLoop() {
 			if (UninitializedLog("OnVideoLoop")) return;
-			SendRelayEvent("_RelayVideoLoop");
+			relayPoint._RelayVideoLoop(identifier);
+			CheckTextureChange();
 		}
 
 		public override void OnVideoPause() {
 			if (UninitializedLog("OnVideoPause")) return;
-			SendRelayEvent("_RelayVideoPause");
+			relayPoint._RelayVideoPause(identifier);
+			CheckTextureChange();
 		}
 	}
 }

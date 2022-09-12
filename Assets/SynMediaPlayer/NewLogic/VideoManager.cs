@@ -34,6 +34,12 @@ namespace Synergiance.MediaPlayer {
 		private float[] videoCrossFadeLengths; // Length of cross fade between videos
 		private float[] videoCrossFadeBegin; // Begin time for each cross fade
 
+		// Video Reference Points
+		private float[] videoStartTimes; // Time video should have started
+		private float[] nextVideoStartTimes; // Time the next video should start
+		//private float[] videosPointA; // For AB Looping
+		//private float[] videosPointB; // For AB Looping
+
 		// Video load queue
 		private VRCUrl[] videosToLoad; // Queue of videos to load
 		private bool[] videosPlayImmediately; // Whether video in queue should play as soon as its loaded
@@ -472,6 +478,10 @@ namespace Synergiance.MediaPlayer {
 
 		public void _RelayVideoPause(int _id) {
 			SendRelayEvent("_RelayVideoPause", _id);
+		}
+
+		public void _RelayVideoTextureChange(int _id, Texture _texture) {
+			//
 		}
 	}
 }
