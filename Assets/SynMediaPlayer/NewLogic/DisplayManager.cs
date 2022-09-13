@@ -6,9 +6,11 @@ namespace Synergiance.MediaPlayer {
 	public class DisplayManager : DiagnosticBehaviour {
 		private VideoManager videoManager;
 		private VideoDisplay[] displays;
+		private string[] displayNames;
 		private int[][] sourceDisplayMap;
 		private Texture[] sourcePrimaryTextureMap;
 		private Texture[] sourceSecondaryTextureMap;
+		private string[] defaultDisplaySources;
 
 		protected override string DebugName => "Display Manager";
 		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.4f, 0.1f, 0.5f));
@@ -29,7 +31,11 @@ namespace Synergiance.MediaPlayer {
 			initialized = true;
 		}
 
-		public void _AddSource() {
+		/// <summary>
+		/// Adds a source to the display map
+		/// </summary>
+		/// <param name="_name">Name of the source</param>
+		public void _AddSource(string _name) {
 			if (!initialized) {
 				LogError("Cannot add source, not initialized!");
 				return;
@@ -42,6 +48,8 @@ namespace Synergiance.MediaPlayer {
 			} else {
 				sourceDisplayMap = new int[1][];
 			}
+
+			// TODO: Search default display sources for name string
 		}
 
 		/// <summary>
@@ -67,8 +75,11 @@ namespace Synergiance.MediaPlayer {
 		/// Registers a display with the display manager
 		/// </summary>
 		/// <param name="_display">Display to register</param>
+		/// <param name="_defaultSource">Default source to use for this display</param>
 		/// <returns>The ID to use for all future calls, -1 if an error occurred</returns>
-		public int _RegisterDisplay(VideoDisplay _display) {
+		public int _RegisterDisplay(VideoDisplay _display, string _defaultSource) {
+			// TODO: Insert into display list
+			// TODO: Search through display names for the default source
 			return -1;
 		}
 

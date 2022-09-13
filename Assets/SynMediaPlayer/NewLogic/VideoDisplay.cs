@@ -8,6 +8,7 @@ namespace Synergiance.MediaPlayer {
 	public class VideoDisplay : DiagnosticBehaviour {
 		[SerializeField] private Material videoMaterial;
 		[SerializeField] private Renderer videoRenderer;
+		[SerializeField] private VideoController videoController;
 		[SerializeField] private int videoRendererIndex;
 		[SerializeField] private string primaryTextureProperty = "_MainTex";
 		[SerializeField] private string secondaryTextureProperty = "_SecondTex";
@@ -18,6 +19,7 @@ namespace Synergiance.MediaPlayer {
 		[Range(0, 2)] [SerializeField] private float relativeVolume = 1;
 		[SerializeField] private Collider activeZone;
 		[SerializeField] private DisplayManager displayManager;
+		[SerializeField] private string defaultVideoPlayer;
 
 		protected override string DebugName => "Video Display";
 		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.5f, 0.1f, 0.65f));
@@ -27,6 +29,9 @@ namespace Synergiance.MediaPlayer {
 
 		private float secondaryWeight;
 		private float overlayWeight;
+
+		private int currentId = -1;
+		private int defaultId = -1;
 
 		public float SecondaryWeight {
 			get => secondaryWeight;
@@ -97,6 +102,8 @@ namespace Synergiance.MediaPlayer {
 				audioSource.enabled = false;
 			}
 
+			displayManager._RegisterDisplay(this, defaultVideoPlayer);
+
 			isValid = true;
 		}
 
@@ -145,6 +152,30 @@ namespace Synergiance.MediaPlayer {
 			_sources = audioSources;
 			_volume = relativeVolume;
 			return true;
+		}
+
+		/// <summary>
+		/// A run once setter of the default ID
+		/// </summary>
+		/// <param name="_id">The ID to use as default</param>
+		public void _SetDefaultSourceId(int _id) {
+			if (defaultId >= 0) {
+				LogWarning("Default ID already set!");
+				return;
+			}
+
+			if (_id < 0) {
+				LogError("Cannot set default ID to less than 0!");
+				return;
+			}
+
+			Log($"Setting default ID to {_id} for \"{defaultVideoPlayer}\"");
+			defaultId = _id;
+
+			if (currentId >= 0) return;
+
+			currentId = defaultId;
+			_SwitchSource(defaultId);
 		}
 
 		public bool _SwitchSource(int _source) {
