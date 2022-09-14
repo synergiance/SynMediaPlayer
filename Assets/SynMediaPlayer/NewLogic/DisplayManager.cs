@@ -201,5 +201,44 @@ namespace Synergiance.MediaPlayer {
 			sourceDisplayMap[_source] = tmpDisplayMap;
 			return true;
 		}
+
+		/// <summary>
+		/// Updates the texture of displays bound to source
+		/// </summary>
+		/// <param name="_source">Source ID to use for updating</param>
+		/// <param name="_texture">Texture to submit to displays</param>
+		/// <param name="_type">Specifies which texture to update on the display</param>
+		public bool _SetVideoTexture(int _source, Texture _texture, int _type = 0) {
+			if (!initialized) {
+				LogError("Not initialized!");
+				return false;
+			}
+
+			if (_source < 0 || sourceDisplayMap == null || _source >= sourceDisplayMap.Length) {
+				LogError("Source does not exist!");
+				return false;
+			}
+
+			int[] displayMap = sourceDisplayMap[_source];
+			if (displayMap == null || displayMap.Length == 0) {
+				Log("No displays bound to source, returning early");
+				return false;
+			}
+
+			Log($"Updating textures for source {_source}");
+			for (int i = 0; i < displayMap.Length; i++) {
+				if (displayMap[i] < 0) continue;
+
+				if (displayMap[i] >= displays.Length) {
+					LogWarning($"Display {displayMap[i]} is out of range!");
+					displayMap[i] = -1;
+					continue;
+				}
+
+				Log($"Updating texture on display {displayMap[i]}");
+				displays[displayMap[i]]._SetVideoTexture(_type, _texture);
+			}
+			return true;
+		}
 	}
 }

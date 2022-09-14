@@ -51,6 +51,16 @@ namespace Synergiance.MediaPlayer {
 		private int defaultId = -1;
 		private int identifier;
 
+		/// <summary>
+		/// Accessor for whether display is meant to have audio.
+		/// </summary>
+		public bool HasAudio { get; private set; }
+
+		/// <summary>
+		/// Interface for the secondary weight. Setting to 1 will display only
+		/// the secondary texture, and setting to 0 will display only the
+		/// primary texture.
+		/// </summary>
 		public float SecondaryWeight {
 			get => secondaryWeight;
 			set {
@@ -59,6 +69,10 @@ namespace Synergiance.MediaPlayer {
 			}
 		}
 
+		/// <summary>
+		/// Interface for the overlay weight. This is the opacity of the
+		/// overlay. 1 is fully opaque, and 0 is fully transparent.
+		/// </summary>
 		public float OverlayWeight {
 			get => overlayWeight;
 			set {
@@ -93,11 +107,6 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 
-			if (audioSources == null || audioSources.Length == 0) {
-				LogError("Audio sources missing!");
-				return;
-			}
-
 			if (videoMaterial == null) {
 				if (videoRenderer == null) {
 					LogError("No output material!");
@@ -126,7 +135,9 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 
-			foreach (AudioSource audioSource in audioSources) {
+			HasAudio = audioSources != null && audioSources.Length > 0;
+			// ReSharper disable once PossibleNullReferenceException
+			if (HasAudio) foreach (AudioSource audioSource in audioSources) {
 				audioSource.enabled = false;
 			}
 
@@ -206,8 +217,8 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_volume">Relative volume will be set here</param>
 		/// <returns>True if valid</returns>
 		public bool _GetAudioTemplate(out AudioSource[] _sources, out float _volume) {
-			if (!isValid) {
-				LogError("Display invalid!");
+			if (!isValid || !HasAudio) {
+				LogError(isValid ? "Display doesn't have audio!" : "Display invalid!");
 
 				_sources = null;
 				_volume = 0;
@@ -243,6 +254,11 @@ namespace Synergiance.MediaPlayer {
 			}
 		}
 
+		/// <summary>
+		/// Switches the source of the display to a different source.
+		/// </summary>
+		/// <param name="_source">ID of the new source</param>
+		/// <returns>True on success, false if there's an error</returns>
 		public bool _SwitchSource(int _source) {
 			Initialize();
 
@@ -254,6 +270,11 @@ namespace Synergiance.MediaPlayer {
 			if (!isValid) {
 				LogError("Display is invalid!");
 				return false;
+			}
+
+			if (_source == currentId) {
+				LogWarning("Source already selected!");
+				return true;
 			}
 
 			Log($"Switching source to {_source}");

@@ -600,7 +600,8 @@ namespace Synergiance.MediaPlayer {
 				Log("Ignoring texture change since relay is unbound");
 				return;
 			}
-			// TODO: Send texture to display
+
+			displayManager._SetVideoTexture(relayHandles[_id], _texture, relayIsSecondary[_id] ? 1 : 0);
 		}
 	}
 }
