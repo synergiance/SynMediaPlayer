@@ -130,16 +130,22 @@ namespace Synergiance.MediaPlayer {
 				audioSource.enabled = false;
 			}
 
-			displayManager._RegisterDisplay(this, defaultVideoPlayer);
+			identifier = displayManager._RegisterDisplay(this, defaultVideoPlayer);
+			if (identifier < 0) {
+				LogError("Failed to register display!");
+				return;
+			}
 
 			hasSecondaryTexProp = PropertyValidAndExists(secondaryTextureProperty);
-			hasSecondaryWeightProp = hasOverlayTexProp && PropertyValidAndExists(secondaryWeightProperty);
+			hasSecondaryWeightProp = hasSecondaryTexProp && PropertyValidAndExists(secondaryWeightProperty);
 			hasOverlayTexProp = PropertyValidAndExists(overlayTextureProperty);
 			hasOverlayWeightProp = hasOverlayTexProp && PropertyValidAndExists(overlayWeightProperty);
 
 			// TODO: Link up to video controller
 
 			isValid = true;
+
+			UpdateMaterialWeights();
 
 			if (defaultId >= 0) {
 				Log($"Switching to default source {defaultId}");
@@ -148,9 +154,14 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void UpdateMaterialWeights() {
+			Initialize();
 			if (!isValid) return;
-			videoMaterial.SetFloat(secondaryWeightProperty, secondaryWeight);
-			videoMaterial.SetFloat(overlayWeightProperty, overlayWeight);
+
+			if (hasSecondaryWeightProp)
+				videoMaterial.SetFloat(secondaryWeightProperty, secondaryWeight);
+
+			if (hasOverlayWeightProp)
+				videoMaterial.SetFloat(overlayWeightProperty, overlayWeight);
 		}
 
 		private bool PropertyValidAndExists(string _propertyName) {
@@ -173,9 +184,11 @@ namespace Synergiance.MediaPlayer {
 					texProp = primaryTextureProperty;
 					break;
 				case 1:
+					if (!hasSecondaryTexProp) return false;
 					texProp = secondaryTextureProperty;
 					break;
 				case 2:
+					if (!hasOverlayTexProp) return false;
 					texProp = overlayTextureProperty;
 					break;
 				default:
