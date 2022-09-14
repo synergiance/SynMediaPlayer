@@ -2,9 +2,20 @@
 using UnityEngine;
 
 namespace Synergiance.MediaPlayer {
+	/// <summary>
+	/// This is meant to be fed into the SetVideoTexture method on the
+	/// Video Display.
+	/// </summary>
 	public enum TextureType {
 		Primary, Secondary, Overlay
 	}
+
+	/// <summary>
+	/// This component drives the display of a video player. It hooks up to
+	/// video component and receives the relevant textures from the video
+	/// manager. It can also be linked with a video controller, so that it can
+	/// always hook up to the same video player as a video controller instance.
+	/// </summary>
 	public class VideoDisplay : DiagnosticBehaviour {
 		[SerializeField] private Material videoMaterial;
 		[SerializeField] private Renderer videoRenderer;
@@ -30,6 +41,11 @@ namespace Synergiance.MediaPlayer {
 
 		private float secondaryWeight;
 		private float overlayWeight;
+
+		private bool hasSecondaryTexProp;
+		private bool hasOverlayTexProp;
+		private bool hasSecondaryWeightProp;
+		private bool hasOverlayWeightProp;
 
 		private int currentId = -1;
 		private int defaultId = -1;
@@ -100,21 +116,46 @@ namespace Synergiance.MediaPlayer {
 				}
 			}
 
+			if (string.IsNullOrWhiteSpace(primaryTextureProperty)) {
+				LogError("Must specify a primary texture property!");
+				return;
+			}
+
+			if (!videoMaterial.HasProperty(primaryTextureProperty)) {
+				LogError($"Primary texture property \"{primaryTextureProperty}\" does not exist on material!");
+				return;
+			}
+
 			foreach (AudioSource audioSource in audioSources) {
 				audioSource.enabled = false;
 			}
 
 			displayManager._RegisterDisplay(this, defaultVideoPlayer);
 
+			hasSecondaryTexProp = PropertyValidAndExists(secondaryTextureProperty);
+			hasSecondaryWeightProp = hasOverlayTexProp && PropertyValidAndExists(secondaryWeightProperty);
+			hasOverlayTexProp = PropertyValidAndExists(overlayTextureProperty);
+			hasOverlayWeightProp = hasOverlayTexProp && PropertyValidAndExists(overlayWeightProperty);
+
 			// TODO: Link up to video controller
 
 			isValid = true;
+
+			if (defaultId >= 0) {
+				Log($"Switching to default source {defaultId}");
+				_SwitchSource(defaultId);
+			}
 		}
 
 		private void UpdateMaterialWeights() {
 			if (!isValid) return;
 			videoMaterial.SetFloat(secondaryWeightProperty, secondaryWeight);
 			videoMaterial.SetFloat(overlayWeightProperty, overlayWeight);
+		}
+
+		private bool PropertyValidAndExists(string _propertyName) {
+			return !string.IsNullOrWhiteSpace(_propertyName)
+			       && videoMaterial.HasProperty(_propertyName);
 		}
 
 		/// <summary>
@@ -154,10 +195,12 @@ namespace Synergiance.MediaPlayer {
 		public bool _GetAudioTemplate(out AudioSource[] _sources, out float _volume) {
 			if (!isValid) {
 				LogError("Display invalid!");
+
 				_sources = null;
 				_volume = 0;
 				return false;
 			}
+
 			_sources = audioSources;
 			_volume = relativeVolume;
 			return true;
@@ -181,17 +224,35 @@ namespace Synergiance.MediaPlayer {
 			Log($"Setting default ID to {_id} for \"{defaultVideoPlayer}\"");
 			defaultId = _id;
 
-			if (currentId >= 0) return;
-
-			currentId = defaultId;
-			_SwitchSource(defaultId);
+			if (isValid && currentId < 0) {
+				Log($"Switching to default source {defaultId}");
+				_SwitchSource(defaultId);
+			}
 		}
 
 		public bool _SwitchSource(int _source) {
-			if (disableSwitchingSource) return false;
-			if (!isValid) return false;
-			displayManager._SwitchSource(identifier, _source);
+			Initialize();
+
+			if (disableSwitchingSource) {
+				LogWarning("Source switching disabled!");
+				return false;
+			}
+
+			if (!isValid) {
+				LogError("Display is invalid!");
+				return false;
+			}
+
+			Log($"Switching source to {_source}");
+			if (!displayManager._SwitchSource(identifier, _source)) {
+				LogError("Couldn't switch source!");
+				return false;
+			}
+
+			currentId = _source;
+
 			// TODO: If linked, switch source on video controls
+
 			return true;
 		}
 	}

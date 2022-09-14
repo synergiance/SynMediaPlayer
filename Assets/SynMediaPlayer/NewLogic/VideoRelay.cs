@@ -1,10 +1,12 @@
 ﻿using Synergiance.MediaPlayer.Diagnostics;
+using UdonSharp;
 using UnityEngine;
 using VRC.SDK3.Components.Video;
 using VRC.SDK3.Video.Components.Base;
 using VRC.SDKBase;
 
 namespace Synergiance.MediaPlayer {
+	[UdonBehaviourSyncMode(BehaviourSyncMode.None)]
 	public class VideoRelay : DiagnosticBehaviour {
 		[SerializeField] private BaseVRCVideoPlayer videoSource;
 		[SerializeField] private Renderer videoRendererSource;

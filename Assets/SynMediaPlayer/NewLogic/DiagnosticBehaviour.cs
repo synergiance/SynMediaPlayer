@@ -13,9 +13,6 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 		/// This is the display name of the behaviour in the debug log
 		/// </summary>
 		protected virtual string DebugName => "Diagnostic Behaviour";
-		private const string DebugTemplate = "[<color=$color>$name</color>] ";
-		private const string DebugTplName = "$name";
-		private const string DebugTplColor = "$color";
 
 		[SerializeField] private bool debug = true;
 		[SerializeField] private Diagnostics diagnostics;
@@ -33,9 +30,7 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 			if (diagnosticsInitialized) return;
 			hasDiagnostics = diagnostics != null;
 			if (hasDiagnostics) RegisterDiagnostics();
-			else debugPrefix = DebugTemplate
-				.Replace(DebugTplName, DebugName)
-				.Replace(DebugTplColor, DebugColor);
+			else debugPrefix = $"[<color={DebugColor}>{DebugName}</color> <color=#B06060>(!)</color>] ";
 			diagnosticsInitialized = true;
 		}
 

@@ -6,7 +6,8 @@ using Object = UnityEngine.Object;
 
 namespace Synergiance.MediaPlayer.Diagnostics {
 	public class Diagnostics : UdonSharpBehaviour {
-		[SerializeField] private bool debug;
+		[SerializeField] private bool globalDebug;
+		[SerializeField] private bool diagnosticDebug;
 
 		private string[] names;
 		private string[] colors;
@@ -25,7 +26,7 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 			colors = new string[ArrayIncrement];
 			prefixes = new string[ArrayIncrement];
 			initialized = true;
-			if (debug) Debug.Log($"{DiagnosticPrefix} Initialized arrays with length {ArrayIncrement}");
+			if (diagnosticDebug) Debug.Log($"{DiagnosticPrefix} Initialized arrays with length {ArrayIncrement}", this);
 		}
 
 		private void ExpandArrays() {
@@ -40,7 +41,7 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 			tmp = new string[newLength];
 			Array.Copy(prefixes, tmp, oldLength);
 			prefixes = tmp;
-			if (debug) Debug.Log($"{DiagnosticPrefix} Expanded arrays from {oldLength} to {newLength}");
+			if (diagnosticDebug) Debug.Log($"{DiagnosticPrefix} Expanded arrays from {oldLength} to {newLength}", this);
 		}
 
 		/// <summary>
@@ -62,7 +63,7 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 			names[id] = _name;
 			colors[id] = _color;
 			prefixes[id] = $"[<color={_color}>{_name}</color> <color=#808080>({id.ToString()})</color>] ";
-			if (debug) Debug.Log($"{DiagnosticPrefix} Added {_name} with color {_color} under id #{id}");
+			if (diagnosticDebug) Debug.Log($"{DiagnosticPrefix} Added {_name} with color {_color} under id #{id}", this);
 			return id;
 		}
 
@@ -73,7 +74,7 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 		/// <param name="_message">Message to log</param>
 		/// <param name="_context">Object to attach as context, uses current object if null</param>
 		public void _Log(int _id, string _message, Object _context = null) {
-			if (!debug) return;
+			if (!globalDebug) return;
 			LogType(0, _id, _message, _context);
 		}
 

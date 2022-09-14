@@ -9,6 +9,7 @@ namespace Synergiance.MediaPlayer {
 	public enum VideoTypes {
 		Video, Stream, LowLatency
 	}
+	[DefaultExecutionOrder(-2), UdonBehaviourSyncMode(BehaviourSyncMode.None)]
 	public class VideoManager : DiagnosticBehaviour {
 		// Settings
 		[Range(1, 10)] [SerializeField] private int loadAttempts = 3; // Number of attempts at loading a video
