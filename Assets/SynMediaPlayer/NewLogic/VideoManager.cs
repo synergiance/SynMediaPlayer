@@ -1,5 +1,6 @@
 ﻿using System;
 using Synergiance.MediaPlayer.Diagnostics;
+using UdonSharp;
 using UnityEngine;
 using VRC.SDK3.Components.Video;
 using VRC.SDKBase;
@@ -19,11 +20,15 @@ namespace Synergiance.MediaPlayer {
 		private bool[] relayIsSecondary; // True when this is the next video instead of the current
 
 		// Video player handles
-		[SerializeField] private DisplayManager displayManager; // Handle for display manager, which displays our videos
+		[SerializeField] private PlayerManager playerManager; // Handle for video player manager, which drives our videos
 		private VideoPlayer[] videoPlayers; // Video players assigned to each handle
 		private int[] primaryHandles; // Primary relay assigned to handle
 		private int[] secondaryHandles; // Secondary relay assigned to handle
 		private float[] videoPlayerVolumes; // Volume the video player is set to
+
+		// Misc handles
+		[SerializeField] private DisplayManager displayManager; // Handle for display manager, which displays our videos
+		[SerializeField] private UdonSharpBehaviour audioLink; // Reference to AudioLink to switch the audio source
 
 		// Video links
 		private VRCUrl[] primaryLinks; // Primary video link for handle
@@ -84,6 +89,13 @@ namespace Synergiance.MediaPlayer {
 				LogError("No relays set!");
 				return;
 			}
+
+			if (displayManager == null) {
+				LogError("Display manager missing!");
+				return;
+			}
+
+			displayManager._Initialize(this);
 
 			videosToLoad = new VRCUrl[MAX_QUEUE_LENGTH];
 			videosPlayImmediately = new bool[MAX_QUEUE_LENGTH];
@@ -147,20 +159,18 @@ namespace Synergiance.MediaPlayer {
 			VideoPlayer[] tempPlayers = new VideoPlayer[index + 1];
 			Array.Copy(videoPlayers, tempPlayers, index);
 			videoPlayers = tempPlayers;
-			int[] tempHandles = new int[index + 1];
-			Array.Copy(primaryHandles, tempHandles, index);
-			primaryHandles = tempHandles;
-			tempHandles = new int[index + 1];
-			Array.Copy(secondaryHandles, tempHandles, index);
-			secondaryHandles = tempHandles;
-			tempHandles = new int[index + 1];
-			Array.Copy(primaryLoadAttempts, tempHandles, index);
-			primaryLoadAttempts = tempHandles;
-			tempHandles = new int[index + 1];
-			Array.Copy(secondaryLoadAttempts, tempHandles, index);
-			secondaryLoadAttempts = tempHandles;
+			ExpandIntArray(ref primaryHandles);
+			ExpandIntArray(ref secondaryHandles);
+			ExpandIntArray(ref primaryLoadAttempts);
+			ExpandIntArray(ref secondaryLoadAttempts);
 			InsertPlayerIntoNewHandle(_player, index);
 			return index;
+		}
+
+		private void ExpandIntArray(ref int[] _array) {
+			int[] tmpArray = new int[_array.Length + 1];
+			Array.Copy(_array, tmpArray, _array.Length);
+			_array = tmpArray;
 		}
 
 		private void InsertPlayerIntoNewHandle(VideoPlayer _player, int _handle) {
@@ -428,6 +438,7 @@ namespace Synergiance.MediaPlayer {
 			else primaryHandles[_handle] = _relay;
 			relayHandles[_relay] = _handle;
 			relayIsSecondary[_relay] = _secondary;
+			FindAndUpdateRelayAudio(_relay, _handle);
 			Log($"Successfully bound relay {_relay} to{(_secondary ? " secondary" : "")} handle {_handle}");
 			return true;
 		}
@@ -461,6 +472,21 @@ namespace Synergiance.MediaPlayer {
 				primaryHandles[handle] = -1;
 			relayIsSecondary[_relay] = false;
 			relays[_relay]._Stop();
+		}
+
+		private void FindAndUpdateRelayAudio(int _relay, int _handle) {
+			Log($"Searching for template for handle {_handle} to apply to relay {_relay}");
+
+			if (!displayManager._GetAudioTemplate(_handle, out AudioSource[] sources, out float volume)) {
+				LogError("Error getting audio template!");
+				return;
+			}
+
+			UpdateRelayAudio(_relay, sources, volume);
+		}
+
+		private void UpdateRelayAudio(int _relay, AudioSource[] _templateAudio, float _templateVolume) {
+			relays[_relay]._SetAudioTemplate(_templateAudio, _templateVolume);
 		}
 
 		private bool HandleHasQueue(int _handle) {

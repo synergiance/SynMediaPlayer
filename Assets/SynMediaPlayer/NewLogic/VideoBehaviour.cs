@@ -14,10 +14,6 @@ namespace Synergiance.MediaPlayer {
 		private bool videoBaseInitialized;
 		[SerializeField] protected SecurityManager securityManager;
 
-		// Public Callback Variables
-		[HideInInspector] public int relayIdentifier;
-		[HideInInspector] public VideoError relayVideoError;
-
 		private void InitializeVideoBase() {
 			if (videoBaseInitialized) return;
 			videoCallbacks = new UdonSharpBehaviour[CallbacksArrayIncrement];
@@ -53,7 +49,7 @@ namespace Synergiance.MediaPlayer {
 
 		public virtual void _RelayVideoLoading() { SendVideoCallback("_RelayVideoLoading"); }
 		public virtual void _RelayVideoReady() { SendVideoCallback("_RelayVideoReady"); }
-		public virtual void _RelayVideoError() { SendVideoCallback("_RelayVideoError"); }
+		public virtual void _RelayVideoError(VideoError _error) { SendErrorCallback(_error); }
 		public virtual void _RelayVideoStart() { SendVideoCallback("_RelayVideoStart"); }
 		public virtual void _RelayVideoPlay() { SendVideoCallback("_RelayVideoPlay"); }
 		public virtual void _RelayVideoPause() { SendVideoCallback("_RelayVideoPause"); }
@@ -72,6 +68,18 @@ namespace Synergiance.MediaPlayer {
 			InitializeVideoBase();
 			foreach (UdonSharpBehaviour videoCallback in videoCallbacks)
 				videoCallback.SendCustomEvent(_callbackName);
+		}
+
+		/// <summary>
+		/// Sends an error callback to all registered callbacks
+		/// </summary>
+		/// <param name="_error">Relevant error</param>
+		protected void SendErrorCallback(VideoError _error) {
+			InitializeVideoBase();
+			foreach (UdonSharpBehaviour videoCallback in videoCallbacks) {
+				videoCallback.SetProgramVariable("relayVideoError", _error);
+				videoCallback.SendCustomEvent("_RelayVideoError");
+			}
 		}
 	}
 }

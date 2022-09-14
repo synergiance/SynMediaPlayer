@@ -23,6 +23,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private bool lockByDefault;
 		[SerializeField] private PlayerManager playerManager;
 		[SerializeField] private VideoQueue queue;
+		[SerializeField] private string playerName = "Video Player";
 		private PlaylistManager playlistManager;
 		private VideoManager videoManager;
 		private bool paused;
@@ -40,6 +41,7 @@ namespace Synergiance.MediaPlayer {
 		private bool initialized;
 		private bool isValid;
 		private UdonSharpBehaviour[] callbacks;
+		private int identifier;
 
 		protected override string DebugName => "Video Player";
 		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.25f, 0.65f, 0.1f));
@@ -81,6 +83,8 @@ namespace Synergiance.MediaPlayer {
 				LogError("Player manager is missing!");
 				return;
 			}
+
+			identifier = playerManager._RegisterVideoPlayer(this, playerName);
 
 			videoManager = playerManager.GetVideoManager();
 			if (videoManager == null) {

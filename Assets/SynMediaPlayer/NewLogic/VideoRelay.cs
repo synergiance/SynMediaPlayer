@@ -89,6 +89,11 @@ namespace Synergiance.MediaPlayer {
 			}
 		}
 
+		/// <summary>
+		/// Main speaker (front left) used by the video relay
+		/// </summary>
+		public AudioSource MainSpeaker => initialized ? speakers[0] : null;
+
 		private VideoManager relayPoint;
 		private int identifier;
 		private Texture videoTextureCache;
@@ -142,7 +147,7 @@ namespace Synergiance.MediaPlayer {
 		/// </summary>
 		/// <param name="_sources">Array of template audio sources</param>
 		/// <param name="_volume">Relative volume</param>
-		/// <returns></returns>
+		/// <returns>True on success</returns>
 		public bool _SetAudioTemplate(AudioSource[] _sources, float _volume) {
 			if (_volume < 0) {
 				LogError("Volume cannot be negative!");

@@ -20,6 +20,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private Collider activeZone;
 		[SerializeField] private DisplayManager displayManager;
 		[SerializeField] private string defaultVideoPlayer;
+		[SerializeField] private bool disableSwitchingSource;
 
 		protected override string DebugName => "Video Display";
 		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.5f, 0.1f, 0.65f));
@@ -32,6 +33,7 @@ namespace Synergiance.MediaPlayer {
 
 		private int currentId = -1;
 		private int defaultId = -1;
+		private int identifier;
 
 		public float SecondaryWeight {
 			get => secondaryWeight;
@@ -104,6 +106,8 @@ namespace Synergiance.MediaPlayer {
 
 			displayManager._RegisterDisplay(this, defaultVideoPlayer);
 
+			// TODO: Link up to video controller
+
 			isValid = true;
 		}
 
@@ -147,8 +151,13 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_sources">AudioSource array will be handed back here</param>
 		/// <param name="_volume">Relative volume will be set here</param>
 		/// <returns>True if valid</returns>
-		public bool _GetAudioTemplate(ref AudioSource[] _sources, ref float _volume) {
-			if (!isValid) return false;
+		public bool _GetAudioTemplate(out AudioSource[] _sources, out float _volume) {
+			if (!isValid) {
+				LogError("Display invalid!");
+				_sources = null;
+				_volume = 0;
+				return false;
+			}
 			_sources = audioSources;
 			_volume = relativeVolume;
 			return true;
@@ -179,6 +188,10 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public bool _SwitchSource(int _source) {
+			if (disableSwitchingSource) return false;
+			if (!isValid) return false;
+			displayManager._SwitchSource(identifier, _source);
+			// TODO: If linked, switch source on video controls
 			return true;
 		}
 	}

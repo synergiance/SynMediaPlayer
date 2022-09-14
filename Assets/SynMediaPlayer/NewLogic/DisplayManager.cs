@@ -59,16 +59,21 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_sources">AudioSource array will be handed back here</param>
 		/// <param name="_volume">Relative volume will be set here</param>
 		/// <returns>If initialized, returns true on success</returns>
-		public bool _GetAudioTemplate(int _id, ref AudioSource[] _sources, float _volume) {
+		public bool _GetAudioTemplate(int _id, out AudioSource[] _sources, out float _volume) {
 			if (!initialized) {
 				LogError("Not initialized!");
+				_sources = null;
+				_volume = 0;
 				return false;
 			}
-			if (_id < 0 || _id >= displays.Length) {
+			if (_id < 0 || _id >= sourceDisplayMap.Length) {
 				LogError("Display index out of range!");
+				_sources = null;
+				_volume = 0;
 				return false;
 			}
-			return displays[_id]._GetAudioTemplate(ref _sources, ref _volume);
+			
+			return displays[_id]._GetAudioTemplate(out _sources, out _volume);
 		}
 
 		/// <summary>
@@ -83,7 +88,7 @@ namespace Synergiance.MediaPlayer {
 			return -1;
 		}
 
-		public void _SwitchStream(int _id, int _stream) {
+		public void _SwitchSource(int _id, int _source) {
 			// TODO: Switch Stream
 		}
 	}
