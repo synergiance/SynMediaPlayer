@@ -121,25 +121,38 @@ namespace Synergiance.MediaPlayer {
 				LogError("Already initialized!");
 				return null;
 			}
+
 			if (videoRendererSource == null) {
 				LogError("No renderer!");
 				return null;
 			}
+
 			if (videoRendererSource.materials == null || videoMaterialIndex >= videoRendererSource.materials.Length || videoMaterialIndex < 0) {
 				LogError("Video Material Index out of bounds!");
 				return null;
 			}
+
 			videoMaterial = videoRendererSource.materials[videoMaterialIndex];
 			if (videoMaterial == null) {
 				LogError("There is no material in that slot!");
 				return null;
 			}
+
 			if (string.IsNullOrWhiteSpace(videoName)) videoName = gameObject.name;
+
+			if (speakers == null) speakers = new AudioSource[0];
+
 			relayPoint = _relayPoint;
 			identifier = _identifier;
 			initialized = true;
 			UpdateSpeakers();
 			return videoName;
+		}
+
+		public void _NullAudioTemplate() {
+			speakersActive = 0;
+			relativeVolume = 0;
+			UpdateSpeakers();
 		}
 
 		/// <summary>

@@ -488,10 +488,12 @@ namespace Synergiance.MediaPlayer {
 			Log($"Searching for template for handle {_handle} to apply to relay {_relay}");
 
 			if (!displayManager._GetAudioTemplate(_handle, out AudioSource[] sources, out float volume)) {
-				LogError("Error getting audio template!");
+				Log("No active audio template, muting audio on relay " + _relay);
+				relays[_relay]._NullAudioTemplate();
 				return;
 			}
 
+			Log("Updating audio template on relay " + _relay);
 			UpdateRelayAudio(_relay, sources, volume);
 		}
 
