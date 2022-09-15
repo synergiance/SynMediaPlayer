@@ -29,6 +29,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private AudioSource[] audioSources;
 		[Range(0, 2)] [SerializeField] private float relativeVolume = 1;
 		[SerializeField] private Collider activeZone;
+		[SerializeField] private float audioPriority;
 		[SerializeField] private DisplayManager displayManager;
 		[SerializeField] private string defaultVideoPlayer;
 		[SerializeField] private bool disableSwitchingSource;
@@ -141,7 +142,7 @@ namespace Synergiance.MediaPlayer {
 				audioSource.enabled = false;
 			}
 
-			identifier = displayManager._RegisterDisplay(this, defaultVideoPlayer);
+			identifier = displayManager._RegisterDisplay(this, defaultVideoPlayer, audioPriority);
 			if (identifier < 0) {
 				LogError("Failed to register display!");
 				return;
@@ -160,7 +161,7 @@ namespace Synergiance.MediaPlayer {
 
 			if (defaultId >= 0) {
 				Log($"Switching to default source {defaultId}");
-				_SwitchSource(defaultId);
+				SwitchSourceInternal(defaultId);
 			}
 		}
 
@@ -250,7 +251,7 @@ namespace Synergiance.MediaPlayer {
 
 			if (isValid && currentId < 0) {
 				Log($"Switching to default source {defaultId}");
-				_SwitchSource(defaultId);
+				SwitchSourceInternal(defaultId);
 			}
 		}
 
@@ -260,12 +261,20 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_source">ID of the new source</param>
 		/// <returns>True on success, false if there's an error</returns>
 		public bool _SwitchSource(int _source) {
-			Initialize();
-
 			if (disableSwitchingSource) {
 				LogWarning("Source switching disabled!");
 				return false;
 			}
+
+			SwitchSourceInternal(_source);
+
+			// TODO: If linked, switch source on video controls
+
+			return true;
+		}
+
+		private bool SwitchSourceInternal(int _source) {
+			Initialize();
 
 			if (!isValid) {
 				LogError("Display is invalid!");
@@ -284,8 +293,6 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			currentId = _source;
-
-			// TODO: If linked, switch source on video controls
 
 			return true;
 		}

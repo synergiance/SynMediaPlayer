@@ -14,6 +14,7 @@ namespace Synergiance.MediaPlayer {
 		private string[] sourceNames;
 		private int[][] sourceDisplayMap;
 		private int[] displaySourceMap;
+		private float[] displayWeights;
 		private Texture[] sourcePrimaryTextureMap;
 		private Texture[] sourceSecondaryTextureMap;
 		private string[] defaultDisplaySources;
@@ -74,28 +75,62 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		/// <summary>
-		/// Gets audio template from display at index <paramref name="_id"/>
+		/// Gets optimal audio template from source at index <paramref name="_source"/>
 		/// </summary>
-		/// <param name="_id">ID of the display to get</param>
-		/// <param name="_sources">AudioSource array will be handed back here</param>
-		/// <param name="_volume">Relative volume will be set here</param>
+		/// <param name="_source">ID of the source to get</param>
+		/// <param name="_templateSources">AudioSource array will be handed back here</param>
+		/// <param name="_templateVolume">Relative volume will be set here</param>
 		/// <returns>If initialized, returns true on success</returns>
-		public bool _GetAudioTemplate(int _id, out AudioSource[] _sources, out float _volume) {
+		public bool _GetAudioTemplate(int _source, out AudioSource[] _templateSources, out float _templateVolume) {
 			if (!initialized) {
 				LogError("Not initialized!");
-				_sources = null;
-				_volume = 0;
+				_templateSources = null;
+				_templateVolume = 0;
 				return false;
 			}
 
-			if (_id < 0 || _id >= sourceDisplayMap.Length) {
+			if (_source < 0 || _source >= sourceDisplayMap.Length) {
 				LogError("Display index out of range!");
-				_sources = null;
-				_volume = 0;
+				_templateSources = null;
+				_templateVolume = 0;
 				return false;
 			}
 
-			return displays[_id]._GetAudioTemplate(out _sources, out _volume);
+			if (sourceDisplayMap[_source] == null || sourceDisplayMap[_source].Length == 0) {
+				Log("Source has no displays");
+				_templateSources = null;
+				_templateVolume = 0;
+				return false;
+			}
+
+			float bestWeight = Single.NegativeInfinity;
+			int bestDisplay = -1;
+			foreach (int display in sourceDisplayMap[_source]) {
+				if (display < 0) continue;
+
+				if (display >= displays.Length) {
+					LogWarning($"Display {display} in map is invalid!");
+					continue;
+				}
+
+				if (displayWeights[display] < bestWeight) continue;
+
+				if (!displays[display].HasAudio) continue;
+
+				// TODO: Check to see whether source is active
+
+				bestDisplay = display;
+				bestWeight = displayWeights[display];
+			}
+
+			if (bestDisplay < 0) {
+				Log("No capable displays found");
+				_templateSources = null;
+				_templateVolume = 0;
+				return false;
+			}
+
+			return displays[bestDisplay]._GetAudioTemplate(out _templateSources, out _templateVolume);
 		}
 
 		/// <summary>
@@ -103,8 +138,9 @@ namespace Synergiance.MediaPlayer {
 		/// </summary>
 		/// <param name="_display">Display to register</param>
 		/// <param name="_defaultSource">Default source to use for this display</param>
+		/// <param name="_priority">Audio priority. Higher values will take precedence.</param>
 		/// <returns>The ID to use for all future calls, -1 if an error occurred</returns>
-		public int _RegisterDisplay(VideoDisplay _display, string _defaultSource) {
+		public int _RegisterDisplay(VideoDisplay _display, string _defaultSource, float _priority) {
 			if (_display == null) {
 				LogError("Must pass in a display to register!");
 				return -1;
@@ -119,22 +155,27 @@ namespace Synergiance.MediaPlayer {
 				displays = new VideoDisplay[1];
 				defaultDisplaySources = new string[1];
 				displaySourceMap = new int[1];
+				displayWeights = new float[1];
 			} else {
 				VideoDisplay[] tmpDisplays = new VideoDisplay[displays.Length + 1];
 				string[] tmpDefaultDisplaySources = new string[tmpDisplays.Length];
 				int[] tmpDisplaySourceMap = new int[tmpDisplays.Length];
+				float[] tmpDisplayWeights = new float[tmpDisplays.Length];
 				Array.Copy(displays, tmpDisplays, displays.Length);
 				Array.Copy(defaultDisplaySources, tmpDefaultDisplaySources, displays.Length);
 				Array.Copy(displaySourceMap, tmpDisplaySourceMap, displays.Length);
+				Array.Copy(displayWeights, tmpDisplayWeights, displays.Length);
 				displays = tmpDisplays;
 				defaultDisplaySources = tmpDefaultDisplaySources;
 				displaySourceMap = tmpDisplaySourceMap;
+				displayWeights = tmpDisplayWeights;
 			}
 
 			int displayIndex = displays.Length - 1;
 			displays[displayIndex] = _display;
 			defaultDisplaySources[displayIndex] = _defaultSource;
 			displaySourceMap[displayIndex] = -1;
+			displayWeights[displayIndex] = _priority;
 
 			if (sourceNames == null) return displayIndex;
 			for (int i = 0; i < sourceNames.Length; i++) {
