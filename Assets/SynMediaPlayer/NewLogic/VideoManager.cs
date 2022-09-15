@@ -342,13 +342,39 @@ namespace Synergiance.MediaPlayer {
 			return -1;
 		}
 
+		/// <summary>
+		/// This is called when there is a change to audio on the display side.
+		/// The video manager will grab the new updated audio template if the
+		/// video player is bound and update all relevant relays.
+		/// </summary>
+		/// <param name="_handle">ID of the video player that's getting updated</param>
 		public void _GetUpdatedAudioTemplate(int _handle) {
+			if (!isValid) {
+				LogError("Not Initialized!");
+				return;
+			}
+
+			if (_handle < 0 || _handle >= videoPlayers.Length) {
+				LogError("Video player at that ID does not exist!");
+				return;
+			}
+
 			int relay = GetPrimaryRelayAtHandle(_handle);
-			if (relay < 0) return;
-			FindAndUpdateRelayAudio(relay, _handle);
+			if (relay < 0) {
+				LogWarning($"Video player {_handle} not bound!");
+				return;
+			}
+
+			Log("Getting updated audio template for video player " + _handle);
+			bool hasAudio = displayManager._GetAudioTemplate(_handle, out AudioSource[] sources, out float volume);
+			UpdateRelayAudio(relay, sources, volume, hasAudio);
+
 			relay = GetSecondaryRelayAtHandle(_handle);
-			if (relay < 0) return;
-			FindAndUpdateRelayAudio(relay, _handle);
+			if (relay < 0) {
+				Log("No secondary relay bound to video player " + _handle);
+				return;
+			}
+			UpdateRelayAudio(relay, sources, volume, hasAudio);
 		}
 
 		private int GetPrimaryRelayAtHandle(int _handle) {
@@ -487,18 +513,14 @@ namespace Synergiance.MediaPlayer {
 		private void FindAndUpdateRelayAudio(int _relay, int _handle) {
 			Log($"Searching for template for handle {_handle} to apply to relay {_relay}");
 
-			if (!displayManager._GetAudioTemplate(_handle, out AudioSource[] sources, out float volume)) {
-				Log("No active audio template, muting audio on relay " + _relay);
-				relays[_relay]._NullAudioTemplate();
-				return;
-			}
-
-			Log("Updating audio template on relay " + _relay);
-			UpdateRelayAudio(_relay, sources, volume);
+			bool hasAudio = displayManager._GetAudioTemplate(_handle, out AudioSource[] sources, out float volume);
+			UpdateRelayAudio(_relay, sources, volume, hasAudio);
 		}
 
-		private void UpdateRelayAudio(int _relay, AudioSource[] _templateAudio, float _templateVolume) {
-			relays[_relay]._SetAudioTemplate(_templateAudio, _templateVolume);
+		private void UpdateRelayAudio(int _relay, AudioSource[] _templateAudio, float _templateVolume, bool _hasAudio) {
+			Log($"{(_hasAudio ? "Setting audio template" : "Muting audio")} on relay {_relay}");
+			if (_hasAudio) relays[_relay]._SetAudioTemplate(_templateAudio, _templateVolume);
+			else relays[_relay]._NullAudioTemplate();
 		}
 
 		private bool HandleHasQueue(int _handle) {

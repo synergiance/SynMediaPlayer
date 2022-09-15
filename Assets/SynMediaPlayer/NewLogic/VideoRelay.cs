@@ -149,6 +149,9 @@ namespace Synergiance.MediaPlayer {
 			return videoName;
 		}
 
+		/// <summary>
+		/// Nullifies audio template and makes relay effectively mute
+		/// </summary>
 		public void _NullAudioTemplate() {
 			speakersActive = 0;
 			relativeVolume = 0;
