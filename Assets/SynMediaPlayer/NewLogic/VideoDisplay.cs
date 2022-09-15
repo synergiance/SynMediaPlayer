@@ -1,5 +1,7 @@
 ﻿using Synergiance.MediaPlayer.Diagnostics;
+using UdonSharp;
 using UnityEngine;
+using VRC.SDKBase;
 
 namespace Synergiance.MediaPlayer {
 	/// <summary>
@@ -16,6 +18,7 @@ namespace Synergiance.MediaPlayer {
 	/// manager. It can also be linked with a video controller, so that it can
 	/// always hook up to the same video player as a video controller instance.
 	/// </summary>
+	[DefaultExecutionOrder(-5), UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
 	public class VideoDisplay : DiagnosticBehaviour {
 		[SerializeField] private Material videoMaterial;
 		[SerializeField] private Renderer videoRenderer;
@@ -27,7 +30,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private string secondaryWeightProperty = "_SecondaryWeight";
 		[SerializeField] private string overlayWeightProperty = "_OverlayWeight";
 		[SerializeField] private AudioSource[] audioSources;
-		[Range(0, 2)] [SerializeField] private float relativeVolume = 1;
+		[Range(0, 1)] [SerializeField] private float relativeVolume = 1f;
 		[SerializeField] private Collider activeZone;
 		[SerializeField] private float audioPriority;
 		[SerializeField] private DisplayManager displayManager;
@@ -39,6 +42,8 @@ namespace Synergiance.MediaPlayer {
 
 		private bool initialized;
 		private bool isValid;
+
+		private bool audioActive;
 
 		private float secondaryWeight;
 		private float overlayWeight;
@@ -56,6 +61,19 @@ namespace Synergiance.MediaPlayer {
 		/// Accessor for whether display is meant to have audio.
 		/// </summary>
 		public bool HasAudio { get; private set; }
+
+		/// <summary>
+		/// Accessor for whether local player is in the audio zone
+		/// </summary>
+		public bool AudioActive {
+			get => audioActive;
+			private set {
+				audioActive = value;
+				Initialize();
+				if (!isValid) return;
+				displayManager._AudioZoneActiveCallback(identifier);
+			}
+		}
 
 		/// <summary>
 		/// Interface for the secondary weight. Setting to 1 will display only
@@ -295,6 +313,36 @@ namespace Synergiance.MediaPlayer {
 			currentId = _source;
 
 			return true;
+		}
+
+		public void _RelayEnter() {
+			Log("Player entered zone");
+			AudioActive = true;
+		}
+
+		public void _RelayExit() {
+			Log("Player exited zone");
+			AudioActive = false;
+		}
+
+		private bool ValidatePlayer(VRCPlayerApi _player) {
+			return !Utilities.IsValid(_player) || _player.isLocal;
+		}
+
+		public override void OnPlayerTriggerEnter(VRCPlayerApi _player) {
+			if (ValidatePlayer(_player)) _RelayEnter();
+		}
+
+		public override void OnPlayerTriggerExit(VRCPlayerApi _player) {
+			if (ValidatePlayer(_player)) _RelayExit();
+		}
+
+		public override void OnPlayerCollisionEnter(VRCPlayerApi _player) {
+			if (ValidatePlayer(_player)) _RelayEnter();
+		}
+
+		public override void OnPlayerCollisionExit(VRCPlayerApi _player) {
+			if (ValidatePlayer(_player)) _RelayExit();
 		}
 	}
 }

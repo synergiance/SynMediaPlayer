@@ -19,11 +19,13 @@ namespace Synergiance.MediaPlayer {
 	/// deciding factor on what to do with that information. This is written to
 	/// run alongside other video player behaviours.
 	/// </summary>
+	[UdonBehaviourSyncMode(BehaviourSyncMode.Manual), DefaultExecutionOrder(-10)]
 	public class VideoPlayer : VideoBehaviour {
 		[SerializeField] private bool lockByDefault;
 		[SerializeField] private PlayerManager playerManager;
 		[SerializeField] private VideoQueue queue;
 		[SerializeField] private string playerName = "Video Player";
+		[Range(0, 1)] [SerializeField] private float volume = 0.55f;
 		private PlaylistManager playlistManager;
 		private VideoManager videoManager;
 		private bool paused;
@@ -67,6 +69,7 @@ namespace Synergiance.MediaPlayer {
 		public float CurrentTime => paused ? pauseTime : Time.time - beginTime;
 		public bool Playing => !paused;
 		public float VideoLength => GetVideoLength();
+		public float Volume => volume;
 
 		private void Start() {
 			Initialize();

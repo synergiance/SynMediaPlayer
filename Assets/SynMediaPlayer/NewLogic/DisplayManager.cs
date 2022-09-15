@@ -7,7 +7,7 @@ namespace Synergiance.MediaPlayer {
 	/// <summary>
 	/// Maintains a set of displays and their links
 	/// </summary>
-	[DefaultExecutionOrder(-1), UdonBehaviourSyncMode(BehaviourSyncMode.None)]
+	[DefaultExecutionOrder(-20), UdonBehaviourSyncMode(BehaviourSyncMode.None)]
 	public class DisplayManager : DiagnosticBehaviour {
 		private VideoManager videoManager;
 		private VideoDisplay[] displays;
@@ -117,7 +117,7 @@ namespace Synergiance.MediaPlayer {
 
 				if (!displays[display].HasAudio) continue;
 
-				// TODO: Check to see whether source is active
+				if (!displays[display].AudioActive) continue;
 
 				bestDisplay = display;
 				bestWeight = displayWeights[display];
@@ -280,6 +280,26 @@ namespace Synergiance.MediaPlayer {
 				displays[displayMap[i]]._SetVideoTexture(_type, _texture);
 			}
 			return true;
+		}
+
+		/// <summary>
+		/// Event receiver for when an display audio zone is activated or
+		/// deactivated.
+		/// </summary>
+		/// <param name="_id">Display ID</param>
+		/// <param name="_active">Whether zone is activating or deactivating</param>
+		public void _AudioZoneActiveCallback(int _id) {
+			if (!initialized) {
+				LogError("Not initialized!");
+				return;
+			}
+
+			if (_id < 0 || displays == null || _id >= displays.Length) {
+				LogError($"Display {_id} is out of range");
+				return;
+			}
+
+			videoManager._GetUpdatedAudioTemplate(displaySourceMap[_id]);
 		}
 	}
 }

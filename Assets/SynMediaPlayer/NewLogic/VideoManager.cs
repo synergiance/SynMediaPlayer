@@ -9,7 +9,7 @@ namespace Synergiance.MediaPlayer {
 	public enum VideoTypes {
 		Video, Stream, LowLatency
 	}
-	[DefaultExecutionOrder(-2), UdonBehaviourSyncMode(BehaviourSyncMode.None)]
+	[DefaultExecutionOrder(-30), UdonBehaviourSyncMode(BehaviourSyncMode.None)]
 	public class VideoManager : DiagnosticBehaviour {
 		// Settings
 		[Range(1, 10)] [SerializeField] private int loadAttempts = 3; // Number of attempts at loading a video
@@ -340,6 +340,15 @@ namespace Synergiance.MediaPlayer {
 		public float _GetDuration(int _handle, bool _secondary = false) {
 			// TODO: Implement
 			return -1;
+		}
+
+		public void _GetUpdatedAudioTemplate(int _handle) {
+			int relay = GetPrimaryRelayAtHandle(_handle);
+			if (relay < 0) return;
+			FindAndUpdateRelayAudio(relay, _handle);
+			relay = GetSecondaryRelayAtHandle(_handle);
+			if (relay < 0) return;
+			FindAndUpdateRelayAudio(relay, _handle);
 		}
 
 		private int GetPrimaryRelayAtHandle(int _handle) {
