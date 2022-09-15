@@ -337,9 +337,18 @@ namespace Synergiance.MediaPlayer {
 			return relays[relay].Time;
 		}
 
+		/// <summary>
+		/// Gets the duration of the current or next video for a given video
+		/// player
+		/// </summary>
+		/// <param name="_handle">Video player to use</param>
+		/// <param name="_secondary">Use this if you want the secondary video duration</param>
+		/// <returns>Duration of the video, or -1 if there's a problem</returns>
 		public float _GetDuration(int _handle, bool _secondary = false) {
-			// TODO: Implement
-			return -1;
+			int relay = _secondary ? GetSecondaryRelayAtHandle(_handle) : GetPrimaryRelayAtHandle(_handle);
+			if (relay < 0) return -1;
+			Log($"Getting duration from video relay {relay} using handle {_handle}");
+			return relays[relay].Duration;
 		}
 
 		/// <summary>
