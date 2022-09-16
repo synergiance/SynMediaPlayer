@@ -15,8 +15,8 @@ MonoBehaviour:
   EnableAutomaticResync: 0
   videoURL:
     url: 
-  autoPlay: 1
-  loop: 1
+  autoPlay: 0
+  loop: 0
   renderMode: 1
   targetTexture: {fileID: 0}
   targetMaterialRenderer: {fileID: 6682460809633969096}
@@ -102,7 +102,7 @@ PrefabInstance:
     - target: {fileID: 8904717159418970815, guid: b96fb94c46a25204b8649e1a141842e1,
         type: 3}
       propertyPath: m_Name
-      value: Video Relay
+      value: Stereo Unity Video Relay
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b96fb94c46a25204b8649e1a141842e1, type: 3}

@@ -15,8 +15,8 @@ MonoBehaviour:
   EnableAutomaticResync: 0
   videoURL:
     url: 
-  autoPlay: 1
-  loop: 1
+  autoPlay: 0
+  loop: 0
   maximumResolution: 720
   useLowLatency: 0
 --- !u!114 &1649187590
@@ -157,7 +157,7 @@ PrefabInstance:
     - target: {fileID: 2021569936791136544, guid: 5213b54e0d017ae409f95c7793366b99,
         type: 3}
       propertyPath: m_Name
-      value: Surround Video Relay
+      value: Surround AVPro Video Relay
       objectReference: {fileID: 0}
     - target: {fileID: 5757832573626352964, guid: 5213b54e0d017ae409f95c7793366b99,
         type: 3}

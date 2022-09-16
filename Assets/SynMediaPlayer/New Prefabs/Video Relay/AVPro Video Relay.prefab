@@ -15,8 +15,8 @@ MonoBehaviour:
   EnableAutomaticResync: 0
   videoURL:
     url: 
-  autoPlay: 1
-  loop: 1
+  autoPlay: 0
+  loop: 0
   maximumResolution: 720
   useLowLatency: 0
 --- !u!114 &5979244973912112444
@@ -130,7 +130,7 @@ PrefabInstance:
     - target: {fileID: 4814882404830386146, guid: 3c95b178ac6cb79498ddf82ab6e9f1a7,
         type: 3}
       propertyPath: m_Name
-      value: Video Relay
+      value: AVPro Video Relay
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3c95b178ac6cb79498ddf82ab6e9f1a7, type: 3}

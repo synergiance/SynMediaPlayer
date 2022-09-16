@@ -4,6 +4,7 @@ using UnityEngine;
 using VRC.SDK3.Components.Video;
 
 namespace Synergiance.MediaPlayer {
+	[DefaultExecutionOrder(-20)]
 	public class PlayerManager : DiagnosticBehaviour {
 		[SerializeField] private PlaylistManager playlistManager;
 		[SerializeField] private VideoManager videoManager;
@@ -91,6 +92,8 @@ namespace Synergiance.MediaPlayer {
 				videoPlayers = temp;
 				videoPlayerNames = tempStr;
 			}
+
+			videoManager._ResizeVideoPlayerArray();
 
 			int videoPlayerId = videoPlayers.Length - 1;
 			videoPlayers[videoPlayerId] = _videoPlayer;

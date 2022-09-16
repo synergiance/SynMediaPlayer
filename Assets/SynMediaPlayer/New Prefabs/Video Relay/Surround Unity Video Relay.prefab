@@ -15,8 +15,8 @@ MonoBehaviour:
   EnableAutomaticResync: 0
   videoURL:
     url: 
-  autoPlay: 1
-  loop: 1
+  autoPlay: 0
+  loop: 0
   renderMode: 1
   targetTexture: {fileID: 0}
   targetMaterialRenderer: {fileID: 5394000597320830697}
@@ -42,7 +42,7 @@ PrefabInstance:
     - target: {fileID: 2021569936791136544, guid: 5213b54e0d017ae409f95c7793366b99,
         type: 3}
       propertyPath: m_Name
-      value: Surround Video Relay
+      value: Surround Unity Video Relay
       objectReference: {fileID: 0}
     - target: {fileID: 5757832573626352964, guid: 5213b54e0d017ae409f95c7793366b99,
         type: 3}
