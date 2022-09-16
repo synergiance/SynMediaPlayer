@@ -62,6 +62,9 @@ namespace Synergiance.MediaPlayer {
 		private int videosInQueue;
 		private int firstVideoInQueue;
 
+		// Cache for untrusted check
+		public bool BlockingUntrustedLinks { get; private set; }
+
 		// Public Callback Variables
 		[HideInInspector] public int relayIdentifier;
 		[HideInInspector] public VideoError relayVideoError;
@@ -601,7 +604,27 @@ namespace Synergiance.MediaPlayer {
 				Log($"Ignoring Video Error callback from relay {_id}");
 				return;
 			}
-			// TODO: What to do when this video has an error
+
+			switch (_err) {
+				case VideoError.AccessDenied:
+					BlockingUntrustedLinks = true;
+					LogError("Allow Untrusted URLs needs to be enabled to load this video!");
+					break;
+				case VideoError.RateLimited:
+					LogWarning("Rate limited! This means you are using a separate video object.");
+					// TODO: Requeue a rate limited video
+					return;
+				case VideoError.InvalidURL:
+					LogError("This video could not load because the URL is malformed!\nMake sure you're typing the URL correctly.");
+					break;
+				case VideoError.Unknown:
+					LogError("This video could not load because it could not resolve in Youtube-DL!\nMake sure you're typing the URL correctly.");
+					break;
+				case VideoError.PlayerError:
+					LogError("Unsupported format or corrupt video file!");
+					break;
+			}
+
 			SendRelayEvent(relayIsSecondary[_id] ? "_RelayVideoQueueError" : "_RelayVideoError", _id);
 		}
 
