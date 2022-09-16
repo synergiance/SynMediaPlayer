@@ -77,6 +77,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void Initialize() {
 			if (initialized) return;
+			Log("Initialize!");
 			CheckValid();
 			initialized = true;
 		}
@@ -88,6 +89,11 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			identifier = playerManager._RegisterVideoPlayer(this, playerName);
+
+			if (identifier < 0) {
+				LogError("Failed to register video player!");
+				return;
+			}
 
 			videoManager = playerManager.GetVideoManager();
 			if (videoManager == null) {
@@ -105,6 +111,8 @@ namespace Synergiance.MediaPlayer {
 				LogError("Queue is missing!");
 				return;
 			}
+
+			Log("Successfully validated!");
 
 			isLocked = lockByDefault && securityManager.HasSecurity;
 			isValid = true;

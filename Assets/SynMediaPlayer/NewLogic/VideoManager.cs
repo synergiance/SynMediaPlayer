@@ -80,6 +80,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void Initialize() {
 			if (initialized) return;
+			Log("Initialize!");
 			InitialSetUp();
 			initialized = true;
 		}
@@ -95,6 +96,8 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 
+			Log("Initial Set Up");
+
 			displayManager._Initialize(this);
 
 			videosToLoad = new VRCUrl[MAX_QUEUE_LENGTH];
@@ -105,6 +108,7 @@ namespace Synergiance.MediaPlayer {
 			relayHandles = new int[relays.Length];
 			relayIsSecondary = new bool[relays.Length];
 
+			Log("Initializing video relays");
 			for (int i = 0; i < relays.Length; i++) {
 				videoNames[i] = relays[i].InitializeRelay(this, i);
 				relayHandles[i] = -1;
@@ -128,10 +132,14 @@ namespace Synergiance.MediaPlayer {
 		/// <returns>True on success, false if anything's wrong.</returns>
 		public bool _ResizeVideoPlayerArray() {
 			Initialize();
-			if (!isValid) return false;
+			if (!isValid) {
+				LogError("Invalid!");
+				return false;
+			}
 
 			int prevLength = primaryHandles != null ? primaryHandles.Length : 0;
 			int newLength = playerManager.NumVideoPlayers;
+			Log($"Resizing video player handle references from {prevLength} to {newLength}");
 
 			if (newLength <= prevLength) {
 				LogError("This should never appear. Video player list will always expand.");
@@ -147,14 +155,17 @@ namespace Synergiance.MediaPlayer {
 				secondaryLinks = new VRCUrl[newLength];
 				primaryLoadAttempts = new int[newLength];
 				secondaryLoadAttempts = new int[newLength];
+			} else {
+				Log($"Expanding handle arrays from {prevLength} to {newLength}");
+				ExpandIntArray(ref primaryHandles, newLength);
+				ExpandIntArray(ref secondaryHandles, newLength);
+				ExpandIntArray(ref primaryLoadAttempts, newLength);
+				ExpandIntArray(ref secondaryLoadAttempts, newLength);
+				ExpandLinkArray(ref primaryLinks, newLength);
+				ExpandLinkArray(ref secondaryLinks, newLength);
 			}
 
-			Log($"Expanding handle arrays from {prevLength} to {newLength}");
-			ExpandIntArray(ref primaryHandles, newLength);
-			ExpandIntArray(ref secondaryHandles, newLength);
-			ExpandIntArray(ref primaryLoadAttempts, newLength);
-			ExpandIntArray(ref secondaryLoadAttempts, newLength);
-
+			Log("Initializing new handles");
 			for (int i = prevLength; i < newLength; i++) {
 				primaryHandles[i] = -1;
 				secondaryHandles[i] = -1;
@@ -169,6 +180,12 @@ namespace Synergiance.MediaPlayer {
 
 		private void ExpandIntArray(ref int[] _array, int _newLength) {
 			int[] tmpArray = new int[_newLength];
+			Array.Copy(_array, tmpArray, _array.Length);
+			_array = tmpArray;
+		}
+
+		private void ExpandLinkArray(ref VRCUrl[] _array, int _newLength) {
+			VRCUrl[] tmpArray = new VRCUrl[_newLength];
 			Array.Copy(_array, tmpArray, _array.Length);
 			_array = tmpArray;
 		}
@@ -198,6 +215,8 @@ namespace Synergiance.MediaPlayer {
 				LogWarning("Invalid video type! Defaulting to video");
 				videoType = 0;
 			}
+			
+			Log($"Load video of type {_videoType} for handle {_handle} and link \"{_videoLink}\" {(_playImmediately ? " to play immediately" : "")}");
 
 			primaryLinks[_handle] = _videoLink;
 			primaryVideoTypes[_handle] = videoType;

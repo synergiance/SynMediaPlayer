@@ -25,6 +25,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void Initialize() {
 			if (initialized) return;
+			Log("Initialize!");
 			CheckValid();
 			initialized = true;
 		}
@@ -39,6 +40,8 @@ namespace Synergiance.MediaPlayer {
 				LogError("Playlist Manager Missing!");
 				return;
 			}
+
+			Log("Successfully validated!");
 
 			isValid = true;
 		}
@@ -80,6 +83,8 @@ namespace Synergiance.MediaPlayer {
 				if (foundIndex >= 0)
 					return foundIndex;
 			}
+
+			Log($"Registering video player \"{_name}\"");
 
 			if (videoPlayers == null || videoPlayers.Length == 0) {
 				videoPlayers = new VideoPlayer[1];
