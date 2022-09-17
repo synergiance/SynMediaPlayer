@@ -44,6 +44,7 @@ namespace Synergiance.MediaPlayer {
 		private bool isValid;
 
 		private bool audioActive;
+		private bool videoControllerLinked;
 
 		private float secondaryWeight;
 		private float overlayWeight;
@@ -171,7 +172,10 @@ namespace Synergiance.MediaPlayer {
 			hasOverlayTexProp = PropertyValidAndExists(overlayTextureProperty);
 			hasOverlayWeightProp = hasOverlayTexProp && PropertyValidAndExists(overlayWeightProperty);
 
-			// TODO: Link up to video controller
+			if (videoController != null) {
+				Log("Linking display");
+				videoControllerLinked = videoController._LinkDisplay(this);
+			}
 
 			isValid = true;
 
@@ -286,7 +290,8 @@ namespace Synergiance.MediaPlayer {
 
 			SwitchSourceInternal(_source);
 
-			// TODO: If linked, switch source on video controls
+			if (videoControllerLinked)
+				videoController._SwitchSource(_source);
 
 			return true;
 		}

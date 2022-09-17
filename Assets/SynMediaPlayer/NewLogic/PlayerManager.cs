@@ -10,6 +10,8 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private VideoManager videoManager;
 		private VideoPlayer[] videoPlayers;
 		private string[] videoPlayerNames;
+		private int[][] videoControllerBinds;
+		private VideoController[] videoControllers;
 
 		public int NumVideoPlayers => videoPlayers != null ? videoPlayers.Length : 0;
 
@@ -89,13 +91,17 @@ namespace Synergiance.MediaPlayer {
 			if (videoPlayers == null || videoPlayers.Length == 0) {
 				videoPlayers = new VideoPlayer[1];
 				videoPlayerNames = new string[1];
+				videoControllerBinds = new int[1][];
 			} else {
 				VideoPlayer[] temp = new VideoPlayer[videoPlayers.Length + 1];
 				string[] tempStr = new string[temp.Length];
+				int[][] tempBinds = new int[temp.Length][];
 				Array.Copy(videoPlayers, temp, videoPlayers.Length);
 				Array.Copy(videoPlayerNames, tempStr, videoPlayers.Length);
+				Array.Copy(videoControllerBinds, tempBinds, videoPlayers.Length);
 				videoPlayers = temp;
 				videoPlayerNames = tempStr;
+				videoControllerBinds = tempBinds;
 			}
 
 			videoManager._ResizeVideoPlayerArray();
@@ -103,7 +109,13 @@ namespace Synergiance.MediaPlayer {
 			int videoPlayerId = videoPlayers.Length - 1;
 			videoPlayers[videoPlayerId] = _videoPlayer;
 			videoPlayerNames[videoPlayerId] = _name;
+			videoControllerBinds[videoPlayerId] = new int[0];
 			return videoPlayerId;
+		}
+
+		public int _RegisterVideoController(VideoController _controller, string _defaultSource) {
+			//
+			return -1;
 		}
 
 		private bool ValidateId(int _id) {

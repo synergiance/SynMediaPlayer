@@ -51,6 +51,10 @@ namespace Synergiance.MediaPlayer {
 			return true;
 		}
 
+		public bool _SwitchSource(int _source) {
+			return false;
+		}
+
 		public void _Play() {}
 		public void _Pause() {}
 		public void _Stop() {}
