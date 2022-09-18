@@ -22,6 +22,13 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 		private int diagnosticsID = -1;
 
 		/// <summary>
+		/// Sets diagnostics mode. Set to true to put behaviour into diagnostic
+		/// mode. Just remember to set back to false, since diagnostics are a
+		/// heavy performance overhead.
+		/// </summary>
+		public bool DiagnosticMode { set; protected get; }
+
+		/// <summary>
 		/// This method will initialize the diagnostic behaviour. It can either
 		/// be called from the initialization method, or it will fire the first
 		/// time its needed.
@@ -36,7 +43,7 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 
 		private void RegisterDiagnostics() {
 			// Register with diagnostic class and get an ID
-			diagnosticsID = diagnostics._Register(DebugName, DebugColor);
+			diagnosticsID = diagnostics._Register(DebugName, DebugColor, this);
 		}
 
 		/// <summary>
@@ -62,12 +69,28 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 		}
 
 		/// <summary>
+		/// Dumps the current state of the behaviour. This will only work while
+		/// the behaviour is in diagnostic mode.
+		/// </summary>
+		/// <param name="_state">String to be returned by behaviour. This will
+		/// be null if diagnostics mode is not enabled.</param>
+		/// <returns>If diagnostics mode, true, otherwise false.</returns>
+		public virtual bool _DumpState(out string _state) {
+			if (!DiagnosticMode) {
+				_state = null;
+				return false;
+			}
+			_state = "This behaviour is not coded to support dumping state";
+			return true;
+		}
+
+		/// <summary>
 		/// Logs a message to the debug log if the debug checkbox is enabled.
 		/// </summary>
 		/// <param name="_message">Message to log</param>
 		/// <param name="_context">Object to attach as context, uses current object if null</param>
 		protected void Log(string _message, Object _context = null) {
-			if (!debug) return;
+			if (!debug && !DiagnosticMode) return;
 			InitializeDiagnostics();
 			if (_context == null) _context = this;
 			if (hasDiagnostics) {
