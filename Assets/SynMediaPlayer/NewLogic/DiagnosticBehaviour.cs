@@ -69,18 +69,26 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 		}
 
 		/// <summary>
+		/// Internal interface for dumping behaviour state.
+		/// </summary>
+		/// <returns>A string representing the state of the behaviour.</returns>
+		protected virtual string DumpState() {
+			return "This behaviour is not coded to support dumping state";
+		}
+
+		/// <summary>
 		/// Dumps the current state of the behaviour. This will only work while
 		/// the behaviour is in diagnostic mode.
 		/// </summary>
 		/// <param name="_state">String to be returned by behaviour. This will
 		/// be null if diagnostics mode is not enabled.</param>
 		/// <returns>If diagnostics mode, true, otherwise false.</returns>
-		public virtual bool _DumpState(out string _state) {
+		public bool _DumpState(out string _state) {
 			if (!DiagnosticMode) {
 				_state = null;
 				return false;
 			}
-			_state = "This behaviour is not coded to support dumping state";
+			_state = DumpState();
 			return true;
 		}
 
