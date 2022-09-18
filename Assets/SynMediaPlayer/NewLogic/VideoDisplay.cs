@@ -113,6 +113,11 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void CheckValid() {
+			if (isValid) {
+				LogWarning("Breaking validation check loop!");
+				return;
+			}
+
 			if (activeZone == null) {
 				LogError("No zone assigned!");
 				return;
@@ -162,7 +167,7 @@ namespace Synergiance.MediaPlayer {
 				audioSource.enabled = false;
 			}
 
-			identifier = displayManager._RegisterDisplay(this, defaultVideoPlayer, audioPriority);
+			if (identifier < 0) identifier = displayManager._RegisterDisplay(this, defaultVideoPlayer, audioPriority);
 			if (identifier < 0) {
 				LogError("Failed to register display!");
 				return;
@@ -284,6 +289,8 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_source">ID of the new source</param>
 		/// <returns>True on success, false if there's an error</returns>
 		public bool _SwitchSource(int _source) {
+			Initialize();
+
 			if (settingControllerSource) {
 				Log("Breaking feedback loop");
 				return false;
@@ -306,8 +313,6 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private bool SwitchSourceInternal(int _source) {
-			Initialize();
-
 			if (!isValid) {
 				LogError("Display is invalid!");
 				return false;

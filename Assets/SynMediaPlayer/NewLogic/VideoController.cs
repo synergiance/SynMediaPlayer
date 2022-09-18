@@ -33,6 +33,11 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void SetUp() {
+			if (isValid) {
+				LogWarning("Breaking set up feedback loop!");
+				return;
+			}
+
 			if (playerManager == null) {
 				LogError("Player Manager missing!");
 				return;
@@ -96,6 +101,8 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_source">ID of the video player we want to switch to</param>
 		/// <returns>True on success</returns>
 		public bool _SwitchSource(int _source) {
+			Initialize();
+
 			if (settingDisplay) {
 				Log("Breaking feedback loop");
 				return false;
@@ -121,8 +128,6 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private bool SwitchSourceInternal(int _source) {
-			Initialize();
-
 			if (!isValid) {
 				LogError("Controller is invalid!");
 				return false;

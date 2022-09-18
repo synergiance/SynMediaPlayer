@@ -157,6 +157,12 @@ namespace Synergiance.MediaPlayer {
 				displaySourceMap = new int[1];
 				displayWeights = new float[1];
 			} else {
+				for (int i = 0; i < displays.Length; i++) {
+					if (displays[i] != _display) continue;
+					LogError("Display already registered!");
+					return i;
+				}
+
 				VideoDisplay[] tmpDisplays = new VideoDisplay[displays.Length + 1];
 				string[] tmpDefaultDisplaySources = new string[tmpDisplays.Length];
 				int[] tmpDisplaySourceMap = new int[tmpDisplays.Length];
