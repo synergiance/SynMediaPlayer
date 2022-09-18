@@ -45,6 +45,7 @@ namespace Synergiance.MediaPlayer {
 
 		private bool audioActive;
 		private bool videoControllerLinked;
+		private bool settingControllerSource;
 
 		private float secondaryWeight;
 		private float overlayWeight;
@@ -283,6 +284,11 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_source">ID of the new source</param>
 		/// <returns>True on success, false if there's an error</returns>
 		public bool _SwitchSource(int _source) {
+			if (settingControllerSource) {
+				Log("Breaking feedback loop");
+				return false;
+			}
+
 			if (disableSwitchingSource) {
 				LogWarning("Source switching disabled!");
 				return false;
@@ -290,8 +296,11 @@ namespace Synergiance.MediaPlayer {
 
 			SwitchSourceInternal(_source);
 
-			if (videoControllerLinked)
+			if (videoControllerLinked) {
+				settingControllerSource = true;
 				videoController._SwitchSource(_source);
+				settingControllerSource = false;
+			}
 
 			return true;
 		}

@@ -6,7 +6,15 @@ namespace Synergiance.MediaPlayer {
 	/// </summary>
 	public class VideoController : VideoBehaviour {
 		[SerializeField] private PlayerManager playerManager;
+		[SerializeField] private string defaultPlayer;
+		[SerializeField] private bool disableSwitchingSource;
 		private VideoDisplay display;
+		private bool displayLinked;
+		private bool settingDisplay;
+		private int defaultId = -1;
+		private int currentId = -1;
+		private int identifier;
+
 		private bool initialized;
 		private bool isValid;
 
@@ -30,11 +38,23 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 
-			// TODO: Register with player manager
+			Log("Registering with video controller");
+			identifier = playerManager._RegisterVideoController(this, defaultPlayer);
+			if (identifier < 0) {
+				LogError("Registration unsuccessful!");
+				return;
+			}
+
+			if (defaultId >= 0) SwitchSourceInternal(defaultId);
 
 			isValid = true;
 		}
 
+		/// <summary>
+		/// Links a display to this controller
+		/// </summary>
+		/// <param name="_display">Display to link</param>
+		/// <returns></returns>
 		public bool _LinkDisplay(VideoDisplay _display) {
 			if (_display == null) {
 				LogError("Cannot link null display!");
@@ -48,11 +68,78 @@ namespace Synergiance.MediaPlayer {
 
 			Log("Linking display");
 			display = _display;
+			displayLinked = true;
 			return true;
 		}
 
+		/// <summary>
+		/// Callback to receive the ID of the default source, when found
+		/// </summary>
+		/// <param name="_id">ID of the default source</param>
+		public void _SetDefaultSourceId(int _id) {
+			if (_id < 0) {
+				LogError("Invalid source!");
+				return;
+			}
+
+			Log($"Received ID ({_id}) of default source");
+			defaultId = _id;
+
+			if (!initialized) return;
+
+			SwitchSourceInternal(defaultId);
+		}
+
+		/// <summary>
+		/// Switch to a different video player source
+		/// </summary>
+		/// <param name="_source">ID of the video player we want to switch to</param>
+		/// <returns>True on success</returns>
 		public bool _SwitchSource(int _source) {
-			return false;
+			if (settingDisplay) {
+				Log("Breaking feedback loop");
+				return false;
+			}
+
+			if (disableSwitchingSource) {
+				LogWarning("Source switching disabled!");
+				return false;
+			}
+
+			if (settingDisplay) {
+				Log("Breaking feedback loop");
+				return false;
+			}
+
+			if (displayLinked) {
+				settingDisplay = true;
+				display._SwitchSource(_source);
+				settingDisplay = false;
+			}
+
+			return SwitchSourceInternal(_source);
+		}
+
+		private bool SwitchSourceInternal(int _source) {
+			Initialize();
+
+			if (!isValid) {
+				LogError("Controller is invalid!");
+				return false;
+			}
+
+			if (_source == currentId) {
+				LogWarning("Source already selected!");
+				return true;
+			}
+
+			Log("Switching source to " + _source);
+
+			// TODO: Actually switch
+
+			currentId = _source;
+
+			return true;
 		}
 
 		public void _Play() {}
