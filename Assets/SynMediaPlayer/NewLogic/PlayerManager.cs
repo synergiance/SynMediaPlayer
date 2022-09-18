@@ -10,7 +10,8 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private VideoManager videoManager;
 		private VideoPlayer[] videoPlayers;
 		private string[] videoPlayerNames;
-		private int[][] videoControllerBinds;
+		private int[][] playerControllerBinds;
+		private int[] controllerPlayerBinds;
 		private string[] videoControllerPreferred;
 		private VideoController[] videoControllers;
 
@@ -98,17 +99,17 @@ namespace Synergiance.MediaPlayer {
 			if (videoPlayers == null || videoPlayers.Length == 0) {
 				videoPlayers = new VideoPlayer[1];
 				videoPlayerNames = new string[1];
-				videoControllerBinds = new int[1][];
+				playerControllerBinds = new int[1][];
 			} else {
 				VideoPlayer[] temp = new VideoPlayer[videoPlayers.Length + 1];
 				string[] tempStr = new string[temp.Length];
 				int[][] tempBinds = new int[temp.Length][];
 				Array.Copy(videoPlayers, temp, videoPlayers.Length);
 				Array.Copy(videoPlayerNames, tempStr, videoPlayers.Length);
-				Array.Copy(videoControllerBinds, tempBinds, videoPlayers.Length);
+				Array.Copy(playerControllerBinds, tempBinds, videoPlayers.Length);
 				videoPlayers = temp;
 				videoPlayerNames = tempStr;
-				videoControllerBinds = tempBinds;
+				playerControllerBinds = tempBinds;
 			}
 
 			videoManager._ResizeVideoPlayerArray();
@@ -116,7 +117,7 @@ namespace Synergiance.MediaPlayer {
 			int videoPlayerId = videoPlayers.Length - 1;
 			videoPlayers[videoPlayerId] = _videoPlayer;
 			videoPlayerNames[videoPlayerId] = _name;
-			videoControllerBinds[videoPlayerId] = new int[0];
+			playerControllerBinds[videoPlayerId] = new int[0];
 			return videoPlayerId;
 		}
 
@@ -145,19 +146,24 @@ namespace Synergiance.MediaPlayer {
 			if (numControllers == 0) {
 				videoControllers = new VideoController[1];
 				videoControllerPreferred = new string[1];
+				controllerPlayerBinds = new int[1];
 			} else {
 				VideoController[] tmpControllers = new VideoController[numControllers + 1];
 				string[] tmpDefaults = new string[numControllers + 1];
+				int[] tmpBinds = new int[numControllers + 1];
 				// ReSharper disable once AssignNullToNotNullAttribute
 				Array.Copy(videoControllers, tmpControllers, numControllers);
 				Array.Copy(videoControllerPreferred, tmpDefaults, numControllers);
+				Array.Copy(controllerPlayerBinds, tmpBinds, numControllers);
 				videoControllers = tmpControllers;
 				videoControllerPreferred = tmpDefaults;
+				controllerPlayerBinds = tmpBinds;
 			}
 
 			Log("Registering controller with ID " + numControllers);
 			videoControllers[numControllers] = _controller;
 			videoControllerPreferred[numControllers] = _defaultSource;
+			controllerPlayerBinds[numControllers] = -1;
 
 			Log("Searching for default source ID");
 			for (int i = 0; i < videoPlayerNames.Length; i++) {
@@ -170,7 +176,53 @@ namespace Synergiance.MediaPlayer {
 			return numControllers;
 		}
 
+		public bool _SwitchControllerSource(int _newSource, int _id) {
+			Initialize();
+			if (!isValid || videoControllers == null || _id < 0 || _id >= videoControllers.Length) {
+				LogWarning("Invalid controller id");
+				return false;
+			}
+
+			if (!ValidateId(_newSource)) return false;
+
+			int oldSource = controllerPlayerBinds[_id];
+
+			if (_newSource == oldSource) {
+				LogWarning("Already using this source!");
+				return true;
+			}
+
+			Log($"Switching source on controller {_id} from {oldSource} to {_newSource}");
+
+			if (oldSource >= 0) for (int i = 0; i < playerControllerBinds[oldSource].Length; i++) {
+				if (playerControllerBinds[oldSource][i] != _id) continue;
+				Log($"Removing controller {_id} from player controller binds at {oldSource},{i}");
+				playerControllerBinds[oldSource][i] = -1;
+				break;
+			}
+
+			controllerPlayerBinds[_id] = _newSource;
+
+			int numBinds = playerControllerBinds[_newSource] == null ? 0 : playerControllerBinds.Length;
+			for (int i = 0; i < numBinds; i++) {
+				if (playerControllerBinds[_newSource][i] >= 0) continue;
+				Log($"Adding controller {_id} to player controller binds at {_newSource},{i}");
+				playerControllerBinds[_newSource][i] = _id;
+				return true;
+			}
+
+			Log($"Expanding player controller binds array at {_newSource}");
+			int[] tmpBinds = new int[numBinds + 1];
+			if (numBinds > 0) Array.Copy(playerControllerBinds[_newSource], tmpBinds, numBinds);
+			Log($"Adding controller {_id} to player controller binds at {_newSource},{numBinds}");
+			tmpBinds[numBinds] = _id;
+			playerControllerBinds[_newSource] = tmpBinds;
+
+			return true;
+		}
+
 		private bool ValidateId(int _id) {
+			Initialize();
 			if (isValid && _id >= 0 && videoPlayers != null && _id < videoPlayers.Length) return true;
 			LogWarning("Invalid video player ID!");
 			return false;

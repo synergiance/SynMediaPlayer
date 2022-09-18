@@ -135,8 +135,12 @@ namespace Synergiance.MediaPlayer {
 
 			Log("Switching source to " + _source);
 
-			// TODO: Actually switch
+			if (!playerManager._SwitchControllerSource(_source, identifier)) {
+				Log("Failed to bind!");
+				return false;
+			}
 
+			Log("Successfully bound to " + _source);
 			currentId = _source;
 
 			return true;
