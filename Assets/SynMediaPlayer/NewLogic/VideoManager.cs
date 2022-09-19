@@ -176,6 +176,11 @@ namespace Synergiance.MediaPlayer {
 				secondaryLinks[i] = VRCUrl.Empty;
 				primaryLoadAttempts[i] = -1;
 				secondaryLoadAttempts[i] = -1;
+				string playerName = playerManager.GetVideoPlayerName(i);
+				if (string.IsNullOrWhiteSpace(playerName))
+					LogWarning("Video player name is null!");
+				Log($"Adding video player {playerName} to display manager");
+				displayManager._AddSource(playerName);
 			}
 
 			return true;

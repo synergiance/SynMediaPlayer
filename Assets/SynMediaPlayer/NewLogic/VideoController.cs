@@ -50,9 +50,9 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 
-			if (defaultId >= 0) SwitchSourceInternal(defaultId);
-
 			isValid = true;
+
+			if (defaultId >= 0) SwitchSourceInternal(defaultId);
 		}
 
 		/// <summary>

@@ -49,9 +49,15 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 
+			if (string.IsNullOrWhiteSpace(_name)) {
+				LogError("Name cannot be empty!");
+				return;
+			}
+
 			Log($"Adding source \"{_name}\" to display manager");
 
 			if (sourceDisplayMap != null) {
+				Log("Expanding source display map arrays");
 				int[][] mapBak = sourceDisplayMap;
 				string[] nameBak = sourceNames;
 				sourceDisplayMap = new int[mapBak.Length + 1][];
@@ -59,12 +65,14 @@ namespace Synergiance.MediaPlayer {
 				Array.Copy(mapBak, sourceDisplayMap, mapBak.Length);
 				Array.Copy(nameBak, sourceNames, nameBak.Length);
 			} else {
+				Log("Creating source display map arrays");
 				sourceDisplayMap = new int[1][];
 				sourceNames = new string[1];
 			}
 
 			int sourceIndex = sourceDisplayMap.Length - 1;
 			sourceNames[sourceIndex] = _name;
+			Log("Source added at index " + sourceIndex);
 
 			if (defaultDisplaySources == null) return;
 			for (int i = 0; i < defaultDisplaySources.Length; i++) {
@@ -152,6 +160,7 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			if (displays == null || displays.Length == 0) {
+				Log("Creating display arrays");
 				displays = new VideoDisplay[1];
 				defaultDisplaySources = new string[1];
 				displaySourceMap = new int[1];
@@ -163,6 +172,7 @@ namespace Synergiance.MediaPlayer {
 					return i;
 				}
 
+				Log("Expanding display arrays");
 				VideoDisplay[] tmpDisplays = new VideoDisplay[displays.Length + 1];
 				string[] tmpDefaultDisplaySources = new string[tmpDisplays.Length];
 				int[] tmpDisplaySourceMap = new int[tmpDisplays.Length];
@@ -178,6 +188,7 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			int displayIndex = displays.Length - 1;
+			Log("Registering display to index " + displayIndex);
 			displays[displayIndex] = _display;
 			defaultDisplaySources[displayIndex] = _defaultSource;
 			displaySourceMap[displayIndex] = -1;

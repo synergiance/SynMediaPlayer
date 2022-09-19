@@ -53,6 +53,11 @@ namespace Synergiance.MediaPlayer {
 		public PlaylistManager GetPlaylistManager() { return playlistManager; }
 		public VideoManager GetVideoManager() { return videoManager; }
 
+		public string GetVideoPlayerName(int _id) {
+			if (!ValidateId(_id)) return null;
+			return videoPlayerNames[_id];
+		}
+
 		/// <summary>
 		/// Registers a video player with the player manager.
 		/// </summary>
@@ -97,10 +102,12 @@ namespace Synergiance.MediaPlayer {
 			Log($"Registering video player \"{_name}\"");
 
 			if (videoPlayers == null || videoPlayers.Length == 0) {
+				Log("Creating video player arrays");
 				videoPlayers = new VideoPlayer[1];
 				videoPlayerNames = new string[1];
 				playerControllerBinds = new int[1][];
 			} else {
+				Log("Expanding video player arrays");
 				VideoPlayer[] temp = new VideoPlayer[videoPlayers.Length + 1];
 				string[] tempStr = new string[temp.Length];
 				int[][] tempBinds = new int[temp.Length][];
@@ -112,12 +119,14 @@ namespace Synergiance.MediaPlayer {
 				playerControllerBinds = tempBinds;
 			}
 
-			videoManager._ResizeVideoPlayerArray();
-
 			int videoPlayerId = videoPlayers.Length - 1;
+			Log("Adding video player at index " + videoPlayerId);
 			videoPlayers[videoPlayerId] = _videoPlayer;
 			videoPlayerNames[videoPlayerId] = _name;
-			playerControllerBinds[videoPlayerId] = new int[0];
+			playerControllerBinds[videoPlayerId] = null;
+
+			videoManager._ResizeVideoPlayerArray();
+
 			return videoPlayerId;
 		}
 

@@ -57,7 +57,7 @@ namespace Synergiance.MediaPlayer {
 
 		private int currentId = -1;
 		private int defaultId = -1;
-		private int identifier;
+		private int identifier = -1;
 
 		/// <summary>
 		/// Accessor for whether display is meant to have audio.
@@ -85,6 +85,7 @@ namespace Synergiance.MediaPlayer {
 		public float SecondaryWeight {
 			get => secondaryWeight;
 			set {
+				Initialize();
 				secondaryWeight = value;
 				UpdateMaterialWeights();
 			}
@@ -97,6 +98,7 @@ namespace Synergiance.MediaPlayer {
 		public float OverlayWeight {
 			get => overlayWeight;
 			set {
+				Initialize();
 				overlayWeight = value;
 				UpdateMaterialWeights();
 			}
@@ -108,6 +110,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void Initialize() {
 			if (initialized) return;
+			Log("Initialize!");
 			CheckValid();
 			initialized = true;
 		}
@@ -162,11 +165,13 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			HasAudio = audioSources != null && audioSources.Length > 0;
+			Log(HasAudio ? "Has audio" : "No audio detected.");
 			// ReSharper disable once PossibleNullReferenceException
 			if (HasAudio) foreach (AudioSource audioSource in audioSources) {
 				audioSource.enabled = false;
 			}
 
+			Log(identifier < 0 ? "Registering display" : "Display already registered");
 			if (identifier < 0) identifier = displayManager._RegisterDisplay(this, defaultVideoPlayer, audioPriority);
 			if (identifier < 0) {
 				LogError("Failed to register display!");
@@ -177,6 +182,12 @@ namespace Synergiance.MediaPlayer {
 			hasSecondaryWeightProp = hasSecondaryTexProp && PropertyValidAndExists(secondaryWeightProperty);
 			hasOverlayTexProp = PropertyValidAndExists(overlayTextureProperty);
 			hasOverlayWeightProp = hasOverlayTexProp && PropertyValidAndExists(overlayWeightProperty);
+			string propLog = "Properties: ";
+			propLog += " SecondTex: " + hasSecondaryTexProp;
+			propLog += ", OverlayTex: " + hasOverlayTexProp;
+			propLog += ", SecondWeight: " + hasSecondaryWeightProp;
+			propLog += ", OverlayWeight: " + hasOverlayWeightProp;
+			Log(propLog);
 
 			if (videoController != null) {
 				Log("Linking display");
@@ -194,8 +205,9 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void UpdateMaterialWeights() {
-			Initialize();
 			if (!isValid) return;
+
+			Log("Update Material Weights");
 
 			if (hasSecondaryWeightProp)
 				videoMaterial.SetFloat(secondaryWeightProperty, secondaryWeight);

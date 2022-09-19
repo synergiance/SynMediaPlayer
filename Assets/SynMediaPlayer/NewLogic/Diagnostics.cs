@@ -18,7 +18,9 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 
 		private const int ArrayIncrement = 16;
 		private const string DiagnosticPrefix = "[<color=#808080>Diagnostics</color>]";
+		private const float MinRuntime = 1.0f;
 		private const float MaxRuntime = 300.0f;
+		private const float MinDelay = 0.01f;
 
 		private int numDiagnostics;
 		private int diagnosticsLeft;
@@ -36,10 +38,10 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 			initialized = true;
 			if (diagnosticDebug) Debug.Log($"{DiagnosticPrefix} Initialized arrays with length {ArrayIncrement}", this);
 
-			float runtime = Mathf.Clamp(diagnosticRuntime, float.Epsilon, MaxRuntime);
-			diagnosticDelay = Mathf.Min(diagnosticDelay, float.Epsilon);
+			float runtime = Mathf.Clamp(diagnosticRuntime, MinRuntime, MaxRuntime);
+			diagnosticDelay = Mathf.Max(diagnosticDelay, MinDelay);
 			numDiagnostics = Mathf.FloorToInt(runtime / diagnosticDelay);
-			if (diagnosticDebug) Debug.Log($"{DiagnosticPrefix} Diagnostics will run {numDiagnostics} times every {diagnosticDelay:N2} seconds", this);
+			if (diagnosticDebug) Debug.Log($"{DiagnosticPrefix} Diagnostics will run every {diagnosticDelay:N2} seconds {numDiagnostics} times", this);
 		}
 
 		private void ExpandArrays() {
