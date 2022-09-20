@@ -50,6 +50,9 @@ namespace Synergiance.MediaPlayer {
 		//private float[] videosPointA; // For AB Looping
 		//private float[] videosPointB; // For AB Looping
 
+		// Video states
+		private bool[] isPlaying;
+
 		// Video load queue
 		private VRCUrl[] videosToLoad; // Queue of videos to load
 		private bool[] videosPlayImmediately; // Whether video in queue should play as soon as its loaded
@@ -62,6 +65,10 @@ namespace Synergiance.MediaPlayer {
 		private int videosInQueue;
 		private int firstVideoInQueue;
 
+		// Sync timing
+		private const float PLAYER_CHECK_COOLDOWN = 0.1f;
+		private float lastPlayerCheck = -PLAYER_CHECK_COOLDOWN;
+
 		// Cache for untrusted check
 		public bool BlockingUntrustedLinks { get; private set; }
 
@@ -72,6 +79,7 @@ namespace Synergiance.MediaPlayer {
 		// Behaviour integrity
 		private bool initialized;
 		private bool isValid;
+		private bool hasPlayerHandles;
 
 		// Diagnostic settings
 		protected override string DebugName => "Video Manager";
@@ -158,14 +166,23 @@ namespace Synergiance.MediaPlayer {
 				secondaryLinks = new VRCUrl[newLength];
 				primaryLoadAttempts = new int[newLength];
 				secondaryLoadAttempts = new int[newLength];
+				primaryVideoTypes = new int[newLength];
+				secondaryVideoTypes = new int[newLength];
+				primaryVideoDurations = new float[newLength];
+				secondaryVideoDurations = new float[newLength];
+				hasPlayerHandles = true;
 			} else {
 				Log($"Expanding handle arrays from {prevLength} to {newLength}");
 				ExpandIntArray(ref primaryHandles, newLength);
 				ExpandIntArray(ref secondaryHandles, newLength);
 				ExpandIntArray(ref primaryLoadAttempts, newLength);
 				ExpandIntArray(ref secondaryLoadAttempts, newLength);
+				ExpandIntArray(ref primaryVideoTypes, newLength);
+				ExpandIntArray(ref secondaryVideoTypes, newLength);
 				ExpandLinkArray(ref primaryLinks, newLength);
 				ExpandLinkArray(ref secondaryLinks, newLength);
+				ExpandFloatArray(ref primaryVideoDurations, newLength);
+				ExpandFloatArray(ref secondaryVideoDurations, newLength);
 			}
 
 			Log("Initializing new handles");
@@ -176,6 +193,10 @@ namespace Synergiance.MediaPlayer {
 				secondaryLinks[i] = VRCUrl.Empty;
 				primaryLoadAttempts[i] = -1;
 				secondaryLoadAttempts[i] = -1;
+				primaryVideoTypes[i] = -1;
+				secondaryVideoTypes[i] = -1;
+				primaryVideoDurations[i] = -1;
+				secondaryVideoDurations[i] = -1;
 				string playerName = playerManager.GetVideoPlayerName(i);
 				if (string.IsNullOrWhiteSpace(playerName))
 					LogWarning("Video player name is null!");
@@ -192,10 +213,31 @@ namespace Synergiance.MediaPlayer {
 			_array = tmpArray;
 		}
 
+		private void ExpandFloatArray(ref float[] _array, int _newLength) {
+			float[] tmpArray = new float[_newLength];
+			Array.Copy(_array, tmpArray, _array.Length);
+			_array = tmpArray;
+		}
+
 		private void ExpandLinkArray(ref VRCUrl[] _array, int _newLength) {
 			VRCUrl[] tmpArray = new VRCUrl[_newLength];
 			Array.Copy(_array, tmpArray, _array.Length);
 			_array = tmpArray;
+		}
+
+		private void Update() {
+			if (!isValid) return;
+			if (!Networking.IsNetworkSettled) return;
+			CheckPlayers();
+		}
+
+		private void CheckPlayers() {
+			if (!hasPlayerHandles) return;
+			if (lastPlayerCheck + PLAYER_CHECK_COOLDOWN > Time.time) return;
+			for (int i = 0; i < primaryHandles.Length; i++) {
+				if (primaryHandles[i] < 0) continue;
+				//
+			}
 		}
 
 		/// <summary>
@@ -309,6 +351,12 @@ namespace Synergiance.MediaPlayer {
 			lastVideoLoadAttempt = Time.time;
 		}
 
+		/// <summary>
+		/// Play a given video player
+		/// </summary>
+		/// <param name="_handle">Handle of the video player associated with
+		///     the video.</param>
+		/// <returns>True on success.</returns>
 		public bool _Play(int _handle) {
 			int relay = GetPrimaryRelayAtHandle(_handle);
 			if (relay < 0) return false;
@@ -324,6 +372,12 @@ namespace Synergiance.MediaPlayer {
 			return relays[relay]._Play();
 		}
 
+		/// <summary>
+		/// Pause a given video player
+		/// </summary>
+		/// <param name="_handle">Handle of the video player associated with
+		///     the video.</param>
+		/// <returns>True on success.</returns>
 		public bool _Pause(int _handle) {
 			int relay = GetPrimaryRelayAtHandle(_handle);
 			if (relay < 0) return false;
@@ -331,6 +385,12 @@ namespace Synergiance.MediaPlayer {
 			return relays[relay]._Pause();
 		}
 
+		/// <summary>
+		/// Stop a given video player
+		/// </summary>
+		/// <param name="_handle">Handle of the video player associated with
+		///     the video.</param>
+		/// <returns>True on success.</returns>
 		public bool _Stop(int _handle) {
 			int relay = GetPrimaryRelayAtHandle(_handle);
 			if (relay < 0) return false;

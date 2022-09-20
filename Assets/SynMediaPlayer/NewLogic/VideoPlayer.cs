@@ -118,11 +118,47 @@ namespace Synergiance.MediaPlayer {
 			isValid = true;
 		}
 
-		public void _Play() {}
+		public void _Play() {
+			if (!CheckValidAndAccess("play")) return;
 
-		public void _Pause() {}
+			Log("Playing");
+			paused = false;
+			Sync();
+			playerManager._PlayVideo(identifier);
+		}
 
-		public void _Stop() {}
+		public void _Pause() {
+			if (!CheckValidAndAccess("pause")) return;
+
+			Log("Pausing");
+			paused = true;
+			Sync();
+			playerManager._PauseVideo(identifier);
+		}
+
+		public void _Stop() {
+			if (!CheckValidAndAccess("stop")) return;
+
+			Log("Stopping");
+			paused = true;
+			// TODO: Set time to 0
+			Sync();
+			playerManager._StopVideo(identifier);
+		}
+
+		private bool CheckValidAndAccess(string _action) {
+			if (!isValid) {
+				LogError($"Cannot {_action}, invalid!");
+				return false;
+			}
+
+			if (!UnlockedOrHasAccess) {
+				LogWarning($"Cannot {_action}, not allowed to interact with video player!");
+				return false;
+			}
+
+			return true;
+		}
 
 		public void _Lock() {
 			if (!securityManager.HasSecurity) {

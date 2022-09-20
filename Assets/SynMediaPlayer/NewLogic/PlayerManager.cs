@@ -185,6 +185,24 @@ namespace Synergiance.MediaPlayer {
 			return numControllers;
 		}
 
+		public bool _PlayVideo(int _id) {
+			if (!ValidateId(_id)) return false;
+			Log("Playing id " + _id);
+			return videoManager._Play(_id);
+		}
+
+		public bool _PauseVideo(int _id) {
+			if (!ValidateId(_id)) return false;
+			Log("Pausing id " + _id);
+			return videoManager._Pause(_id);
+		}
+
+		public bool _StopVideo(int _id) {
+			if (!ValidateId(_id)) return false;
+			Log("Stopping id " + _id);
+			return videoManager._Stop(_id);
+		}
+
 		public bool _SwitchControllerSource(int _newSource, int _id) {
 			Initialize();
 			if (!isValid || videoControllers == null || _id < 0 || _id >= videoControllers.Length) {
