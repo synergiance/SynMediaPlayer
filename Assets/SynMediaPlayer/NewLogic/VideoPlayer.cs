@@ -1,6 +1,8 @@
-﻿using Synergiance.MediaPlayer;
+﻿using System;
+using Synergiance.MediaPlayer;
 using UdonSharp;
 using UnityEngine;
+using VRC.Udon.Common;
 
 namespace Synergiance.MediaPlayer {
 	/// <summary>
@@ -8,7 +10,7 @@ namespace Synergiance.MediaPlayer {
 	/// unsupported in UdonSharp as of writing this.
 	/// </summary>
 	public enum MediaType {
-		Video, Stream, LowLatencyStream, Music, MusicStream
+		Video, Stream, Music, MusicStream
 	}
 
 	/// <summary>
@@ -37,6 +39,8 @@ namespace Synergiance.MediaPlayer {
 		[UdonSynced] private int beginNetTimeSync;
 		private int mediaType;
 		[UdonSynced] private int mediaTypeSync;
+		private int syncIndex = -1;
+		[UdonSynced] private int syncIndexSync;
 		private bool isLocked;
 		[UdonSynced] private bool isLockedSync;
 
@@ -58,10 +62,63 @@ namespace Synergiance.MediaPlayer {
 				return !isValid || isLocked;
 			}
 			private set {
-				if (isLocked == value) return;
+				if (isLocked == isLockedSync == value) return;
+				// TODO: Permission check and sync
 				isLocked = value;
 				Log($"{(isLocked ? "Locking" : "Unlocking")} the player");
-				CallCallbacks(isLocked ? "_SecurityLocked" : "_SecurityUnlocked");
+				//CallCallbacks(isLocked ? "_SecurityLocked" : "_SecurityUnlocked");
+				Sync();
+			}
+		}
+
+		public bool Paused {
+			get => paused;
+			private set {
+				if (paused == pausedSync == value) return;
+				if (!CheckValidAndAccess(value ? "pause" : "unpause")) return;
+				pausedSync = value;
+				Log((value ? "Pausing" : "Playing") + " the video");
+				Sync();
+			}
+		}
+
+		private float PauseTime {
+			get => pauseTime;
+			set {
+				if (Mathf.Abs(value - pauseTime) + Mathf.Abs(value - pauseTimeSync) < 0.1) return;
+				pauseTimeSync = value;
+				Log("Setting paused time to " + value);
+				Sync();
+			}
+		}
+
+		private int BeginNetTime {
+			get => beginNetTime;
+			set {
+				if (beginNetTimeSync == value && beginNetTime == value) return;
+				beginNetTimeSync = value;
+				Log("Setting begin net time to " + value);
+				Sync();
+			}
+		}
+
+		private int MediaType {
+			get => mediaType;
+			set {
+				if (mediaType == value && mediaTypeSync == value) return;
+				mediaTypeSync = value;
+				Log("Setting media type to: " + value);
+				Sync();
+			}
+		}
+
+		private int SyncIndex {
+			get => syncIndex;
+			set {
+				if (syncIndex == value && syncIndexSync == value) return;
+				syncIndexSync = value;
+				Log("Updating sync index to: " + value);
+				Sync();
 			}
 		}
 
@@ -122,8 +179,7 @@ namespace Synergiance.MediaPlayer {
 			if (!CheckValidAndAccess("play")) return;
 
 			Log("Playing");
-			paused = false;
-			Sync();
+			Paused = false;
 			playerManager._PlayVideo(identifier);
 		}
 
@@ -131,8 +187,7 @@ namespace Synergiance.MediaPlayer {
 			if (!CheckValidAndAccess("pause")) return;
 
 			Log("Pausing");
-			paused = true;
-			Sync();
+			Paused = true;
 			playerManager._PauseVideo(identifier);
 		}
 
@@ -140,9 +195,8 @@ namespace Synergiance.MediaPlayer {
 			if (!CheckValidAndAccess("stop")) return;
 
 			Log("Stopping");
-			paused = true;
+			Paused = true;
 			// TODO: Set time to 0
-			Sync();
 			playerManager._StopVideo(identifier);
 		}
 
@@ -201,7 +255,63 @@ namespace Synergiance.MediaPlayer {
 			return -1;
 		}
 
+		private void PlayInternal() {
+			//
+		}
+
+		private void PauseInternal() {
+			//
+		}
+
+		private void StopInternal() {
+			//
+		}
+
+		#region Sync
 		private void Sync() {
+			Log("Sync!");
+			if (IsEditor) {
+				return;
+			}
+		}
+
+		public override void OnDeserialization() {
+			Log("On Deserialization");
+			ApplySyncData();
+		}
+
+		public override void OnPostSerialization(SerializationResult _result) {
+			if (!_result.success) {
+				LogWarning("Failed to serialize, byte count:" + _result.byteCount);
+				return;
+			}
+			Log($"Successfully serialized {_result.byteCount} bytes");
+			ApplySyncData();
+		}
+
+		private void ApplySyncData() {
+			CheckChanges(out bool cPaused, out bool cBeginNetTime,
+				out bool cPauseTime, out bool cLocked, out bool cMediaType);
+			paused = pausedSync;
+			beginNetTime = beginNetTimeSync;
+			pauseTime = pauseTimeSync;
+			isLocked = isLockedSync;
+			mediaType = mediaTypeSync;
+			InterpretChanges(cPaused, cBeginNetTime, cPauseTime, cLocked, cMediaType);
+		}
+
+		private void CheckChanges(out bool _cPaused, out bool _cBeginNetTime,
+			out bool _cPauseTime, out bool _cLocked, out bool _cMediaType) {
+			_cPaused = paused != pausedSync;
+			_cBeginNetTime = beginNetTime != beginNetTimeSync;
+			_cPauseTime = Math.Abs(pauseTime - pauseTimeSync) > 0.1f;
+			_cLocked = isLocked != isLockedSync;
+			_cMediaType = mediaType != mediaTypeSync;
+		}
+		#endregion
+
+		private void InterpretChanges(bool _cPaused, bool _cBeginNetTime,
+			bool _cPauseTime, bool _cLocked, bool _cMediaType) {
 			//
 		}
 

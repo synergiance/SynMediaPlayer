@@ -16,8 +16,10 @@ namespace Synergiance.MediaPlayer {
 	public class VideoQueue : DiagnosticBehaviour {
 		[SerializeField] private int maxQueueLength = 64;
 		[SerializeField] private VideoListSync queuedVideos;
+		[SerializeField] private SecurityManager securityManager;
 		[UdonSynced] private int currentIndexSync;
 		[UdonSynced] private int videosInQueueSync;
+		[UdonSynced] private int syncIndex = -1;
 		private int currentIndex;
 		private int videosInQueue;
 
@@ -37,6 +39,8 @@ namespace Synergiance.MediaPlayer {
 		/// </summary>
 		public int VideosInQueue => isValid ? videosInQueue : -1;
 
+		public int SyncIndex => syncIndex;
+
 		protected override string DebugName => "Video Queue";
 		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.7f, 0.65f, 0.15f));
 
@@ -55,13 +59,23 @@ namespace Synergiance.MediaPlayer {
 				LogError("Video list does not exist!");
 				return;
 			}
+
+			if (securityManager == null) {
+				LogError("Security manager not found!");
+				return;
+			}
+
 			isValid = true;
+
 			if (maxQueueLength < 4) {
 				Debug.LogWarning($"Max queue length ({maxQueueLength}) is too low! Increasing to 4.");
 				maxQueueLength = 4;
 			}
+
 			Log($"Initializing queue of length {maxQueueLength}");
 			queuedVideos._Initialize(maxQueueLength);
+
+			// TODO: Make sure you're master
 			Sync();
 		}
 

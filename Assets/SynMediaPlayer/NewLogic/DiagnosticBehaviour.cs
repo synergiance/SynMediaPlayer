@@ -1,6 +1,7 @@
 ﻿
 using UdonSharp;
 using UnityEngine;
+using VRC.SDKBase;
 
 namespace Synergiance.MediaPlayer.Diagnostics {
 	public class DiagnosticBehaviour : UdonSharpBehaviour {
@@ -20,6 +21,21 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 		private bool diagnosticsInitialized;
 		private string debugPrefix;
 		private int diagnosticsID = -1;
+
+		private bool hasCheckedEditor;
+		private bool isEditor;
+
+		/// <summary>
+		/// Accessor for whether we're in editor
+		/// </summary>
+		protected bool IsEditor {
+			get {
+				if (hasCheckedEditor) return isEditor;
+				isEditor = Networking.LocalPlayer == null;
+				hasCheckedEditor = true;
+				return isEditor;
+			}
+		}
 
 		/// <summary>
 		/// Sets diagnostics mode. Set to true to put behaviour into diagnostic
