@@ -2,6 +2,7 @@
 using Synergiance.MediaPlayer;
 using UdonSharp;
 using UnityEngine;
+using VRC.SDKBase;
 using VRC.Udon.Common;
 
 namespace Synergiance.MediaPlayer {
@@ -271,8 +272,11 @@ namespace Synergiance.MediaPlayer {
 		private void Sync() {
 			Log("Sync!");
 			if (IsEditor) {
+				ApplySyncData();
 				return;
 			}
+			Networking.SetOwner(Networking.LocalPlayer, gameObject);
+			RequestSerialization();
 		}
 
 		public override void OnDeserialization() {
@@ -290,30 +294,25 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void ApplySyncData() {
-			CheckChanges(out bool cPaused, out bool cBeginNetTime,
-				out bool cPauseTime, out bool cLocked, out bool cMediaType);
+			// Check what's changed
+			bool cPaused = paused != pausedSync;
+			bool cBeginNetTime = beginNetTime != beginNetTimeSync;
+			bool cPauseTime = Math.Abs(pauseTime - pauseTimeSync) > 0.1f;
+			bool cLocked = isLocked != isLockedSync;
+			bool cMediaType = mediaType != mediaTypeSync;
+			bool cSyncIndex = syncIndex != syncIndexSync;
+
+			// Copy changed properties
 			paused = pausedSync;
 			beginNetTime = beginNetTimeSync;
 			pauseTime = pauseTimeSync;
 			isLocked = isLockedSync;
 			mediaType = mediaTypeSync;
-			InterpretChanges(cPaused, cBeginNetTime, cPauseTime, cLocked, cMediaType);
-		}
+			syncIndex = syncIndexSync;
 
-		private void CheckChanges(out bool _cPaused, out bool _cBeginNetTime,
-			out bool _cPauseTime, out bool _cLocked, out bool _cMediaType) {
-			_cPaused = paused != pausedSync;
-			_cBeginNetTime = beginNetTime != beginNetTimeSync;
-			_cPauseTime = Math.Abs(pauseTime - pauseTimeSync) > 0.1f;
-			_cLocked = isLocked != isLockedSync;
-			_cMediaType = mediaType != mediaTypeSync;
+			// TODO: Determine what to do when variables change
 		}
 		#endregion
-
-		private void InterpretChanges(bool _cPaused, bool _cBeginNetTime,
-			bool _cPauseTime, bool _cLocked, bool _cMediaType) {
-			//
-		}
 
 		private void CallCallbacks(string _message) {
 			if (callbacks == null) return;
