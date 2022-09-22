@@ -108,6 +108,7 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 			return true;
 		}
 
+		// ReSharper disable Unity.PerformanceAnalysis
 		/// <summary>
 		/// Logs a message to the debug log if the debug checkbox is enabled.
 		/// </summary>

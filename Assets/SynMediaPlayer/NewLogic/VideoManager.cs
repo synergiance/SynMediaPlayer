@@ -398,7 +398,7 @@ namespace Synergiance.MediaPlayer {
 			return relays[relay]._Stop();
 		}
 
-		public bool _SetTime(int _handle, float _time) {
+		public bool _SeekTo(int _handle, float _time) {
 			int relay = GetPrimaryRelayAtHandle(_handle);
 			if (relay < 0) return false;
 			Log($"Setting time to {_time} on video relay {relay} using handle {_handle}");
@@ -411,6 +411,13 @@ namespace Synergiance.MediaPlayer {
 			if (relay < 0) return -1;
 			Log($"Getting time from video relay {relay} using handle {_handle}");
 			return relays[relay].Time;
+		}
+
+		public bool _GetPlaying(int _handle) {
+			int relay = GetPrimaryRelayAtHandle(_handle);
+			if (relay < 0) return true;
+			Log($"Getting paused state from video relay {relay} using handle {_handle}");
+			return relays[relay].IsPlaying;
 		}
 
 		/// <summary>

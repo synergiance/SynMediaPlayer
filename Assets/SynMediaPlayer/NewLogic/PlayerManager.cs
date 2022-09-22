@@ -15,6 +15,10 @@ namespace Synergiance.MediaPlayer {
 		private string[] videoControllerPreferred;
 		private VideoController[] videoControllers;
 
+		// Sync timing
+		private const float CHECK_COOLDOWN = 0.1f;
+		private float lastCheck = -CHECK_COOLDOWN;
+
 		public int NumVideoPlayers => videoPlayers != null ? videoPlayers.Length : 0;
 
 		protected override string DebugName => "Player Manager";
@@ -203,6 +207,22 @@ namespace Synergiance.MediaPlayer {
 			return videoManager._Stop(_id);
 		}
 
+		public bool _SeekTo(int _id, float _time) {
+			if (!ValidateId(_id)) return false;
+			Log($"Seeking to {_time:N2} seconds");
+			return videoManager._SeekTo(_id, _time);
+		}
+
+		public float _GetTime(int _id) {
+			if (!ValidateId(_id)) return -1;
+			return videoManager._GetTime(_id);
+		}
+
+		public bool _GetPlaying(int _id) {
+			if (!ValidateId(_id)) return false;
+			return videoManager._GetPlaying(_id);
+		}
+
 		public bool _SwitchControllerSource(int _newSource, int _id) {
 			Initialize();
 			if (!isValid || videoControllers == null || _id < 0 || _id >= videoControllers.Length) {
@@ -266,6 +286,14 @@ namespace Synergiance.MediaPlayer {
 			if (!ValidateId(_id)) return false;
 			videoPlayers[_id].SendCustomEvent(_event);
 			return true;
+		}
+
+		private void Update() {
+			if (!isValid || videoPlayers == null) return;
+			if (lastCheck + CHECK_COOLDOWN > Time.time) return;
+			Log("Checking video players");
+			foreach (VideoPlayer videoPlayer in videoPlayers)
+				videoPlayer._UpdateSync();
 		}
 
 		/// <summary>

@@ -2,6 +2,7 @@
 using Synergiance.MediaPlayer;
 using UdonSharp;
 using UnityEngine;
+using UnityEngineInternal;
 using VRC.SDKBase;
 using VRC.Udon.Common;
 
@@ -12,6 +13,10 @@ namespace Synergiance.MediaPlayer {
 	/// </summary>
 	public enum MediaType {
 		Video, Stream, Music, MusicStream
+	}
+
+	public enum ResyncMode {
+		Normal, Resync, CatchUp, WaitForSync, WaitForVideo
 	}
 
 	/// <summary>
@@ -49,6 +54,18 @@ namespace Synergiance.MediaPlayer {
 		private bool isValid;
 		private UdonSharpBehaviour[] callbacks;
 		private int identifier;
+
+		// Video Sync variables
+		private int syncMode;
+		private const float RESYNC_THRESHOLD = 5.0f;
+		private const float RESYNC_COOLDOWN = 1.0f;
+		private const float RESYNC_DETECT = 0.1f;
+		private const float DRIFT_TOLERANCE = 0.5f;
+		private const float COLD_SPOOL_TIME = 1.0f;
+		private const float HOT_SPOOL_TIME = 0.25f;
+		private float drift;
+		private float lastResync = -1;
+		private float timeAtLastResync = -1;
 
 		protected override string DebugName => "Video Player";
 		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.25f, 0.65f, 0.1f));
@@ -123,10 +140,12 @@ namespace Synergiance.MediaPlayer {
 			}
 		}
 
+		public bool IsReady { private set; get; }
 		public bool UnlockedOrHasAccess => !IsLocked || securityManager.HasAccess;
-		public float CurrentTime => paused ? pauseTime : Time.time - beginTime;
+		public float CurrentTime => IsReady ? paused ? pauseTime : Time.time - beginTime : 0;
+		public float RawTime => IsReady ? playerManager._GetTime(identifier) : 0;
 		public bool Playing => !paused;
-		public float VideoLength => GetVideoLength();
+		public float Duration => GetDuration();
 		public float Volume => volume;
 
 		private void Start() {
@@ -247,7 +266,7 @@ namespace Synergiance.MediaPlayer {
 			IsLocked = false;
 		}
 
-		private float GetVideoLength() {
+		private float GetDuration() {
 			Initialize();
 			if (!isValid) return -1;
 			// TODO: Implementation
@@ -268,7 +287,117 @@ namespace Synergiance.MediaPlayer {
 			//
 		}
 
-		#region Sync
+		#region VideoSync
+		public void _UpdateSync() {
+			Log("Update Sync");
+			if (!IsReady || paused) return;
+			drift = RawTime - CurrentTime;
+			switch (syncMode) {
+				case 0: // Normal
+					UpdateNormal();
+					break;
+				case 1: // Resync
+					UpdateResync();
+					break;
+				case 2: // Catch Up
+					UpdateCatchUp();
+					break;
+				case 3: // Wait for sync
+					UpdateWaitSync();
+					break;
+				case 4: // Wait for video
+					UpdateWaitVideo();
+					break;
+			}
+		}
+
+		private void UpdateNormal() {
+			if (Mathf.Abs(drift) > RESYNC_THRESHOLD) {
+				syncMode = 1;
+				UpdateResync();
+			}
+
+			if (drift > DRIFT_TOLERANCE) {
+				syncMode = 3;
+				UpdateWaitSync();
+			}
+
+			if (drift < -DRIFT_TOLERANCE) {
+				syncMode = 2;
+				UpdateCatchUp();
+			}
+		}
+
+		private void UpdateCatchUp() {
+			float timeSinceLastResync = Time.time - lastResync;
+			if (RESYNC_COOLDOWN > timeSinceLastResync) return;
+			if (Mathf.Abs(RawTime - timeAtLastResync) < RESYNC_DETECT) return;
+
+			if (drift > -DRIFT_TOLERANCE) {
+				Log("Setting mode to normal");
+				syncMode = 0;
+				// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
+				UpdateNormal();
+				return;
+			}
+
+			// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
+			ResyncTo(Time.time - beginTime + HOT_SPOOL_TIME);
+		}
+
+		private void UpdateWaitSync() {
+			float timeSinceLastResync = Time.time - lastResync;
+			if (RESYNC_COOLDOWN > timeSinceLastResync) return;
+
+			if (drift < DRIFT_TOLERANCE) {
+				Log("Setting mode to normal");
+				syncMode = 0;
+				// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
+				UpdateNormal();
+				return;
+			}
+
+			bool playing = playerManager._GetPlaying(identifier);
+			if (drift > HOT_SPOOL_TIME) {
+				if (playing) playerManager._PauseVideo(identifier);
+				return;
+			}
+
+			// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
+			ResyncTo(Time.time - beginTime + HOT_SPOOL_TIME);
+		}
+
+		private void UpdateResync() {
+			float timeSinceLastResync = Time.time - lastResync;
+			if (RESYNC_COOLDOWN > timeSinceLastResync) return;
+			if (Mathf.Abs(RawTime - timeAtLastResync) < RESYNC_DETECT) return;
+
+			if (Mathf.Abs(drift) < RESYNC_THRESHOLD) {
+				Log("Setting mode to normal");
+				syncMode = 0;
+				// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
+				UpdateNormal();
+				return;
+			}
+
+			// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
+			ResyncTo(Time.time - beginTime + COLD_SPOOL_TIME);
+		}
+
+		private void UpdateWaitVideo() {
+			// TODO: Implement
+		}
+
+		private void ResyncTo(float _time) {
+			Log("Resync to " + _time.ToString("N2"));
+			playerManager._SeekTo(identifier, _time);
+			playerManager._PlayVideo(identifier);
+			lastResync = Time.time;
+			timeAtLastResync = RawTime;
+		}
+		#endregion
+
+		#region NetSync
 		private void Sync() {
 			Log("Sync!");
 			if (IsEditor) {
@@ -314,11 +443,13 @@ namespace Synergiance.MediaPlayer {
 		}
 		#endregion
 
+		#region Callbacks
 		private void CallCallbacks(string _message) {
 			if (callbacks == null) return;
 			Log($"Calling callbacks with method \"{_message}\"");
 			foreach (UdonSharpBehaviour callback in callbacks)
 				callback.SendCustomEvent(_message);
 		}
+		#endregion
 	}
 }
