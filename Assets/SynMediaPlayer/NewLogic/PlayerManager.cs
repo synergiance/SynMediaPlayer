@@ -19,7 +19,7 @@ namespace Synergiance.MediaPlayer {
 		private const float CHECK_COOLDOWN = 0.1f;
 		private float lastCheck = -CHECK_COOLDOWN;
 
-		public int NumVideoPlayers => videoPlayers != null ? videoPlayers.Length : 0;
+		public int NumVideoPlayers => hasVideoPlayers ? videoPlayers.Length : 0;
 
 		protected override string DebugName => "Player Manager";
 		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.15f, 0.5f, 0.1f));
@@ -27,10 +27,13 @@ namespace Synergiance.MediaPlayer {
 		private bool initialized;
 		private bool isValid;
 
+		private bool hasVideoPlayers;
+
 		void Start() {
 			Initialize();
 		}
 
+		// ReSharper disable Unity.PerformanceAnalysis
 		private void Initialize() {
 			if (initialized) return;
 			Log("Initialize!");
@@ -85,7 +88,7 @@ namespace Synergiance.MediaPlayer {
 				return -1;
 			}
 
-			if (videoPlayers != null) {
+			if (hasVideoPlayers) {
 				int foundIndex = -1;
 				for (int i = 0; i < videoPlayers.Length; i++) {
 					if (videoPlayers[i] == _videoPlayer) {
@@ -105,11 +108,12 @@ namespace Synergiance.MediaPlayer {
 
 			Log($"Registering video player \"{_name}\"");
 
-			if (videoPlayers == null || videoPlayers.Length == 0) {
+			if (!hasVideoPlayers || videoPlayers.Length == 0) {
 				Log("Creating video player arrays");
 				videoPlayers = new VideoPlayer[1];
 				videoPlayerNames = new string[1];
 				playerControllerBinds = new int[1][];
+				hasVideoPlayers = true;
 			} else {
 				Log("Expanding video player arrays");
 				VideoPlayer[] temp = new VideoPlayer[videoPlayers.Length + 1];
@@ -268,9 +272,10 @@ namespace Synergiance.MediaPlayer {
 			return true;
 		}
 
+		// ReSharper disable Unity.PerformanceAnalysis
 		private bool ValidateId(int _id) {
 			Initialize();
-			if (isValid && _id >= 0 && videoPlayers != null && _id < videoPlayers.Length) return true;
+			if (isValid && hasVideoPlayers && _id >= 0 && _id < videoPlayers.Length) return true;
 			LogWarning("Invalid video player ID!");
 			return false;
 		}
@@ -289,7 +294,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void Update() {
-			if (!isValid || videoPlayers == null) return;
+			if (!isValid || !hasVideoPlayers) return;
 			if (lastCheck + CHECK_COOLDOWN > Time.time) return;
 			Log("Checking video players");
 			foreach (VideoPlayer videoPlayer in videoPlayers)

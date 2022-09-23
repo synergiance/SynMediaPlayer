@@ -469,6 +469,7 @@ namespace Synergiance.MediaPlayer {
 			UpdateRelayAudio(relay, sources, volume, hasAudio);
 		}
 
+		// ReSharper disable Unity.PerformanceAnalysis
 		private int GetPrimaryRelayAtHandle(int _handle) {
 			if (!isValid) return -1;
 			if (_handle < 0 || _handle > primaryHandles.Length) {

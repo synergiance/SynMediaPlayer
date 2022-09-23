@@ -72,6 +72,10 @@ namespace Synergiance.MediaPlayer {
 		private float lastResync = -1;
 		private float timeAtLastResync = -1;
 
+		private readonly string[] syncModeNames = {
+			"Normal", "Resync", "Catch Up", "Wait For Sync", "Wait For Video", "Seek", "Wait For Load"
+		};
+
 		protected override string DebugName => "Video Player";
 		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.25f, 0.65f, 0.1f));
 
@@ -307,16 +311,16 @@ namespace Synergiance.MediaPlayer {
 				case 3: // Wait for sync
 					UpdateWaitSync();
 					break;
-				case 4: // Wait for video
+				case 4: // Wait for video to resume
 					UpdateWaitVideo();
 					break;
-				case 5:
+				case 5: // Seek mode
 					UpdateSeek();
 					break;
-				case 6:
+				case 6: // Wait for video to load
 					UpdateWaitLoad();
 					break;
-				default:
+				default: // Default to normal
 					UpdateNormal();
 					break;
 			}
@@ -339,80 +343,53 @@ namespace Synergiance.MediaPlayer {
 			}
 		}
 
+		// ReSharper disable Unity.PerformanceAnalysis
 		private void UpdateCatchUp() {
 			if (nextResync > Time.time) return;
 
 			if (Mathf.Abs(RawTime - timeAtLastResync) < RESYNC_DETECT) {
 				if (Time.time - lastResync < RESYNC_TIMEOUT) return;
-				Log("Setting mode to wait video");
-				syncMode = 4;
+				SetSyncMode(4);
 				return;
 			}
 
 			if (drift > -DRIFT_TOLERANCE) {
-				Log("Setting mode to normal");
-				syncMode = 0;
-				// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
-				UpdateNormal();
+				SetSyncMode(0, true);
 				return;
 			}
 
-			// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
 			ResyncTo(Time.time - beginTime + HOT_SPOOL_TIME, DRIFT_COOLDOWN);
 		}
 
 		private void UpdateWaitSync() {
 			if (nextResync > Time.time) return;
 
+			playerManager._GetPlaying(identifier);
+
 			if (drift < DRIFT_TOLERANCE) {
-				Log("Setting mode to normal");
-				syncMode = 0;
-				// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
-				UpdateNormal();
+				SetSyncMode(0, true);
 				return;
 			}
 
-			bool playing = playerManager._GetPlaying(identifier);
 			if (drift > HOT_SPOOL_TIME) {
-				if (playing) playerManager._PauseVideo(identifier);
+				EnsurePlaying(false);
 				return;
 			}
 
-			// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
 			ResyncTo(Time.time - beginTime + HOT_SPOOL_TIME, DRIFT_COOLDOWN);
 		}
 
+		// ReSharper disable Unity.PerformanceAnalysis
 		private void UpdateResync() {
 			if (nextResync > Time.time) return;
+			if (CheckResync()) return;
+			if (CheckDrift(RESYNC_THRESHOLD)) return;
 
-			if (Mathf.Abs(RawTime - timeAtLastResync) < RESYNC_DETECT) {
-				if (Time.time - lastResync < RESYNC_TIMEOUT) return;
-				Log("Setting mode to wait video");
-				syncMode = 4;
-				return;
-			}
-
-			if (Mathf.Abs(drift) < RESYNC_THRESHOLD) {
-				Log("Setting mode to normal");
-				syncMode = 0;
-				// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
-				UpdateNormal();
-				return;
-			}
-
-			// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
 			ResyncTo(Time.time - beginTime + COLD_SPOOL_TIME, RESYNC_COOLDOWN);
 		}
 
 		private void UpdateWaitVideo() {
-			if (Mathf.Abs(RawTime - timeAtLastResync) > RESYNC_DETECT) {
-				Log("Setting mode to normal");
-				syncMode = 0;
-				// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
-				UpdateNormal();
-				return;
-			}
-
+			if (CheckResync()) return;
 			if (Time.time - lastResync < RELOAD_TIMEOUT) return;
 
 			// TODO: Initiate reload
@@ -422,26 +399,43 @@ namespace Synergiance.MediaPlayer {
 			// TODO: Wait for video to load
 		}
 
+		// ReSharper disable Unity.PerformanceAnalysis
 		private void UpdateSeek() {
 			if (SEEK_COOLDOWN > Time.time - lastResync) return;
+			if (CheckResync()) return;
+			if (CheckDrift(RESYNC_THRESHOLD)) return;
 
-			if (Mathf.Abs(RawTime - timeAtLastResync) < RESYNC_DETECT) {
-				if (Time.time - lastResync < RESYNC_TIMEOUT) return;
-				Log("Setting mode to wait video");
-				syncMode = 4;
-				return;
-			}
-
-			if (Mathf.Abs(drift) < RESYNC_THRESHOLD) {
-				Log("Setting mode to normal");
-				syncMode = 0;
-				// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
-				UpdateNormal();
-				return;
-			}
-
-			// ReSharper disable once Unity.PerformanceCriticalCodeInvocation
 			ResyncTo(Time.time - beginTime + COLD_SPOOL_TIME, RESYNC_COOLDOWN);
+		}
+
+		// ReSharper disable Unity.PerformanceAnalysis
+		private bool CheckResync() {
+			if (Mathf.Abs(RawTime - timeAtLastResync) > RESYNC_DETECT) return false;
+			if (Time.time - lastResync < RESYNC_TIMEOUT) return true;
+			SetSyncMode(4);
+			return true;
+		}
+
+		// ReSharper disable Unity.PerformanceAnalysis
+		private bool CheckDrift(float _threshold) {
+			if (Mathf.Abs(drift) > _threshold) return false;
+			SetSyncMode(0, true);
+			return true;
+		}
+
+		private bool EnsurePlaying(bool _playing) {
+			if (playerManager._GetPlaying(identifier) == _playing) return true;
+			if (_playing) playerManager._PlayVideo(identifier);
+			else playerManager._PauseVideo(identifier);
+			return false;
+		}
+
+		private void SetSyncMode(int _mode, bool _callNormal = false) {
+			string modeName = _mode >= syncModeNames.Length || _mode < 0 ? "Unknown" : syncModeNames[_mode];
+			Log($"Setting sync mode to: {modeName} ({_mode})");
+			syncMode = _mode;
+			if (!_callNormal) return;
+			UpdateNormal();
 		}
 
 		private void ResyncTo(float _time, float _cooldown) {
