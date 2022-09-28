@@ -16,7 +16,8 @@ namespace Synergiance.MediaPlayer {
 	}
 
 	public enum ResyncMode {
-		Normal, Resync, CatchUp, WaitForSync, WaitForVideo, Seek, WaitForLoad
+		Normal, Resync, CatchUp, WaitForSync, WaitForVideo, Seek, WaitForLoad,
+		WaitToPlay, WaitToPause, WaitForData
 	}
 
 	/// <summary>
@@ -320,6 +321,15 @@ namespace Synergiance.MediaPlayer {
 				case 6: // Wait for video to load
 					UpdateWaitLoad();
 					break;
+				case 7: // Wait for time to play video
+					UpdateWaitPlay();
+					break;
+				case 8: // Wait for time to pause video
+					UpdateWaitPause();
+					break;
+				case 9: // Wait for new data
+					UpdateWaitData();
+					break;
 				default: // Default to normal
 					UpdateNormal();
 					break;
@@ -406,6 +416,24 @@ namespace Synergiance.MediaPlayer {
 			if (CheckDrift(RESYNC_THRESHOLD)) return;
 
 			ResyncTo(Time.time - beginTime + COLD_SPOOL_TIME, RESYNC_COOLDOWN);
+		}
+
+		private void UpdateWaitPlay() {
+			//
+		}
+
+		private void UpdateWaitPause() {
+			//
+		}
+
+		/// <summary>
+		/// This mode will be active after video player automatically loops,
+		/// goes on to the next video, or anything else that needs to await a
+		/// resync of data before a new reference can be acquired from the
+		/// current owner.
+		/// </summary>
+		private void UpdateWaitData() {
+			//
 		}
 
 		// ReSharper disable Unity.PerformanceAnalysis
