@@ -37,6 +37,8 @@ namespace Synergiance.MediaPlayer {
 		[Range(0, 1)] [SerializeField] private float volume = 0.55f;
 		private PlaylistManager playlistManager;
 		private VideoManager videoManager;
+
+		#region Network Sync Variables
 		private bool paused;
 		[UdonSynced] private bool pausedSync;
 		private float pauseTime;
@@ -50,13 +52,16 @@ namespace Synergiance.MediaPlayer {
 		[UdonSynced] private int syncIndexSync;
 		private bool isLocked;
 		[UdonSynced] private bool isLockedSync;
+		#endregion
 
+		#region Behaviour Integrity Variables
 		private bool initialized;
 		private bool isValid;
 		private UdonSharpBehaviour[] callbacks;
 		private int identifier;
+		#endregion
 
-		// Video Sync variables
+		#region Video Sync Variables
 		private int syncMode;
 		private const float RESYNC_THRESHOLD = 5.0f;
 		private const float RESYNC_COOLDOWN = 30.0f;
@@ -72,14 +77,19 @@ namespace Synergiance.MediaPlayer {
 		private float nextResync = -1;
 		private float lastResync = -1;
 		private float timeAtLastResync = -1;
+		#endregion
 
 		private readonly string[] syncModeNames = {
-			"Normal", "Resync", "Catch Up", "Wait For Sync", "Wait For Video", "Seek", "Wait For Load"
+			"Normal", "Resync", "Catch Up", "Wait For Sync", "Wait For Video",
+			"Seek", "Wait For Load", "Wait To Play", "Wait To Pause", "Await Data"
 		};
 
+		#region Behaviour Debug Settings
 		protected override string DebugName => "Video Player";
 		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.25f, 0.65f, 0.1f));
+		#endregion
 
+		#region Synced Accessors
 		/// <summary>
 		/// Public interface for determining whether video player is locked or not.
 		/// Hides the internal mechanism for locking and unlocking the video player.
@@ -109,7 +119,9 @@ namespace Synergiance.MediaPlayer {
 				Sync();
 			}
 		}
+		#endregion
 
+		#region Synced Variables
 		private float PauseTime {
 			get => pauseTime;
 			set {
@@ -149,7 +161,9 @@ namespace Synergiance.MediaPlayer {
 				Sync();
 			}
 		}
+		#endregion
 
+		#region Accessors
 		public bool IsReady { private set; get; }
 		public bool UnlockedOrHasAccess => !IsLocked || securityManager.HasAccess;
 		public float CurrentTime => IsReady ? paused ? pauseTime : Time.time - beginTime : 0;
@@ -157,7 +171,9 @@ namespace Synergiance.MediaPlayer {
 		public bool Playing => !paused;
 		public float Duration => GetDuration();
 		public float Volume => volume;
+		#endregion
 
+		#region Initialization
 		private void Start() {
 			Initialize();
 		}
@@ -204,7 +220,9 @@ namespace Synergiance.MediaPlayer {
 			isLocked = lockByDefault && securityManager.HasSecurity;
 			isValid = true;
 		}
+		#endregion
 
+		#region Public Methods
 		public void _Play() {
 			if (!CheckValidAndAccess("play")) return;
 
@@ -275,6 +293,7 @@ namespace Synergiance.MediaPlayer {
 			}
 			IsLocked = false;
 		}
+		#endregion
 
 		private float GetDuration() {
 			Initialize();
@@ -297,10 +316,10 @@ namespace Synergiance.MediaPlayer {
 			//
 		}
 
-		#region VideoSync
+		#region Video Sync
 		public void _UpdateSync() {
 			Log("Update Sync");
-			if (!IsReady || paused) return;
+			if (!IsReady || (paused && syncMode == 0)) return;
 			drift = RawTime - CurrentTime;
 			switch (syncMode) {
 				case 1: // Resync
@@ -419,11 +438,27 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void UpdateWaitPlay() {
-			//
+			float rawTime = RawTime;
+			float currentTime = CurrentTime;
+
+			if (rawTime > currentTime + HOT_SPOOL_TIME) return;
+
+			if (rawTime < currentTime) {
+				playerManager._PlayVideo(identifier);
+				ResyncTo(currentTime + HOT_SPOOL_TIME, DRIFT_COOLDOWN);
+				SetSyncMode(2, true);
+				return;
+			}
+
+			playerManager._PlayVideo(identifier);
+			ResyncTo(currentTime + HOT_SPOOL_TIME, DRIFT_COOLDOWN);
+			SetSyncMode(3);
 		}
 
 		private void UpdateWaitPause() {
-			//
+			if (RawTime < PauseTime) return;
+			playerManager._PauseVideo(identifier);
+			SetSyncMode(0);
 		}
 
 		/// <summary>
@@ -476,7 +511,7 @@ namespace Synergiance.MediaPlayer {
 		}
 		#endregion
 
-		#region NetSync
+		#region Network Sync
 		private void Sync() {
 			Log("Sync!");
 			if (IsEditor) {
