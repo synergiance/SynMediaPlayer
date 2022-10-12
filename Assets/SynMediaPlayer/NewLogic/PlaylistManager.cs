@@ -8,6 +8,17 @@ using VRC.SDKBase;
 
 namespace Synergiance.MediaPlayer {
 	/// <summary>
+	/// A struct containing PC and Quest optimized links to the same video, as
+	/// well as a type name for flexible configuration.
+	/// </summary>
+	[Serializable]
+	public struct CompatLink {
+		public string type;
+		public string pc;
+		public string quest;
+	}
+
+	/// <summary>
 	/// A struct containing the name, link, and a friendly name for a video.
 	/// </summary>
 	[Serializable]
@@ -15,6 +26,7 @@ namespace Synergiance.MediaPlayer {
 		public string name;
 		public string link;
 		public string shortName;
+		public CompatLink[] links;
 	}
 
 	/// <summary>
