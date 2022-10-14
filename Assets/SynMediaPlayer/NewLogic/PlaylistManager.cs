@@ -39,11 +39,19 @@ namespace Synergiance.MediaPlayer {
 	}
 
 	/// <summary>
+	/// A wrapper allowing us to serialize the playlists array
+	/// </summary>
+	[Serializable]
+	public struct PlaylistData {
+		public Playlist[] playlists;
+	}
+
+	/// <summary>
 	/// A class containing any number of playlists containing any number of videos.
 	/// </summary>
 	[UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
 	public class PlaylistManager : DiagnosticBehaviour {
-		[SerializeField] private Playlist[] playlists; // Currently just a helper for the UI
+		[SerializeField] private PlaylistData playlistData;// Currently just a helper for the UI
 		[SerializeField] private string playlistBackup; // Saves playlist backup name
 
 		[SerializeField] private int[] playlistOffsets;
@@ -52,6 +60,9 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private string[] videoShortNames;
 		[SerializeField] private string[] videoNames;
 		[SerializeField] private VRCUrl[] videoLinks;
+		[SerializeField] private VRCUrl[] questVideoLinks;
+		[SerializeField] private int[] videoOffsets;
+		[SerializeField] private int[] videoTypes;
 
 		[UdonSynced] private string[] userPlaylistNames;
 		[UdonSynced] private string[] userVideoNames;
@@ -74,7 +85,7 @@ namespace Synergiance.MediaPlayer {
 		#if !COMPILER_UDONSHARP && UNITY_EDITOR
 		public void RebuildSerialized(bool _fullRebuild) {
 			// We will make numPlaylists 0 if it's null, which will prevent null data access
-			int numPlaylists = playlists?.Length ?? 0;
+			int numPlaylists = playlistData.playlists?.Length ?? 0;
 			// Only make new arrays if we need a full rebuild (array sizes changing)
 			if (_fullRebuild) {
 				playlistOffsets = new int[numPlaylists];
@@ -89,7 +100,7 @@ namespace Synergiance.MediaPlayer {
 				// The playlist offset will be the index of its first video in the unstructured data
 				playlistOffsets[playlistIndex] = dumpIndex;
 				// ReSharper disable once PossibleNullReferenceException
-				Playlist playlist = playlists[playlistIndex];
+				Playlist playlist = playlistData.playlists[playlistIndex];
 				playlistNames[playlistIndex] = playlist.name;
 				// We will make numVideos 0 if it's null, which will prevent null data access
 				int numVideos = playlist.videos?.Length ?? 0;
@@ -123,11 +134,13 @@ namespace Synergiance.MediaPlayer {
 		/// </summary>
 		public void DumpContents() {
 			string str = "Playlists:\n";
-			foreach (Playlist playlist in playlists) {
+			foreach (Playlist playlist in playlistData.playlists) {
 				str += $"Playlist: {playlist.name}\n";
 				foreach (Video video in playlist.videos) {
 					str += $"Video Title: {video.name}\nVideo Short Name: ";
-					str += $"{video.shortName}\nVideo Link: {video.link}\n";
+					str += $"{video.shortName}\nVideo Links:\n";
+					foreach (CompatLink link in video.links)
+						str += $"- \"{link.pc}\", \"{link.quest}\" ({link.type})\n";
 				}
 			}
 			str += "Videos:\n";
@@ -136,6 +149,16 @@ namespace Synergiance.MediaPlayer {
 				str += $"{videoShortNames[i]}\nVideo Link: {videoLinks[i]}\n";
 			}
 			Debug.Log(str);
+		}
+
+		public bool LoadFromJson(string _path) {
+			return true;
+		}
+
+		public bool SaveToJson(string _path) {
+			string test = JsonUtility.ToJson(playlistData, true);
+			Debug.Log("Data:\n" + test);
+			return true;
 		}
 
 		/// <summary>
@@ -156,11 +179,11 @@ namespace Synergiance.MediaPlayer {
 			}
 			string basePath = _path + "/";
 			Debug.Log($"Working Directory: {basePath}");
-			playlists = new Playlist[files.Length];
+			playlistData.playlists = new Playlist[files.Length];
 			for (int i = 0; i < files.Length; i++) {
 				string playlistName = files[i].Substring(files[i].LastIndexOf('\\') + 1);
 				playlistName = playlistName.Substring(0, playlistName.Length - 4);
-				playlists[i] = new Playlist {
+				playlistData.playlists[i] = new Playlist {
 					name = playlistName,
 					videos = LoadPlaylistFrom(files[i])
 				};
@@ -180,7 +203,7 @@ namespace Synergiance.MediaPlayer {
 			if (createDirectory) Directory.CreateDirectory(_path);
 			string basePath = _path + "/";
 			Debug.Log((createDirectory ? "Created working directory: " : "Working directory: ") + basePath);
-			foreach (Playlist playlist in playlists)
+			foreach (Playlist playlist in playlistData.playlists)
 				if (SavePlaylistTo(playlist.videos, basePath + playlist.name + ".txt"))
 					Debug.Log($"Saved playlist: {playlist.name}.txt");
 			return true;
@@ -200,10 +223,16 @@ namespace Synergiance.MediaPlayer {
 				if (!ReadLine(ref line1, reader)) break;
 				if (!ReadLine(ref line2, reader)) break;
 				if (!ReadLine(ref line3, reader)) break;
+				CompatLink[] links = new CompatLink[1];
+				links[0] = new CompatLink {
+					type = "",
+					pc = line3
+				};
 				Video video = new Video {
 					name = line1,
 					shortName = line2,
-					link = line3
+					link = line3,
+					links = links
 				};
 				videos.Add(video);
 			}

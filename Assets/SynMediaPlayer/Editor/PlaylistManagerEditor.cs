@@ -25,7 +25,7 @@ namespace Synergiance.MediaPlayer {
 		private void OnEnable() {
 			debugProp = serializedObject.FindProperty("debug");
 			diagnosticsProp = serializedObject.FindProperty("diagnostics");
-			playlistsProp = serializedObject.FindProperty("playlists");
+			playlistsProp = serializedObject.FindProperty("playlistData").FindPropertyRelative("playlists");
 			backupProp = serializedObject.FindProperty("playlistBackup");
 			playlistNamesList = new ReorderableList(serializedObject, playlistsProp, true, true, true, true);
 			playlistNamesList.drawHeaderCallback = DrawPlaylistsHeader;
@@ -178,6 +178,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void SavePlaylists() {
 			((PlaylistManager)target).SaveTo(CalculatePlaylistPath());
+			((PlaylistManager)target).SaveToJson(CalculatePlaylistPath());
 		}
 
 		private void LoadPlaylists() {
