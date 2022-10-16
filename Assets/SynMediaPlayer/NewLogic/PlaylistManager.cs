@@ -59,10 +59,11 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private string[] playlistNames;
 		[SerializeField] private string[] videoShortNames;
 		[SerializeField] private string[] videoNames;
+		[SerializeField] private string[] videoTypes;
 		[SerializeField] private VRCUrl[] videoLinks;
 		[SerializeField] private VRCUrl[] questVideoLinks;
-		[SerializeField] private int[] videoOffsets;
-		[SerializeField] private int[] videoTypes;
+		[SerializeField] private int[] videoTypeOffsets;
+		[SerializeField] private int[] videoTypeLengths;
 
 		[UdonSynced] private string[] userPlaylistNames;
 		[UdonSynced] private string[] userVideoNames;
@@ -70,6 +71,8 @@ namespace Synergiance.MediaPlayer {
 		[UdonSynced] private int[] userPlaylistOffsets;
 		[UdonSynced] private int[] userPlaylistLengths;
 		[UdonSynced] private int numUserPlaylists;
+
+		private const string PlaylistsBrokenError = "Playlists are broken! Disabling playlists.";
 
 		protected override string DebugName => "Playlist Manager";
 		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.65f, 0.15f, 0.15f));
@@ -92,36 +95,73 @@ namespace Synergiance.MediaPlayer {
 				playlistLengths = new int[numPlaylists];
 				playlistNames = new string[numPlaylists];
 				videoShortNames = Array.Empty<string>();
+				questVideoLinks = Array.Empty<VRCUrl>();
+				videoTypeLengths = Array.Empty<int>();
+				videoTypeOffsets = Array.Empty<int>();
 				videoNames = Array.Empty<string>();
 				videoLinks = Array.Empty<VRCUrl>();
+				videoTypes = Array.Empty<string>();
 			}
-			int dumpIndex = 0; // Iterator for non structured data
+
+			int videoDumpIndex = 0; // Iterator for non structured video data
+			int linkDumpIndex = 0; // Iterator for non structured link data
 			for (int playlistIndex = 0; playlistIndex < numPlaylists; playlistIndex++) {
 				// The playlist offset will be the index of its first video in the unstructured data
-				playlistOffsets[playlistIndex] = dumpIndex;
+				playlistOffsets[playlistIndex] = videoDumpIndex;
 				// ReSharper disable once PossibleNullReferenceException
 				Playlist playlist = playlistData.playlists[playlistIndex];
 				playlistNames[playlistIndex] = playlist.name;
+
 				// We will make numVideos 0 if it's null, which will prevent null data access
 				int numVideos = playlist.videos?.Length ?? 0;
+
 				// I considered leaving playlist length to be determined where needed,
 				// but having that overhead in the udon behaviour is undesired
 				playlistLengths[playlistIndex] = numVideos;
+
 				if (numVideos <= 0) continue; // Cancel array resize, with free lower bound check
+
 				if (_fullRebuild) {
 					// Add playlist length on to each array
 					Array.Resize(ref videoShortNames, videoShortNames.Length + numVideos);
 					Array.Resize(ref videoNames, videoNames.Length + numVideos);
-					Array.Resize(ref videoLinks, videoLinks.Length + numVideos);
+					Array.Resize(ref videoTypeLengths, videoTypeLengths.Length + numVideos);
+					Array.Resize(ref videoTypeOffsets, videoTypeOffsets.Length + numVideos);
 				}
+
 				for (int videoIndex = 0; videoIndex < numVideos; videoIndex++) {
 					// ReSharper disable once PossibleNullReferenceException
 					Video video = playlist.videos[videoIndex];
-					videoShortNames[dumpIndex] = video.shortName;
-					videoNames[dumpIndex] = video.name;
-					// Creating new VRCUrl objects is legal outside of Udon, so doing it here
-					videoLinks[dumpIndex] = new VRCUrl(video.link);
-					dumpIndex++;
+					videoShortNames[videoDumpIndex] = video.shortName;
+					videoNames[videoDumpIndex] = video.name;
+
+					// We will make numLinks 0 if links is null, which will prevent null data access
+					videoTypeOffsets[videoDumpIndex] = linkDumpIndex;
+					int numLinks = video.links?.Length ?? 0;
+
+					// Reduce runtime overhead by stashing length
+					videoTypeLengths[videoDumpIndex] = numLinks;
+
+					if (numLinks <= 0) continue;
+
+					if (_fullRebuild) {
+						Array.Resize(ref videoLinks, videoLinks.Length + numLinks);
+						Array.Resize(ref questVideoLinks, questVideoLinks.Length + numLinks);
+						Array.Resize(ref videoTypes, videoTypes.Length + numLinks);
+					}
+
+					for (int linkIndex = 0; linkIndex < numLinks; linkIndex++) {
+						// ReSharper disable once PossibleNullReferenceException
+						CompatLink link = video.links[linkIndex];
+						videoTypes[linkDumpIndex] = link.type ?? "";
+						// Creating new VRCUrl objects is legal outside of Udon, so doing it here
+						videoLinks[linkDumpIndex] = new VRCUrl(link.pc?.Trim() ?? "");
+						VRCUrl questLink = string.IsNullOrWhiteSpace(link.quest) ?
+							videoLinks[linkDumpIndex] : new VRCUrl(link.quest.Trim());
+						questVideoLinks[linkDumpIndex] = questLink;
+						linkDumpIndex++;
+					}
+					videoDumpIndex++;
 				}
 			}
 		}
@@ -146,18 +186,41 @@ namespace Synergiance.MediaPlayer {
 			str += "Videos:\n";
 			for (int i = 0; i < videoNames.Length; i++) {
 				str += $"Video Name: {videoNames[i]}\nVideo Short Name: ";
-				str += $"{videoShortNames[i]}\nVideo Link: {videoLinks[i]}\n";
+				str += $"{videoShortNames[i]}\nVideo Type Offset: ";
+				str += $"{videoTypeOffsets[i]}, Length: {videoTypeLengths[i]}\n";
+			}
+			str += "Video Links:\n";
+			for (int i = 0; i < videoLinks.Length; i++) {
+				str += $"\"{videoLinks[i]}\", \"{questVideoLinks[i]}\" ({videoTypes[i]})";
 			}
 			Debug.Log(str);
 		}
 
 		public bool LoadFromJson(string _path) {
+			if (!File.Exists(_path)) {
+				Debug.LogError("Backup not found!");
+				return false;
+			}
+
+			string fileData = File.ReadAllText(_path);
+
+			if (string.IsNullOrWhiteSpace(fileData)) {
+				Debug.LogError("Backup empty!");
+				return false;
+			}
+
+			playlistData = JsonUtility.FromJson<PlaylistData>(fileData);
+			Debug.Log($"Loaded backup from: {_path}");
+
+			RebuildSerialized(true);
 			return true;
 		}
 
 		public bool SaveToJson(string _path) {
-			string test = JsonUtility.ToJson(playlistData, true);
-			Debug.Log("Data:\n" + test);
+			string serializedData = JsonUtility.ToJson(playlistData, true);
+			Debug.Log("Data:\n" + serializedData);
+			File.WriteAllText(_path, serializedData);
+			Debug.Log($"Saved backup to: {_path}");
 			return true;
 		}
 
@@ -225,13 +288,13 @@ namespace Synergiance.MediaPlayer {
 				if (!ReadLine(ref line3, reader)) break;
 				CompatLink[] links = new CompatLink[1];
 				links[0] = new CompatLink {
-					type = "",
-					pc = line3
+					type = "default",
+					pc = line3,
+					quest = line3
 				};
 				Video video = new Video {
 					name = line1,
 					shortName = line2,
-					link = line3,
 					links = links
 				};
 				videos.Add(video);
@@ -252,7 +315,7 @@ namespace Synergiance.MediaPlayer {
 			foreach (Video video in _videos) {
 				writer.WriteLine(video.name);
 				writer.WriteLine(video.shortName);
-				writer.WriteLine(video.link);
+				writer.WriteLine((video.links?.Length ?? 0) > 0 ? video.links[0].pc : "");
 			}
 			writer.Close();
 			return true;
@@ -299,23 +362,31 @@ namespace Synergiance.MediaPlayer {
 			    || videoShortNames == null
 			    || playlistOffsets == null
 			    || playlistLengths == null) {
-				LogError("No playlists or playlists are broken! Disabling playlists.");
+				LogError(PlaylistsBrokenError);
 				return;
 			}
 
 			if (playlistNames.Length != playlistOffsets.Length
 			    || playlistNames.Length != playlistLengths.Length
-			    || videoNames.Length != videoLinks.Length
 			    || videoNames.Length != videoShortNames.Length
-			    || playlistOffsets[0] != 0) {
-				LogError("Playlists are broken! Disabling playlists.");
+			    || videoNames.Length != videoTypeOffsets.Length
+			    || videoNames.Length != videoTypeLengths.Length
+			    || videoTypes.Length != videoLinks.Length
+			    || videoTypes.Length != questVideoLinks.Length
+			    || videoTypeOffsets[0] != 0 || playlistOffsets[0] != 0) {
+				LogError(PlaylistsBrokenError);
+				return;
+			}
+
+			if (playlistOffsets.Length == 0 || videoTypeOffsets.Length == 0) {
+				LogError(PlaylistsBrokenError);
 				return;
 			}
 
 			int lastOffset = 0;
 			foreach (int offset in playlistOffsets) {
 				if (offset > videoNames.Length || offset < lastOffset) {
-					LogError("Playlists are broken! Disabling playlists.");
+					LogError(PlaylistsBrokenError);
 					return;
 				}
 				lastOffset = offset;
@@ -326,32 +397,60 @@ namespace Synergiance.MediaPlayer {
 				int playlistLength = playlistLengths[i - 1];
 				lastOffset += playlistLength;
 				if (lastOffset == playlistOffsets[i] && playlistLength >= 0) continue;
-				LogError("Lengths and offsets don't match!");
+				LogError(PlaylistsBrokenError);
 				return;
 			}
 
 			lastOffset += playlistLengths[playlistLengths.Length - 1];
 			if (lastOffset != videoNames.Length) {
-				LogError("Lengths don't add up!");
+				LogError(PlaylistsBrokenError);
+				return;
+			}
+
+			lastOffset = 0;
+			foreach (int offset in videoTypeOffsets) {
+				if (offset > videoLinks.Length || offset < lastOffset) {
+					LogError(PlaylistsBrokenError);
+					return;
+				}
+				lastOffset = offset;
+			}
+
+			lastOffset = videoTypeOffsets[0];
+			for (int i = 1; i < videoTypeLengths.Length; i++) {
+				int videoTypeLength = videoTypeLengths[i - 1];
+				lastOffset += videoTypeLength;
+				if (lastOffset == videoTypeOffsets[i] && videoTypeLength >= 0) continue;
+				LogError(PlaylistsBrokenError);
+				return;
+			}
+
+			lastOffset += videoTypeLengths[videoTypeLengths.Length - 1];
+			if (lastOffset != videoLinks.Length) {
+				LogError(PlaylistsBrokenError);
 				return;
 			}
 
 			int currentPlaylist = 0;
 			for (int i = 0; i < videoNames.Length; i++) {
 				while (currentPlaylist + 1 < playlistOffsets.Length && i >= playlistOffsets[currentPlaylist + 1]) currentPlaylist++;
-				if (videoLinks[i] == null) videoLinks[i] = VRCUrl.Empty;
-				bool missingLink = String.IsNullOrWhiteSpace(videoLinks[i].ToString());
+				bool missingLink = videoTypeLengths[i] <= 0;
 				int videoIndex = i - playlistOffsets[currentPlaylist];
 				if (missingLink) LogWarning($"Video {videoIndex} in playlist {currentPlaylist} is missing a link!");
 				bool missingName = string.IsNullOrWhiteSpace(videoNames[i]);
 				bool missingShortName = string.IsNullOrWhiteSpace(videoShortNames[i]);
 				if (missingName && missingShortName) {
-					videoNames[i] = videoShortNames[i] = missingLink ? "<Link missing!>" : videoLinks[i].ToString();
+					videoNames[i] = videoShortNames[i] = $"Video #{i}";
 				} else if (missingName) {
 					videoNames[i] = videoShortNames[i];
 				} else if (missingShortName) {
 					videoShortNames[i] = videoNames[i];
 				}
+			}
+
+			for (int i = 0; i < videoLinks.Length; i++) {
+				if (videoLinks[i] == null) videoLinks[i] = VRCUrl.Empty;
+				if (questVideoLinks[i] == null) questVideoLinks[i] = videoLinks[i];
 			}
 
 			playlistsValid = true;
@@ -375,24 +474,47 @@ namespace Synergiance.MediaPlayer {
 		/// </summary>
 		/// <param name="_playlist">Playlist index</param>
 		/// <param name="_video">Video index</param>
+		/// <param name="_type">Link Type</param>
 		/// <param name="_name">Video Name return</param>
 		/// <param name="_shortName">Video Friendly Name return</param>
 		/// <param name="_link">Video Link return</param>
 		/// <returns>True on success, False if video or playlist doesn't exist.</returns>
-		public bool _GetWorldVideo(int _playlist, int _video, ref string _name, ref string _shortName, ref VRCUrl _link) {
+		public bool _GetWorldVideo(int _playlist, int _video, string _type, ref string _name, ref string _shortName, ref VRCUrl _link) {
 			if (_playlist >= playlistNames.Length || _playlist < 0) {
 				LogError("Playlist out of bounds!");
 				return false;
 			}
+
 			if (_video >= playlistLengths[_playlist] || _video < 0) {
 				LogError("Video out of bounds!");
 				return false;
 			}
+
 			int videoIndex = playlistOffsets[_playlist] + _video;
 			Log($"Fetching video information from index {videoIndex}");
+			int linkOffset = videoTypeOffsets[videoIndex];
+			int numLinks = videoTypeLengths[videoIndex];
+
+			int videoLinkIndex;
+			if (numLinks < 1) {
+				LogWarning("No links in video!");
+				videoLinkIndex = linkOffset - 1;
+			} else if (string.IsNullOrWhiteSpace(_type)) {
+				Log($"Type null, using default. ({linkOffset})");
+				videoLinkIndex = linkOffset;
+			} else {
+				videoLinkIndex = Array.IndexOf(videoTypes, _type, linkOffset, numLinks);
+				if (videoLinkIndex < linkOffset) {
+					Log($"Type not found in video, using default. ({linkOffset})");
+					videoLinkIndex = linkOffset;
+				} else {
+					Log($"Found type in index {videoLinkIndex}");
+				}
+			}
+
 			_shortName = videoShortNames[videoIndex];
 			_name = videoNames[videoIndex];
-			_link = videoLinks[videoIndex];
+			_link = videoLinkIndex < linkOffset ? VRCUrl.Empty : videoLinks[videoLinkIndex];
 			Log($"Name: \"{_name}\", Short Name: \"{_shortName}\", Link: \"{_link}\"");
 			return true;
 		}
@@ -418,15 +540,16 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_playlistType">Type of playlist to fetch from</param>
 		/// <param name="_playlist">Playlist index</param>
 		/// <param name="_video">Video index</param>
+		/// <param name="_type">Link type</param>
 		/// <param name="_name">Video Name return</param>
 		/// <param name="_shortName">Video Friendly Name return</param>
 		/// <param name="_link">Video Link return</param>
 		/// <returns>True on success, False if video or playlist doesn't exist.</returns>
-		public bool _GetVideo(int _playlistType, int _playlist, int _video, ref string _name, ref string _shortName, ref VRCUrl _link) {
+		public bool _GetVideo(int _playlistType, int _playlist, int _video, string _type, ref string _name, ref string _shortName, ref VRCUrl _link) {
 			switch (_playlistType) {
 				case 0:
 					Log("Getting video from world playlists");
-					return _GetWorldVideo(_playlist, _video, ref _name, ref _shortName, ref _link);
+					return _GetWorldVideo(_playlist, _video, _type, ref _name, ref _shortName, ref _link);
 				case 1:
 					Log("Getting video from user playlists");
 					return _GetUserVideo(_playlist, _video, ref _name, ref _shortName, ref _link);

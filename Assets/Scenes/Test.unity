@@ -463,98 +463,169 @@ MonoBehaviour:
   _udonSharpBackingUdonBehaviour: {fileID: 621912732}
   debug: 1
   diagnostics: {fileID: 584252724}
-  playlists:
-  - name: Arf
-    videos:
-    - name: New Video
-      link: https://example.com/meow/video.mp4
-      shortName: Boop
-  - name: Meow
-    videos: []
-  - name: Playlist!
-    videos:
-    - name: Video!
-      link: 
-      shortName: Short video name
-    - name: New Video
-      link: 
-      shortName: Short video name
-  - name: New Playlist
-    videos:
-    - name: New Video
-      link: https://example.com/meow/video.mp4
-      shortName: Boop
-  - name: Nya
-    videos:
-    - name: Video!
-      link: 
-      shortName: Short video name
-    - name: New Video
-      link: https://example.com/video.mp4
-      shortName: New Video
-    - name: Vid
-      link: 
-      shortName: Hello
-    - name: Blah
-      link: https://example.com/meow.mp3
-      shortName: New Video
-    - name: New Video
-      link: 
-      shortName: New Video
-  - name: Playlist
-    videos:
-    - name: Video!
-      link: 
-      shortName: Short video name
-    - name: New Video
-      link: 
-      shortName: Short video name
+  playlistData:
+    playlists:
+    - name: New Playlist
+      videos:
+      - name: New Video
+        link: 
+        shortName: Boop
+        links:
+        - type: default
+          pc: https://example.com/meow/video.mp4
+          quest: https://example.com/meow/video.mp4
+    - name: Meow
+      videos: []
+    - name: Nya
+      videos:
+      - name: Video!
+        link: 
+        shortName: Short video name
+        links:
+        - type: default
+          pc: 
+          quest: 
+      - name: New Video
+        link: 
+        shortName: New Video
+        links:
+        - type: default
+          pc: https://example.com/video.mp4
+          quest: https://example.com/video.mp4
+      - name: Blah
+        link: 
+        shortName: New Video
+        links:
+        - type: default
+          pc: https://example.com/meow.mp3
+          quest: https://example.com/meow.mp3
+      - name: Vid
+        link: 
+        shortName: Hello
+        links:
+        - type: default
+          pc: 
+          quest: 
+      - name: New Video
+        link: 
+        shortName: New Video
+        links:
+        - type: default
+          pc: 
+          quest: 
+    - name: Arf
+      videos:
+      - name: New Video
+        link: 
+        shortName: Boop
+        links:
+        - type: default
+          pc: https://example.com/meow/video.mp4
+          quest: https://example.com/meow/video.mp4
+    - name: Playlist
+      videos:
+      - name: Video!
+        link: 
+        shortName: Short video name
+        links:
+        - type: default
+          pc: 
+          quest: 
+      - name: New Video
+        link: 
+        shortName: Short video name
+        links:
+        - type: default
+          pc: 
+          quest: 
+    - name: Playlist!
+      videos:
+      - name: Video!
+        link: 
+        shortName: Short video name
+        links:
+        - type: default
+          pc: 
+          quest: 
+      - name: New Video
+        link: 
+        shortName: Short video name
+        links:
+        - type: default
+          pc: 
+          quest: 
   playlistBackup: Meow
-  playlistOffsets: 000000000100000001000000030000000400000009000000
-  playlistLengths: 010000000000000002000000010000000500000002000000
+  playlistOffsets: 000000000100000001000000060000000700000009000000
+  playlistLengths: 010000000000000005000000010000000200000002000000
   playlistNames:
-  - Arf
-  - Meow
-  - Playlist!
   - New Playlist
+  - Meow
   - Nya
+  - Arf
   - Playlist
+  - Playlist!
   videoShortNames:
   - Boop
   - Short video name
-  - Short video name
-  - Boop
-  - Short video name
+  - New Video
   - New Video
   - Hello
   - New Video
-  - New Video
+  - Boop
+  - Short video name
+  - Short video name
   - Short video name
   - Short video name
   videoNames:
   - New Video
   - Video!
   - New Video
-  - New Video
-  - Video!
-  - New Video
-  - Vid
   - Blah
+  - Vid
+  - New Video
   - New Video
   - Video!
   - New Video
+  - Video!
+  - New Video
+  videoTypes:
+  - default
+  - default
+  - default
+  - default
+  - default
+  - default
+  - default
+  - default
+  - default
+  - default
+  - default
   videoLinks:
   - url: https://example.com/meow/video.mp4
   - url: 
-  - url: 
-  - url: https://example.com/meow/video.mp4
-  - url: 
   - url: https://example.com/video.mp4
-  - url: 
   - url: https://example.com/meow.mp3
   - url: 
   - url: 
+  - url: https://example.com/meow/video.mp4
   - url: 
+  - url: 
+  - url: 
+  - url: 
+  questVideoLinks:
+  - url: https://example.com/meow/video.mp4
+  - url: 
+  - url: https://example.com/video.mp4
+  - url: https://example.com/meow.mp3
+  - url: 
+  - url: 
+  - url: https://example.com/meow/video.mp4
+  - url: 
+  - url: 
+  - url: 
+  - url: 
+  videoTypeOffsets: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a000000
+  videoTypeLengths: 0100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
 --- !u!4 &621912734
 Transform:
   m_ObjectHideFlags: 0
@@ -1726,7 +1797,7 @@ MonoBehaviour:
   SynchronizePosition: 0
   AllowCollisionOwnershipTransfer: 0
   Reliable: 0
-  _syncMethod: 0
+  _syncMethod: 2
   serializedProgramAsset: {fileID: 11400000, guid: 2612a20dc7d95084c899dad24a7a6e28,
     type: 2}
   programSource: {fileID: 11400000, guid: 9abe8056bfc1e9546a45ceb4aa805a7d, type: 2}
@@ -2464,7 +2535,7 @@ MonoBehaviour:
   SynchronizePosition: 0
   AllowCollisionOwnershipTransfer: 0
   Reliable: 0
-  _syncMethod: 0
+  _syncMethod: 2
   serializedProgramAsset: {fileID: 11400000, guid: 2612a20dc7d95084c899dad24a7a6e28,
     type: 2}
   programSource: {fileID: 11400000, guid: 9abe8056bfc1e9546a45ceb4aa805a7d, type: 2}
