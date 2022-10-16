@@ -478,6 +478,11 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_link">Video Link return</param>
 		/// <returns>True on success, False if video or playlist doesn't exist.</returns>
 		public bool _GetWorldVideo(int _playlist, int _video, string _type, ref string _name, ref string _shortName, ref VRCUrl _link) {
+			if (!playlistsValid) {
+				LogError("Playlists are broken, cannot fetch video!");
+				return false;
+			}
+
 			if (_playlist >= playlistNames.Length || _playlist < 0) {
 				LogError("Playlist out of bounds!");
 				return false;
