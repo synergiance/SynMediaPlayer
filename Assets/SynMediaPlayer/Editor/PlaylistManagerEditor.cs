@@ -154,7 +154,9 @@ namespace Synergiance.MediaPlayer {
 			SerializedProperty newElement = _list.serializedProperty.GetArrayElementAtIndex(index);
 			newElement.FindPropertyRelative("name").stringValue = "New Video";
 			newElement.FindPropertyRelative("shortName").stringValue = "New Video";
+			newElement.FindPropertyRelative("links").arraySize = 0;
 			SelectVideo(_list);
+			AddLink(linkList);
 		}
 
 		private void RemoveVideo(ReorderableList _list) {
@@ -196,7 +198,7 @@ namespace Synergiance.MediaPlayer {
 			_list.serializedProperty.arraySize++;
 			_list.index = index;
 			SerializedProperty newElement = _list.serializedProperty.GetArrayElementAtIndex(index);
-			newElement.FindPropertyRelative("type").stringValue = "link" + index;
+			newElement.FindPropertyRelative("type").stringValue = "link" + (index + 1);
 			newElement.FindPropertyRelative("pc").stringValue = "";
 			newElement.FindPropertyRelative("quest").stringValue = "";
 			SelectLink(_list);
@@ -204,9 +206,10 @@ namespace Synergiance.MediaPlayer {
 
 		private void RemoveLink(ReorderableList _list) {
 			int index = _list.index;
-			_list.index = -1;
 			linkProp = null;
 			_list.serializedProperty.DeleteArrayElementAtIndex(index);
+			if (_list.count < 1) AddLink(_list);
+			_list.index = -1;
 		}
 
 		private void SelectLink(ReorderableList _list) {

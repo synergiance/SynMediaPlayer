@@ -24,7 +24,6 @@ namespace Synergiance.MediaPlayer {
 	[Serializable]
 	public struct Video {
 		public string name;
-		public string link;
 		public string shortName;
 		public CompatLink[] links;
 	}
@@ -218,7 +217,6 @@ namespace Synergiance.MediaPlayer {
 
 		public bool SaveToJson(string _path) {
 			string serializedData = JsonUtility.ToJson(playlistData, true);
-			Debug.Log("Data:\n" + serializedData);
 			File.WriteAllText(_path, serializedData);
 			Debug.Log($"Saved backup to: {_path}");
 			return true;
