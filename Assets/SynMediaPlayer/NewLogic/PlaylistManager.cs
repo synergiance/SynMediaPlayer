@@ -357,9 +357,13 @@ namespace Synergiance.MediaPlayer {
 			if (playlistNames == null
 			    || videoLinks == null
 			    || videoNames == null
+			    || videoTypes == null
+			    || questVideoLinks == null
 			    || videoShortNames == null
 			    || playlistOffsets == null
-			    || playlistLengths == null) {
+			    || playlistLengths == null
+			    || videoTypeLengths == null
+			    || videoTypeOffsets == null) {
 				LogError(PlaylistsBrokenError);
 				return;
 			}
@@ -452,6 +456,7 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			playlistsValid = true;
+			Log("Playlists validated!");
 		}
 
 		/// <summary>
