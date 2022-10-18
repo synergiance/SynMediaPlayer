@@ -142,6 +142,15 @@ namespace Synergiance.MediaPlayer {
 			return true;
 		}
 
+		/// <summary>
+		/// Replaces the first video in the queue with the provided link.
+		/// </summary>
+		/// <param name="_link">The link of the current video</param>
+		/// <returns>True if successful</returns>
+		public bool _SetCurrentVideo(VRCUrl _link) {
+			return true;
+		}
+
 		private void Sync() {
 			Log("Sync!");
 		}

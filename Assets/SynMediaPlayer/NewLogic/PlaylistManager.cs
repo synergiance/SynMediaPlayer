@@ -482,7 +482,11 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_shortName">Video Friendly Name return</param>
 		/// <param name="_link">Video Link return</param>
 		/// <returns>True on success, False if video or playlist doesn't exist.</returns>
-		public bool _GetWorldVideo(int _playlist, int _video, string _type, ref string _name, ref string _shortName, ref VRCUrl _link) {
+		public bool _GetWorldVideo(int _playlist, int _video, string _type, out string _name, out string _shortName, out VRCUrl _link) {
+			_name = null;
+			_shortName = null;
+			_link = null;
+
 			if (!playlistsValid) {
 				LogError("Playlists are broken, cannot fetch video!");
 				return false;
@@ -536,9 +540,13 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_shortName">Video Friendly Name return</param>
 		/// <param name="_link">Video Link return</param>
 		/// <returns>True on success, False if video or playlist doesn't exist.</returns>
-		public bool _GetUserVideo(int _playlist, int _video, ref string _name, ref string _shortName, ref VRCUrl _link) {
+		public bool _GetUserVideo(int _playlist, int _video, out string _name, out string _shortName, out VRCUrl _link) {
 			// TODO: Implement
 			LogError("User videos not implemented!");
+
+			_name = null;
+			_shortName = null;
+			_link = null;
 			return false;
 		}
 
@@ -553,16 +561,19 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_shortName">Video Friendly Name return</param>
 		/// <param name="_link">Video Link return</param>
 		/// <returns>True on success, False if video or playlist doesn't exist.</returns>
-		public bool _GetVideo(int _playlistType, int _playlist, int _video, string _type, ref string _name, ref string _shortName, ref VRCUrl _link) {
+		public bool _GetVideo(int _playlistType, int _playlist, int _video, string _type, out string _name, out string _shortName, out VRCUrl _link) {
 			switch (_playlistType) {
 				case 0:
 					Log("Getting video from world playlists");
-					return _GetWorldVideo(_playlist, _video, _type, ref _name, ref _shortName, ref _link);
+					return _GetWorldVideo(_playlist, _video, _type, out _name, out _shortName, out _link);
 				case 1:
 					Log("Getting video from user playlists");
-					return _GetUserVideo(_playlist, _video, ref _name, ref _shortName, ref _link);
+					return _GetUserVideo(_playlist, _video, out _name, out _shortName, out _link);
 			}
 			LogError($"Invalid playlist type: {_playlistType}");
+			_name = null;
+			_shortName = null;
+			_link = null;
 			return false;
 		}
 	}

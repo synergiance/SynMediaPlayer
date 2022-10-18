@@ -79,10 +79,50 @@ namespace Synergiance.MediaPlayer {
 		private float timeAtLastResync = -1;
 		#endregion
 
+		#region Video Playlist Data
+		private int currentPlaylistType;
+		private int currentPlaylist;
+		private int currentVideo;
+		private string preferredVariant;
+		private string videoName;
+		private string friendlyVideoName;
+		#endregion
+
 		private readonly string[] syncModeNames = {
 			"Normal", "Resync", "Catch Up", "Wait For Sync", "Wait For Video",
 			"Seek", "Wait For Load", "Wait To Play", "Wait To Pause", "Await Data"
 		};
+
+		#region Video Validation
+		private string[] videoHosts = {
+			"drive.google.com", "twitter.com", "vimeo.com", "youku.com",
+			"tiktok.com", "nicovideo.jp", "facebook.com", "vrcdn.video",
+			"soundcloud.com", "youtu.be", "youtube.com", "www.youtube.com",
+			"mixcloud.com"
+		};
+
+		private string[] streamHosts = {
+			"twitch.tv", "vrcdn.live", "youtu.be", "youtube.com",
+			"www.youtube.com", "mixcloud.com"
+		};
+
+		private string[] audioOnlyHosts = {
+			"soundcloud.com", "mixcloud.com"
+		};
+
+		private readonly string[] videoProtocols = {
+			"http", "https", "rtmp", "rtsp", "rtspt", "rtspu"
+		};
+
+		private string[] lowLatencyProtocols = {
+			"rtmp", "rtsp", "rtspt", "rtspu"
+		};
+
+		private const int LinkVideoBit = 0x1;
+		private const int LinkStreamBit = 0x2;
+		private const int LinkLowLatencyBit = 0x4;
+		private const int LinkAudioOnlyBit = 0x8;
+		#endregion
 
 		#region Behaviour Debug Settings
 		protected override string DebugName => "Video Player";
@@ -171,6 +211,17 @@ namespace Synergiance.MediaPlayer {
 		public bool Playing => !paused;
 		public float Duration => GetDuration();
 		public float Volume => volume;
+		public int CurrentPlaylistType => currentPlaylistType;
+		public int CurrentPlaylist => currentPlaylist;
+		public int CurrentVideo => currentVideo;
+
+		public string PreferredVariant {
+			get => preferredVariant;
+			set {
+				preferredVariant = value;
+				// TODO: Switch to preferred variant
+			}
+		}
 		#endregion
 
 		#region Initialization
@@ -223,6 +274,39 @@ namespace Synergiance.MediaPlayer {
 		#endregion
 
 		#region Public Methods
+		public void _LoadVideo(VRCUrl _link, bool _playImmediately) {
+			if (!CheckValidAndAccess("load")) return;
+			if (_link == null || string.IsNullOrWhiteSpace(_link.ToString())) {
+				LogError("Link cannot be blank!");
+				return;
+			}
+			currentPlaylist = -1;
+			currentVideo = -1;
+			currentPlaylistType = -1;
+			LoadInternal(_link, _playImmediately);
+		}
+
+		public void _LoadFromPlaylist(int _listType, int _listId, int _videoIdx, bool _playImmediately, string _variant = null) {
+			if (!CheckValidAndAccess("load")) return;
+
+			bool foundVideo = playlistManager._GetVideo(_listType, _listId, _videoIdx, _variant,
+				out string foundVideoName, out string foundVideoShortName, out VRCUrl foundVideoLink);
+
+			if (!foundVideo) {
+				LogError("Could not find video in playlist!");
+				return;
+			}
+
+			currentPlaylistType = _listType;
+			currentPlaylist = _listId;
+			currentVideo = _videoIdx;
+			preferredVariant = _variant;
+			videoName = foundVideoName;
+			friendlyVideoName = foundVideoShortName;
+
+			LoadInternal(foundVideoLink, _playImmediately);
+		}
+
 		public void _Play() {
 			if (!CheckValidAndAccess("play")) return;
 
@@ -304,6 +388,15 @@ namespace Synergiance.MediaPlayer {
 			return -1;
 		}
 
+		private void LoadInternal(VRCUrl _link, bool _playImmediately) {
+			bool linkValid = CheckLink(_link, true, out int linkType, out string error);
+			if (!linkValid) {
+				LogError("Cannot load link: " + error);
+				return;
+			}
+			//
+		}
+
 		private void PlayInternal() {
 			//
 		}
@@ -314,6 +407,46 @@ namespace Synergiance.MediaPlayer {
 
 		private void StopInternal() {
 			//
+		}
+
+		private bool CheckLink(VRCUrl _link, bool _checkType, out int _linkType, out string _error) {
+			_linkType = 0;
+			_error = null;
+			if (_link == null || string.IsNullOrWhiteSpace(_link.ToString())) {
+				_error = "Blank Link";
+				return false;
+			}
+
+			string linkStr = _link.ToString();
+			int colonPos = linkStr.IndexOf("://", StringComparison.Ordinal);
+			if (colonPos < 0 || linkStr.Length < colonPos + 5) {
+				_error = "Malformed Link";
+				return false;
+			}
+
+			int prefixLength = linkStr.IndexOf('/', colonPos + 3);
+			if (prefixLength < 1) {
+				_error = "Malformed Link";
+				return false;
+			}
+
+			string videoProtocol = linkStr.Substring(0, colonPos).ToLower();
+			if (Array.IndexOf(videoProtocols, videoProtocol) < 0) {
+				_error = "Unsupported Protocol: " + videoProtocol;
+				return false;
+			}
+
+			if (!_checkType) return true;
+
+			string videoHost = linkStr.Substring(colonPos + 3, prefixLength - 3 - colonPos);
+			Log($"Detected Protocol: {videoProtocol}\nDetected Host: {videoHost}");
+
+			if (Array.IndexOf(videoHosts, videoHost) >= 0) _linkType |= LinkVideoBit;
+			if (Array.IndexOf(streamHosts, videoHost) >= 0) _linkType |= LinkStreamBit;
+			if (Array.IndexOf(audioOnlyHosts, videoHost) >= 0) _linkType |= LinkAudioOnlyBit;
+			if (Array.IndexOf(lowLatencyProtocols, videoProtocol) >= 0) _linkType |= LinkStreamBit | LinkLowLatencyBit;
+
+			return true;
 		}
 
 		#region Video Sync
