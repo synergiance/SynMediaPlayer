@@ -1,8 +1,6 @@
 ﻿using System;
-using Synergiance.MediaPlayer;
 using UdonSharp;
 using UnityEngine;
-using UnityEngineInternal;
 using VRC.SDKBase;
 using VRC.Udon.Common;
 
@@ -63,16 +61,16 @@ namespace Synergiance.MediaPlayer {
 
 		#region Video Sync Variables
 		private int syncMode;
-		private const float RESYNC_THRESHOLD = 5.0f;
-		private const float RESYNC_COOLDOWN = 30.0f;
-		private const float RESYNC_DETECT = 0.1f;
-		private const float DRIFT_TOLERANCE = 0.5f;
-		private const float DRIFT_COOLDOWN = 5.0f;
-		private const float COLD_SPOOL_TIME = 1.0f;
-		private const float HOT_SPOOL_TIME = 0.25f;
-		private const float SEEK_COOLDOWN = 0.5f;
-		private const float RESYNC_TIMEOUT = 3.0f;
-		private const float RELOAD_TIMEOUT = 10.0f;
+		private const float ResyncThreshold = 5.0f;
+		private const float ResyncCooldown = 30.0f;
+		private const float ResyncDetect = 0.1f;
+		private const float DriftTolerance = 0.5f;
+		private const float DriftCooldown = 5.0f;
+		private const float ColdSpoolTime = 1.0f;
+		private const float HotSpoolTime = 0.25f;
+		private const float SeekCooldown = 0.5f;
+		private const float ResyncTimeout = 3.0f;
+		private const float ReloadTimeout = 10.0f;
 		private float drift;
 		private float nextResync = -1;
 		private float lastResync = -1;
@@ -94,19 +92,19 @@ namespace Synergiance.MediaPlayer {
 		};
 
 		#region Video Validation
-		private string[] videoHosts = {
+		private readonly string[] videoHosts = {
 			"drive.google.com", "twitter.com", "vimeo.com", "youku.com",
 			"tiktok.com", "nicovideo.jp", "facebook.com", "vrcdn.video",
 			"soundcloud.com", "youtu.be", "youtube.com", "www.youtube.com",
 			"mixcloud.com"
 		};
 
-		private string[] streamHosts = {
+		private readonly string[] streamHosts = {
 			"twitch.tv", "vrcdn.live", "youtu.be", "youtube.com",
 			"www.youtube.com", "mixcloud.com"
 		};
 
-		private string[] audioOnlyHosts = {
+		private readonly string[] audioOnlyHosts = {
 			"soundcloud.com", "mixcloud.com"
 		};
 
@@ -114,7 +112,7 @@ namespace Synergiance.MediaPlayer {
 			"http", "https", "rtmp", "rtsp", "rtspt", "rtspu"
 		};
 
-		private string[] lowLatencyProtocols = {
+		private readonly string[] lowLatencyProtocols = {
 			"rtmp", "rtsp", "rtspt", "rtspu"
 		};
 
@@ -377,6 +375,14 @@ namespace Synergiance.MediaPlayer {
 			}
 			IsLocked = false;
 		}
+
+		public void _QueueIndexUpdate() {
+			if (syncIndex != queue.SyncIndex) {
+				//
+				return;
+			}
+			VRCUrl link = queue.CurrentVideo;
+		}
 		#endregion
 
 		private float GetDuration() {
@@ -394,7 +400,10 @@ namespace Synergiance.MediaPlayer {
 				LogError("Cannot load link: " + error);
 				return;
 			}
-			//
+
+			queue._SetCurrentVideo(_link);
+			syncIndex++;
+			Sync();
 		}
 
 		private void PlayInternal() {
@@ -489,17 +498,17 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void UpdateNormal() {
-			if (Mathf.Abs(drift) > RESYNC_THRESHOLD) {
+			if (Mathf.Abs(drift) > ResyncThreshold) {
 				syncMode = 1;
 				UpdateResync();
 			}
 
-			if (drift > DRIFT_TOLERANCE) {
+			if (drift > DriftTolerance) {
 				syncMode = 3;
 				UpdateWaitSync();
 			}
 
-			if (drift < -DRIFT_TOLERANCE) {
+			if (drift < -DriftTolerance) {
 				syncMode = 2;
 				UpdateCatchUp();
 			}
@@ -509,18 +518,18 @@ namespace Synergiance.MediaPlayer {
 		private void UpdateCatchUp() {
 			if (nextResync > Time.time) return;
 
-			if (Mathf.Abs(RawTime - timeAtLastResync) < RESYNC_DETECT) {
-				if (Time.time - lastResync < RESYNC_TIMEOUT) return;
+			if (Mathf.Abs(RawTime - timeAtLastResync) < ResyncDetect) {
+				if (Time.time - lastResync < ResyncTimeout) return;
 				SetSyncMode(4);
 				return;
 			}
 
-			if (drift > -DRIFT_TOLERANCE) {
+			if (drift > -DriftTolerance) {
 				SetSyncMode(0, true);
 				return;
 			}
 
-			ResyncTo(Time.time - beginTime + HOT_SPOOL_TIME, DRIFT_COOLDOWN);
+			ResyncTo(Time.time - beginTime + HotSpoolTime, DriftCooldown);
 		}
 
 		private void UpdateWaitSync() {
@@ -528,31 +537,31 @@ namespace Synergiance.MediaPlayer {
 
 			playerManager._GetPlaying(identifier);
 
-			if (drift < DRIFT_TOLERANCE) {
+			if (drift < DriftTolerance) {
 				SetSyncMode(0, true);
 				return;
 			}
 
-			if (drift > HOT_SPOOL_TIME) {
+			if (drift > HotSpoolTime) {
 				EnsurePlaying(false);
 				return;
 			}
 
-			ResyncTo(Time.time - beginTime + HOT_SPOOL_TIME, DRIFT_COOLDOWN);
+			ResyncTo(Time.time - beginTime + HotSpoolTime, DriftCooldown);
 		}
 
 		// ReSharper disable Unity.PerformanceAnalysis
 		private void UpdateResync() {
 			if (nextResync > Time.time) return;
 			if (CheckResync()) return;
-			if (CheckDrift(RESYNC_THRESHOLD)) return;
+			if (CheckDrift(ResyncThreshold)) return;
 
-			ResyncTo(Time.time - beginTime + COLD_SPOOL_TIME, RESYNC_COOLDOWN);
+			ResyncTo(Time.time - beginTime + ColdSpoolTime, ResyncCooldown);
 		}
 
 		private void UpdateWaitVideo() {
 			if (CheckResync()) return;
-			if (Time.time - lastResync < RELOAD_TIMEOUT) return;
+			if (Time.time - lastResync < ReloadTimeout) return;
 
 			// TODO: Initiate reload
 		}
@@ -563,28 +572,28 @@ namespace Synergiance.MediaPlayer {
 
 		// ReSharper disable Unity.PerformanceAnalysis
 		private void UpdateSeek() {
-			if (SEEK_COOLDOWN > Time.time - lastResync) return;
+			if (SeekCooldown > Time.time - lastResync) return;
 			if (CheckResync()) return;
-			if (CheckDrift(RESYNC_THRESHOLD)) return;
+			if (CheckDrift(ResyncThreshold)) return;
 
-			ResyncTo(Time.time - beginTime + COLD_SPOOL_TIME, RESYNC_COOLDOWN);
+			ResyncTo(Time.time - beginTime + ColdSpoolTime, ResyncCooldown);
 		}
 
 		private void UpdateWaitPlay() {
 			float rawTime = RawTime;
 			float currentTime = CurrentTime;
 
-			if (rawTime > currentTime + HOT_SPOOL_TIME) return;
+			if (rawTime > currentTime + HotSpoolTime) return;
 
 			if (rawTime < currentTime) {
 				playerManager._PlayVideo(identifier);
-				ResyncTo(currentTime + HOT_SPOOL_TIME, DRIFT_COOLDOWN);
+				ResyncTo(currentTime + HotSpoolTime, DriftCooldown);
 				SetSyncMode(2, true);
 				return;
 			}
 
 			playerManager._PlayVideo(identifier);
-			ResyncTo(currentTime + HOT_SPOOL_TIME, DRIFT_COOLDOWN);
+			ResyncTo(currentTime + HotSpoolTime, DriftCooldown);
 			SetSyncMode(3);
 		}
 
@@ -606,8 +615,8 @@ namespace Synergiance.MediaPlayer {
 
 		// ReSharper disable Unity.PerformanceAnalysis
 		private bool CheckResync() {
-			if (Mathf.Abs(RawTime - timeAtLastResync) > RESYNC_DETECT) return false;
-			if (Time.time - lastResync < RESYNC_TIMEOUT) return true;
+			if (Mathf.Abs(RawTime - timeAtLastResync) > ResyncDetect) return false;
+			if (Time.time - lastResync < ResyncTimeout) return true;
 			SetSyncMode(4);
 			return true;
 		}

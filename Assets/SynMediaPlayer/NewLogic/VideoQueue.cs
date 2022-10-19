@@ -19,12 +19,23 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private SecurityManager securityManager;
 		[UdonSynced] private int currentIndexSync;
 		[UdonSynced] private int videosInQueueSync;
-		[UdonSynced] private int syncIndex = -1;
+		[UdonSynced] private int syncIndexSync = -1;
+		private int syncIndex = -1;
 		private int currentIndex;
 		private int videosInQueue;
 
 		private bool initialized;
 		private bool isValid;
+
+		private VideoPlayer playerCallback;
+
+		public VideoPlayer PlayerCallback {
+			get => playerCallback;
+			set {
+				if (playerCallback != null) return;
+				playerCallback = value;
+			}
+		}
 
 		/// <summary>
 		/// The video that is currently playing
@@ -153,6 +164,13 @@ namespace Synergiance.MediaPlayer {
 
 		private void Sync() {
 			Log("Sync!");
+		}
+
+		public override void OnDeserialization() {
+			if (syncIndex == syncIndexSync) return;
+			syncIndex = syncIndexSync;
+			if (PlayerCallback == null) return;
+			PlayerCallback._QueueIndexUpdate();
 		}
 	}
 }
