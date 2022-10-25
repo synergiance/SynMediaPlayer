@@ -44,8 +44,8 @@ namespace Synergiance.MediaPlayer {
 		private float beginTime;
 		private int beginNetTime;
 		[UdonSynced] private int beginNetTimeSync;
-		private int mediaType;
-		[UdonSynced] private int mediaTypeSync;
+		private MediaType mediaType;
+		[UdonSynced] private MediaType mediaTypeSync;
 		private int syncIndex = -1;
 		[UdonSynced] private int syncIndexSync;
 		private bool isLocked;
@@ -60,7 +60,7 @@ namespace Synergiance.MediaPlayer {
 		#endregion
 
 		#region Video Sync Variables
-		private int syncMode;
+		private ResyncMode syncMode;
 		private const float ResyncThreshold = 5.0f;
 		private const float ResyncCooldown = 30.0f;
 		private const float ResyncDetect = 0.1f;
@@ -180,7 +180,7 @@ namespace Synergiance.MediaPlayer {
 			}
 		}
 
-		private int MediaType {
+		private MediaType MediaType {
 			get => mediaType;
 			set {
 				if (mediaType == value && mediaTypeSync == value) return;
@@ -464,31 +464,31 @@ namespace Synergiance.MediaPlayer {
 			if (!IsReady || (paused && syncMode == 0)) return;
 			drift = RawTime - CurrentTime;
 			switch (syncMode) {
-				case 1: // Resync
+				case ResyncMode.Resync:
 					UpdateResync();
 					break;
-				case 2: // Catch Up
+				case ResyncMode.CatchUp:
 					UpdateCatchUp();
 					break;
-				case 3: // Wait for sync
+				case ResyncMode.WaitForSync:
 					UpdateWaitSync();
 					break;
-				case 4: // Wait for video to resume
+				case ResyncMode.WaitForVideo:
 					UpdateWaitVideo();
 					break;
-				case 5: // Seek mode
+				case ResyncMode.Seek:
 					UpdateSeek();
 					break;
-				case 6: // Wait for video to load
+				case ResyncMode.WaitForLoad:
 					UpdateWaitLoad();
 					break;
-				case 7: // Wait for time to play video
+				case ResyncMode.WaitToPlay:
 					UpdateWaitPlay();
 					break;
-				case 8: // Wait for time to pause video
+				case ResyncMode.WaitToPause:
 					UpdateWaitPause();
 					break;
-				case 9: // Wait for new data
+				case ResyncMode.WaitForData:
 					UpdateWaitData();
 					break;
 				default: // Default to normal
@@ -499,17 +499,17 @@ namespace Synergiance.MediaPlayer {
 
 		private void UpdateNormal() {
 			if (Mathf.Abs(drift) > ResyncThreshold) {
-				syncMode = 1;
+				syncMode = ResyncMode.Resync;
 				UpdateResync();
 			}
 
 			if (drift > DriftTolerance) {
-				syncMode = 3;
+				syncMode = ResyncMode.WaitForSync;
 				UpdateWaitSync();
 			}
 
 			if (drift < -DriftTolerance) {
-				syncMode = 2;
+				syncMode = ResyncMode.CatchUp;
 				UpdateCatchUp();
 			}
 		}
@@ -520,12 +520,12 @@ namespace Synergiance.MediaPlayer {
 
 			if (Mathf.Abs(RawTime - timeAtLastResync) < ResyncDetect) {
 				if (Time.time - lastResync < ResyncTimeout) return;
-				SetSyncMode(4);
+				SetSyncMode(ResyncMode.WaitForVideo);
 				return;
 			}
 
 			if (drift > -DriftTolerance) {
-				SetSyncMode(0, true);
+				SetSyncMode(ResyncMode.Normal, true);
 				return;
 			}
 
@@ -538,7 +538,7 @@ namespace Synergiance.MediaPlayer {
 			playerManager._GetPlaying(identifier);
 
 			if (drift < DriftTolerance) {
-				SetSyncMode(0, true);
+				SetSyncMode(ResyncMode.Normal, true);
 				return;
 			}
 
@@ -588,19 +588,19 @@ namespace Synergiance.MediaPlayer {
 			if (rawTime < currentTime) {
 				playerManager._PlayVideo(identifier);
 				ResyncTo(currentTime + HotSpoolTime, DriftCooldown);
-				SetSyncMode(2, true);
+				SetSyncMode(ResyncMode.CatchUp, true);
 				return;
 			}
 
 			playerManager._PlayVideo(identifier);
 			ResyncTo(currentTime + HotSpoolTime, DriftCooldown);
-			SetSyncMode(3);
+			SetSyncMode(ResyncMode.WaitForSync);
 		}
 
 		private void UpdateWaitPause() {
 			if (RawTime < PauseTime) return;
 			playerManager._PauseVideo(identifier);
-			SetSyncMode(0);
+			SetSyncMode(ResyncMode.Normal);
 		}
 
 		/// <summary>
@@ -617,14 +617,14 @@ namespace Synergiance.MediaPlayer {
 		private bool CheckResync() {
 			if (Mathf.Abs(RawTime - timeAtLastResync) > ResyncDetect) return false;
 			if (Time.time - lastResync < ResyncTimeout) return true;
-			SetSyncMode(4);
+			SetSyncMode(ResyncMode.WaitForVideo);
 			return true;
 		}
 
 		// ReSharper disable Unity.PerformanceAnalysis
 		private bool CheckDrift(float _threshold) {
 			if (Mathf.Abs(drift) > _threshold) return false;
-			SetSyncMode(0, true);
+			SetSyncMode(ResyncMode.Normal, true);
 			return true;
 		}
 
@@ -635,12 +635,15 @@ namespace Synergiance.MediaPlayer {
 			return false;
 		}
 
-		private void SetSyncMode(int _mode, bool _callNormal = false) {
-			string modeName = _mode >= syncModeNames.Length || _mode < 0 ? "Unknown" : syncModeNames[_mode];
-			Log($"Setting sync mode to: {modeName} ({_mode})");
+		private void SetSyncMode(ResyncMode _mode, bool _callNormal = false) {
+			Log($"Setting sync mode to: {GetResyncModeName(_mode)} ({(int)_mode})");
 			syncMode = _mode;
 			if (!_callNormal) return;
 			UpdateNormal();
+		}
+
+		private string GetResyncModeName(ResyncMode _mode) {
+			return (int)_mode >= syncModeNames.Length ? "Unknown" : syncModeNames[(int)_mode];
 		}
 
 		private void ResyncTo(float _time, float _cooldown) {
