@@ -18,6 +18,10 @@ namespace Synergiance.MediaPlayer {
 		WaitToPlay, WaitToPause, WaitForData
 	}
 
+	[Flags] public enum LinkType {
+		None = 0x0, Video = 0x1, Stream = 0x2, LowLatency = 0x4, AudioOnly = 0x8
+	}
+
 	/// <summary>
 	/// Video player is the controlling class that makes videos play. Any video
 	/// currently playing is attached to one of these. It keeps track of the
@@ -82,8 +86,14 @@ namespace Synergiance.MediaPlayer {
 		private int currentPlaylist;
 		private int currentVideo;
 		private string preferredVariant;
-		private string videoName;
-		private string friendlyVideoName;
+		#endregion
+
+		#region Current Video Data
+		private string currentVideoName;
+		private string currentVideoFriendlyName;
+		private VRCUrl currentVideoLink;
+		private int linkType;
+		private bool playImmediately;
 		#endregion
 
 		private readonly string[] syncModeNames = {
@@ -299,8 +309,8 @@ namespace Synergiance.MediaPlayer {
 			currentPlaylist = _listId;
 			currentVideo = _videoIdx;
 			preferredVariant = _variant;
-			videoName = foundVideoName;
-			friendlyVideoName = foundVideoShortName;
+			currentVideoName = foundVideoName;
+			currentVideoFriendlyName = foundVideoShortName;
 
 			LoadInternal(foundVideoLink, _playImmediately);
 		}
@@ -376,12 +386,29 @@ namespace Synergiance.MediaPlayer {
 			IsLocked = false;
 		}
 
-		public void _QueueIndexUpdate() {
+		public void _CheckQueue() {
+			Initialize();
+			if (!isValid) return;
+
 			if (syncIndex != queue.SyncIndex) {
-				//
+				syncMode = ResyncMode.WaitForData;
 				return;
 			}
+
 			VRCUrl link = queue.CurrentVideo;
+			if (Equals(link, currentVideoLink)) {
+				if (syncMode == ResyncMode.WaitForData) {
+					syncMode = ResyncMode.Normal;
+				}
+				return;
+			}
+
+			currentVideoLink = link;
+			bool canBeVideo = (linkType | LinkVideoBit) > 0;
+			bool isLowLatency = (linkType | LinkLowLatencyBit) > 0;
+			VideoType videoType = canBeVideo ? VideoType.Video : isLowLatency ? VideoType.LowLatency : VideoType.Stream;
+			playerManager._LoadPrimaryVideo(identifier, currentVideoLink, videoType, playImmediately);
+			syncMode = ResyncMode.WaitForLoad;
 		}
 		#endregion
 
@@ -699,6 +726,7 @@ namespace Synergiance.MediaPlayer {
 			syncIndex = syncIndexSync;
 
 			// TODO: Determine what to do when variables change
+			if (cSyncIndex) _CheckQueue();
 		}
 		#endregion
 

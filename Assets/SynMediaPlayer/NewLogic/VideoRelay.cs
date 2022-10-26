@@ -12,7 +12,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private Renderer videoRendererSource;
 		[SerializeField] private int videoMaterialIndex;
 		[SerializeField] private string videoTextureName = "_MainTex";
-		[SerializeField] private int videoType;
+		[SerializeField] private VideoType videoType;
 		[SerializeField] private string videoName;
 		[SerializeField] private AudioSource[] speakers;
 
@@ -23,7 +23,7 @@ namespace Synergiance.MediaPlayer {
 		/// Video type of the video (0 for video, 1 for stream,
 		/// and 2 for low latency)
 		/// </summary>
-		public int VideoType => videoType;
+		public VideoType VideoType => videoType;
 
 		/// <summary>
 		/// Accessor for whether there is a video playing

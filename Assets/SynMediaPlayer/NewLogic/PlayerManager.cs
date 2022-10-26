@@ -2,6 +2,7 @@
 using Synergiance.MediaPlayer.Diagnostics;
 using UnityEngine;
 using VRC.SDK3.Components.Video;
+using VRC.SDKBase;
 
 namespace Synergiance.MediaPlayer {
 	[DefaultExecutionOrder(-20)]
@@ -225,6 +226,16 @@ namespace Synergiance.MediaPlayer {
 		public bool _GetPlaying(int _id) {
 			if (!ValidateId(_id)) return false;
 			return videoManager._GetPlaying(_id);
+		}
+
+		public bool _LoadPrimaryVideo(int _id, VRCUrl _link, VideoType _videoType, bool _playImmediately = false) {
+			if (!ValidateId(_id)) return false;
+			return videoManager._LoadVideo(_link, _videoType, _id, _playImmediately);
+		}
+
+		public bool _LoadNextVideo(int _id, VRCUrl _link, VideoType _videoType) {
+			if (!ValidateId(_id)) return false;
+			return videoManager._LoadNextVideo(_link, _videoType, _id);
 		}
 
 		public bool _SwitchControllerSource(int _newSource, int _id) {

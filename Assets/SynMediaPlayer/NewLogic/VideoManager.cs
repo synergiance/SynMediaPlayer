@@ -6,9 +6,10 @@ using VRC.SDK3.Components.Video;
 using VRC.SDKBase;
 
 namespace Synergiance.MediaPlayer {
-	public enum VideoTypes {
+	public enum VideoType {
 		Video, Stream, LowLatency
 	}
+
 	[DefaultExecutionOrder(-30), UdonBehaviourSyncMode(BehaviourSyncMode.None)]
 	public class VideoManager : DiagnosticBehaviour {
 		// Settings
@@ -33,8 +34,8 @@ namespace Synergiance.MediaPlayer {
 		// Video links
 		private VRCUrl[] primaryLinks; // Primary video link for handle
 		private VRCUrl[] secondaryLinks; // Secondary video link for handle
-		private int[] primaryVideoTypes; // Type of primary videos
-		private int[] secondaryVideoTypes; // Type of secondary videos
+		private VideoType[] primaryVideoTypes; // Type of primary videos
+		private VideoType[] secondaryVideoTypes; // Type of secondary videos
 		private int[] primaryLoadAttempts; // Number of load attempts for current primary video
 		private int[] secondaryLoadAttempts; // Number of load attempts for current secondary video
 		private float[] primaryVideoDurations; // Cache for the video duration of the primary video
@@ -58,16 +59,16 @@ namespace Synergiance.MediaPlayer {
 		private bool[] videosPlayImmediately; // Whether video in queue should play as soon as its loaded
 		private int[] videoRelayHandles; // What relay to use to play the video
 
-		private const float VIDEO_LOAD_COOLDOWN = 5.25f;
+		private const float VideoLoadCooldown = 5.25f;
 		private float lastVideoLoadAttempt;
 
-		private const int MAX_QUEUE_LENGTH = 64;
+		private const int MaxQueueLength = 64;
 		private int videosInQueue;
 		private int firstVideoInQueue;
 
 		// Sync timing
-		private const float PLAYER_CHECK_COOLDOWN = 0.1f;
-		private float lastPlayerCheck = -PLAYER_CHECK_COOLDOWN;
+		private const float PlayerCheckCooldown = 0.1f;
+		private float lastPlayerCheck = -PlayerCheckCooldown;
 
 		// Cache for untrusted check
 		public bool BlockingUntrustedLinks { get; private set; }
@@ -111,9 +112,9 @@ namespace Synergiance.MediaPlayer {
 
 			displayManager._Initialize(this);
 
-			videosToLoad = new VRCUrl[MAX_QUEUE_LENGTH];
-			videosPlayImmediately = new bool[MAX_QUEUE_LENGTH];
-			videoRelayHandles = new int[MAX_QUEUE_LENGTH];
+			videosToLoad = new VRCUrl[MaxQueueLength];
+			videosPlayImmediately = new bool[MaxQueueLength];
+			videoRelayHandles = new int[MaxQueueLength];
 
 			videoNames = new string[relays.Length];
 			relayHandles = new int[relays.Length];
@@ -166,8 +167,8 @@ namespace Synergiance.MediaPlayer {
 				secondaryLinks = new VRCUrl[newLength];
 				primaryLoadAttempts = new int[newLength];
 				secondaryLoadAttempts = new int[newLength];
-				primaryVideoTypes = new int[newLength];
-				secondaryVideoTypes = new int[newLength];
+				primaryVideoTypes = new VideoType[newLength];
+				secondaryVideoTypes = new VideoType[newLength];
 				primaryVideoDurations = new float[newLength];
 				secondaryVideoDurations = new float[newLength];
 				hasPlayerHandles = true;
@@ -177,8 +178,8 @@ namespace Synergiance.MediaPlayer {
 				ExpandIntArray(ref secondaryHandles, newLength);
 				ExpandIntArray(ref primaryLoadAttempts, newLength);
 				ExpandIntArray(ref secondaryLoadAttempts, newLength);
-				ExpandIntArray(ref primaryVideoTypes, newLength);
-				ExpandIntArray(ref secondaryVideoTypes, newLength);
+				ExpandVideoTypeArray(ref primaryVideoTypes, newLength);
+				ExpandVideoTypeArray(ref secondaryVideoTypes, newLength);
 				ExpandLinkArray(ref primaryLinks, newLength);
 				ExpandLinkArray(ref secondaryLinks, newLength);
 				ExpandFloatArray(ref primaryVideoDurations, newLength);
@@ -193,8 +194,8 @@ namespace Synergiance.MediaPlayer {
 				secondaryLinks[i] = VRCUrl.Empty;
 				primaryLoadAttempts[i] = -1;
 				secondaryLoadAttempts[i] = -1;
-				primaryVideoTypes[i] = -1;
-				secondaryVideoTypes[i] = -1;
+				primaryVideoTypes[i] = VideoType.Video;
+				secondaryVideoTypes[i] = VideoType.Video;
 				primaryVideoDurations[i] = -1;
 				secondaryVideoDurations[i] = -1;
 				string playerName = playerManager.GetVideoPlayerName(i);
@@ -225,6 +226,12 @@ namespace Synergiance.MediaPlayer {
 			_array = tmpArray;
 		}
 
+		private void ExpandVideoTypeArray(ref VideoType[] _array, int _newLength) {
+			VideoType[] tmpArray = new VideoType[_newLength];
+			Array.Copy(_array, tmpArray, _array.Length);
+			_array = tmpArray;
+		}
+
 		private void Update() {
 			if (!isValid) return;
 			if (!Networking.IsNetworkSettled) return;
@@ -233,7 +240,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void CheckPlayers() {
 			if (!hasPlayerHandles) return;
-			if (lastPlayerCheck + PLAYER_CHECK_COOLDOWN > Time.time) return;
+			if (lastPlayerCheck + PlayerCheckCooldown > Time.time) return;
 			for (int i = 0; i < primaryHandles.Length; i++) {
 				if (primaryHandles[i] < 0) continue;
 				//
@@ -254,22 +261,16 @@ namespace Synergiance.MediaPlayer {
 		/// <returns>On success, returns true. If the currently bound relay is
 		/// incompatible and there is no free compatible relay, this will fail
 		/// and return false.</returns>
-		public bool _LoadVideo(VRCUrl _videoLink, int _videoType, int _handle, bool _playImmediately = false) {
+		public bool _LoadVideo(VRCUrl _videoLink, VideoType _videoType, int _handle, bool _playImmediately = false) {
 			if (_handle < 0 || primaryHandles == null || _handle >= primaryHandles.Length) {
 				LogError("Invalid handle!");
 				return false;
 			}
 
-			int videoType = _videoType;
-			if (videoType < 0 || videoType > 2) {
-				LogWarning("Invalid video type! Defaulting to video");
-				videoType = 0;
-			}
-			
 			Log($"Load video of type {_videoType} for handle {_handle} and link \"{_videoLink}\" {(_playImmediately ? " to play immediately" : "")}");
 
 			primaryLinks[_handle] = _videoLink;
-			primaryVideoTypes[_handle] = videoType;
+			primaryVideoTypes[_handle] = _videoType;
 
 			int relay = GetOrBindRelayAtHandle(_handle);
 			// TODO: If no valid relay just make sure to attempt to bind again
@@ -281,20 +282,14 @@ namespace Synergiance.MediaPlayer {
 			return true;
 		}
 
-		public bool _LoadNextVideo(VRCUrl _videoLink, int _videoType, int _handle) {
+		public bool _LoadNextVideo(VRCUrl _videoLink, VideoType _videoType, int _handle) {
 			if (_handle < 0 || primaryHandles == null || _handle >= primaryHandles.Length) {
 				LogError("Invalid handle!");
 				return false;
 			}
 
-			int videoType = _videoType;
-			if (videoType < 0 || videoType > 2) {
-				LogWarning("Invalid video type! Defaulting to video");
-				videoType = 0;
-			}
-
 			secondaryLinks[_handle] = _videoLink;
-			secondaryVideoTypes[_handle] = videoType;
+			secondaryVideoTypes[_handle] = _videoType;
 			// TODO: Queue up a video
 			return true;
 		}
@@ -304,7 +299,7 @@ namespace Synergiance.MediaPlayer {
 				LogError("Link cannot be null!");
 				return;
 			}
-			if (videosInQueue >= MAX_QUEUE_LENGTH) {
+			if (videosInQueue >= MaxQueueLength) {
 				LogError($"Cannot queue video \"{_link}\"!");
 				return;
 			}
@@ -313,7 +308,7 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 
-			int pushSlot = (firstVideoInQueue + videosInQueue++) % MAX_QUEUE_LENGTH;
+			int pushSlot = (firstVideoInQueue + videosInQueue++) % MaxQueueLength;
 			videosToLoad[pushSlot] = _link;
 			videosPlayImmediately[pushSlot] = _playImmediately;
 			videoRelayHandles[pushSlot] = _relay;
@@ -322,7 +317,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void AttemptLoadNext() {
 			Log("Attempting to load next video");
-			if (lastVideoLoadAttempt + VIDEO_LOAD_COOLDOWN > Time.time + float.Epsilon) {
+			if (lastVideoLoadAttempt + VideoLoadCooldown > Time.time + float.Epsilon) {
 				LogWarning("Cooldown not reached!");
 				return;
 			}
@@ -334,7 +329,7 @@ namespace Synergiance.MediaPlayer {
 			VRCUrl videoLink = videosToLoad[firstVideoInQueue];
 			bool playImmediately = videosPlayImmediately[firstVideoInQueue];
 			int relayHandle = videoRelayHandles[firstVideoInQueue];
-			firstVideoInQueue = (firstVideoInQueue + 1) % MAX_QUEUE_LENGTH;
+			firstVideoInQueue = (firstVideoInQueue + 1) % MaxQueueLength;
 			videosInQueue--;
 			Log($"{(playImmediately ? "Playing" : "Loading")} video \"{videoLink}\" with relay {relayHandle}");
 			LoadVideoInternal(videoLink, playImmediately, relayHandle);
@@ -343,7 +338,7 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 			Log($"{videosInQueue} more video{(videosInQueue == 1 ? "" : "s")} in queue");
-			SendCustomEventDelayedSeconds("AttemptLoadNext", VIDEO_LOAD_COOLDOWN - float.Epsilon);
+			SendCustomEventDelayedSeconds("AttemptLoadNext", VideoLoadCooldown - float.Epsilon);
 		}
 
 		private void LoadVideoInternal(VRCUrl _link, bool _playImmediately, int _relay) {
@@ -500,7 +495,7 @@ namespace Synergiance.MediaPlayer {
 
 		private int GetOrBindRelayAtHandle(int _handle, bool _secondary = false) {
 			int relay = _secondary ? secondaryHandles[_handle] : primaryHandles[_handle];
-			int videoType = _secondary ? secondaryVideoTypes[_handle] : primaryVideoTypes[_handle];
+			VideoType videoType = _secondary ? secondaryVideoTypes[_handle] : primaryVideoTypes[_handle];
 			if (relay < 0) {
 				Log("Handle unbound, searching for compatible relay");
 				relay = GetAndBindCompatibleRelay(videoType, _handle, _secondary);
@@ -512,7 +507,7 @@ namespace Synergiance.MediaPlayer {
 			return relay;
 		}
 
-		private int GetAndBindCompatibleRelay(int _videoType, int _handle, bool _secondary = false) {
+		private int GetAndBindCompatibleRelay(VideoType _videoType, int _handle, bool _secondary = false) {
 			int relay = GetCompatibleRelay(_videoType);
 			if (relay < 0) {
 				LogError("No unbound compatible relays!");
@@ -526,7 +521,7 @@ namespace Synergiance.MediaPlayer {
 			return relay;
 		}
 
-		private int GetCompatibleRelay(int _videoType) {
+		private int GetCompatibleRelay(VideoType _videoType) {
 			int relay = GetFirstUnboundRelay();
 			while (relay >= 0) {
 				if (relays[relay].VideoType == _videoType)

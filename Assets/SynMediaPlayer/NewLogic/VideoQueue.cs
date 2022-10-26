@@ -170,7 +170,7 @@ namespace Synergiance.MediaPlayer {
 			if (syncIndex == syncIndexSync) return;
 			syncIndex = syncIndexSync;
 			if (PlayerCallback == null) return;
-			PlayerCallback._QueueIndexUpdate();
+			PlayerCallback._CheckQueue();
 		}
 	}
 }
