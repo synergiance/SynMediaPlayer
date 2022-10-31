@@ -232,6 +232,13 @@ namespace Synergiance.MediaPlayer {
 			_array = tmpArray;
 		}
 
+		// TODO: Make generic method akin to this
+		private void ExpandArray(ref Array _array, int _newLength) {
+			Array tmpArray = Array.CreateInstance(_array.GetType(), _newLength);
+			Array.Copy(_array, tmpArray, _array.Length);
+			_array = tmpArray;
+		}
+
 		private void Update() {
 			if (!isValid) return;
 			if (!Networking.IsNetworkSettled) return;

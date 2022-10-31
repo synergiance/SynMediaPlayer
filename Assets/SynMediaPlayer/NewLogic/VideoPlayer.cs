@@ -13,11 +13,44 @@ namespace Synergiance.MediaPlayer {
 		Video, Stream, Music, MusicStream
 	}
 
+	/// <summary>
+	/// Modes of operation for an instance of a media player in SMP
+	/// </summary>
 	public enum ResyncMode {
 		Normal, Resync, CatchUp, WaitForSync, WaitForVideo, Seek, WaitForLoad,
 		WaitToPlay, WaitToPause, WaitForData
 	}
 
+	/// <summary>
+	/// Implied metadata generated about each link.
+	/// <list type="table">
+	///  <item>
+	///   <term>Video</term>
+	///   <description>
+	///    Link can be a video with a fixed length and not live
+	///   </description>
+	///  </item>
+	///  <item>
+	///   <term>Stream</term>
+	///   <description>
+	///    Link can be a live broadcast
+	///   </description>
+	///  </item>
+	///  <item>
+	///   <term>LowLatency</term>
+	///   <description>
+	///    A low latency protocol was detected and we can skip the YouTube-DL
+	///    link resolver
+	///   </description>
+	///  </item>
+	///  <item>
+	///   <term>AudioOnly</term>
+	///   <description>
+	///    Link is typically played without a picture
+	///   </description>
+	///  </item>
+	/// </list>
+	/// </summary>
 	[Flags] public enum LinkType {
 		None = 0x0, Video = 0x1, Stream = 0x2, LowLatency = 0x4, AudioOnly = 0x8
 	}
@@ -92,7 +125,7 @@ namespace Synergiance.MediaPlayer {
 		private string currentVideoName;
 		private string currentVideoFriendlyName;
 		private VRCUrl currentVideoLink;
-		private int linkType;
+		private LinkType linkType;
 		private bool playImmediately;
 		#endregion
 
@@ -126,10 +159,10 @@ namespace Synergiance.MediaPlayer {
 			"rtmp", "rtsp", "rtspt", "rtspu"
 		};
 
-		private const int LinkVideoBit = 0x1;
-		private const int LinkStreamBit = 0x2;
-		private const int LinkLowLatencyBit = 0x4;
-		private const int LinkAudioOnlyBit = 0x8;
+		private const int LinkVideoBit = (int)LinkType.Video;
+		private const int LinkStreamBit = (int)LinkType.Stream;
+		private const int LinkLowLatencyBit = (int)LinkType.LowLatency;
+		private const int LinkAudioOnlyBit = (int)LinkType.AudioOnly;
 		#endregion
 
 		#region Behaviour Debug Settings
@@ -282,7 +315,12 @@ namespace Synergiance.MediaPlayer {
 		#endregion
 
 		#region Public Methods
-		public void _LoadVideo(VRCUrl _link, bool _playImmediately) {
+		/// <summary>
+		/// Loads a video by the link
+		/// </summary>
+		/// <param name="_link">URL of the video</param>
+		/// <param name="_playImmediately">Set to true to play as soon as video loads</param>
+		public void _LoadVideo(VRCUrl _link, bool _playImmediately = false) {
 			if (!CheckValidAndAccess("load")) return;
 			if (_link == null || string.IsNullOrWhiteSpace(_link.ToString())) {
 				LogError("Link cannot be blank!");
@@ -294,7 +332,15 @@ namespace Synergiance.MediaPlayer {
 			LoadInternal(_link, _playImmediately);
 		}
 
-		public void _LoadFromPlaylist(int _listType, int _listId, int _videoIdx, bool _playImmediately, string _variant = null) {
+		/// <summary>
+		/// Loads a video from the playlists
+		/// </summary>
+		/// <param name="_listType">The type of playlist we're accessing, since they're accessed differently</param>
+		/// <param name="_listId">ID of the playlist we're accessing</param>
+		/// <param name="_videoIdx">Index of the video in the playlist</param>
+		/// <param name="_variant">Variant of the video we'd like to load. Example: sub, dub</param>
+		/// <param name="_playImmediately">Set to true to play as soon as video loads</param>
+		public void _LoadFromPlaylist(int _listType, int _listId, int _videoIdx, string _variant = null, bool _playImmediately = false) {
 			if (!CheckValidAndAccess("load")) return;
 
 			bool foundVideo = playlistManager._GetVideo(_listType, _listId, _videoIdx, _variant,
@@ -308,7 +354,7 @@ namespace Synergiance.MediaPlayer {
 			currentPlaylistType = _listType;
 			currentPlaylist = _listId;
 			currentVideo = _videoIdx;
-			preferredVariant = _variant;
+			if (_variant != null) preferredVariant = _variant;
 			currentVideoName = foundVideoName;
 			currentVideoFriendlyName = foundVideoShortName;
 
@@ -404,6 +450,8 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			currentVideoLink = link;
+			// ReSharper disable once LocalVariableHidesMember
+			int linkType = (int)this.linkType;
 			bool canBeVideo = (linkType | LinkVideoBit) > 0;
 			bool isLowLatency = (linkType | LinkLowLatencyBit) > 0;
 			VideoType videoType = canBeVideo ? VideoType.Video : isLowLatency ? VideoType.LowLatency : VideoType.Stream;
@@ -422,7 +470,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void LoadInternal(VRCUrl _link, bool _playImmediately) {
-			bool linkValid = CheckLink(_link, true, out int linkType, out string error);
+			bool linkValid = CheckLink(_link, true, out linkType, out string error);
 			if (!linkValid) {
 				LogError("Cannot load link: " + error);
 				return;
@@ -445,7 +493,7 @@ namespace Synergiance.MediaPlayer {
 			//
 		}
 
-		private bool CheckLink(VRCUrl _link, bool _checkType, out int _linkType, out string _error) {
+		private bool CheckLink(VRCUrl _link, bool _checkType, out LinkType _linkType, out string _error) {
 			_linkType = 0;
 			_error = null;
 			if (_link == null || string.IsNullOrWhiteSpace(_link.ToString())) {
@@ -477,10 +525,13 @@ namespace Synergiance.MediaPlayer {
 			string videoHost = linkStr.Substring(colonPos + 3, prefixLength - 3 - colonPos);
 			Log($"Detected Protocol: {videoProtocol}\nDetected Host: {videoHost}");
 
-			if (Array.IndexOf(videoHosts, videoHost) >= 0) _linkType |= LinkVideoBit;
-			if (Array.IndexOf(streamHosts, videoHost) >= 0) _linkType |= LinkStreamBit;
-			if (Array.IndexOf(audioOnlyHosts, videoHost) >= 0) _linkType |= LinkAudioOnlyBit;
-			if (Array.IndexOf(lowLatencyProtocols, videoProtocol) >= 0) _linkType |= LinkStreamBit | LinkLowLatencyBit;
+			// ReSharper disable once LocalVariableHidesMember
+			int linkType = (int)LinkType.None;
+			if (Array.IndexOf(videoHosts, videoHost) >= 0) linkType |= LinkVideoBit;
+			if (Array.IndexOf(streamHosts, videoHost) >= 0) linkType |= LinkStreamBit;
+			if (Array.IndexOf(audioOnlyHosts, videoHost) >= 0) linkType |= LinkAudioOnlyBit;
+			if (Array.IndexOf(lowLatencyProtocols, videoProtocol) >= 0) linkType |= LinkStreamBit | LinkLowLatencyBit;
+			_linkType = (LinkType)linkType;
 
 			return true;
 		}
