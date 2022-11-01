@@ -108,6 +108,9 @@ namespace Synergiance.MediaPlayer {
 		private const float SeekCooldown = 0.5f;
 		private const float ResyncTimeout = 3.0f;
 		private const float ReloadTimeout = 10.0f;
+		private const float BacktrackOnResume = 1.0f;
+		private const float ResumeGracePeriod = 0.5f;
+		private const float PauseDelay = 0.5f;
 		private float drift;
 		private float nextResync = -1;
 		private float lastResync = -1;
@@ -655,6 +658,7 @@ namespace Synergiance.MediaPlayer {
 			if (CheckDrift(ResyncThreshold)) return;
 
 			ResyncTo(Time.time - beginTime + ColdSpoolTime, ResyncCooldown);
+			// TODO: Should we send a seek event?
 		}
 
 		private void UpdateWaitPlay() {
@@ -673,12 +677,14 @@ namespace Synergiance.MediaPlayer {
 			playerManager._PlayVideo(identifier);
 			ResyncTo(currentTime + HotSpoolTime, DriftCooldown);
 			SetSyncMode(ResyncMode.WaitForSync);
+			// TODO: Send callback for play
 		}
 
 		private void UpdateWaitPause() {
 			if (RawTime < PauseTime) return;
 			playerManager._PauseVideo(identifier);
 			SetSyncMode(ResyncMode.Normal);
+			// TODO: Send callback for pause
 		}
 
 		/// <summary>
@@ -778,6 +784,33 @@ namespace Synergiance.MediaPlayer {
 
 			// TODO: Determine what to do when variables change
 			if (cSyncIndex) _CheckQueue();
+			if (cPaused && syncMode != ResyncMode.WaitForData) {
+				if (paused) {
+					// Pause
+				} else {
+					// Play
+				}
+			}
+
+			if (cLocked) {
+				if (isLocked) {
+					// Lock
+				} else {
+					// Unlock
+				}
+			}
+
+			if (cPauseTime && paused) {
+				// Seek to a different position and respool video
+			}
+
+			if (cBeginNetTime && !cSyncIndex) {
+				// Probably a seek
+			}
+
+			if (cMediaType) {
+				// Change how we think about current media, possibly reload
+			}
 		}
 		#endregion
 
