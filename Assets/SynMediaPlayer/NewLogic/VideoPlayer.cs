@@ -786,9 +786,9 @@ namespace Synergiance.MediaPlayer {
 			if (cSyncIndex) _CheckQueue();
 			if (cPaused && syncMode != ResyncMode.WaitForData) {
 				if (paused) {
-					// Pause
+					DirectPauseVideo();
 				} else {
-					// Play
+					DirectPlayVideo();
 				}
 			}
 
@@ -802,15 +802,40 @@ namespace Synergiance.MediaPlayer {
 
 			if (cPauseTime && paused) {
 				// Seek to a different position and respool video
+				DirectSeekPaused();
 			}
 
 			if (cBeginNetTime && !cSyncIndex) {
 				// Probably a seek
+				DirectSeekVideo();
 			}
 
 			if (cMediaType) {
 				// Change how we think about current media, possibly reload
+				DirectChangeMediaType();
 			}
+		}
+		#endregion
+
+		#region Induced Direct Methods
+		private void DirectPlayVideo() {
+			//
+		}
+
+		private void DirectPauseVideo() {
+			//
+		}
+
+		private void DirectSeekPaused() {
+			//
+		}
+
+		private void DirectSeekVideo() {
+			//
+		}
+
+		private void DirectChangeMediaType() {
+			//
 		}
 		#endregion
 

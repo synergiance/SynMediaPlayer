@@ -6,6 +6,14 @@ using UnityEngine;
 using VRC.SDK3.Components.Video;
 
 namespace Synergiance.MediaPlayer {
+	public enum CallbackEvent {
+		MediaLoading, MediaError, MediaReady, MediaStart, MediaEnd, MediaNext, MediaLoop, MediaPlay, MediaPause
+	}
+
+	public enum MediaError {
+		RateLimited, UntrustedLink, InvalidLink, LoadingError, Unknown
+	}
+
 	public class VideoBehaviour : DiagnosticBehaviour {
 		protected override string DebugName => "Video Behaviour";
 		private UdonSharpBehaviour[] videoCallbacks;
@@ -13,6 +21,7 @@ namespace Synergiance.MediaPlayer {
 		private const int CallbacksArrayIncrement = 16;
 		private bool videoBaseInitialized;
 		[SerializeField] protected SecurityManager securityManager;
+		[HideInInspector] public MediaError lastError = MediaError.Unknown;
 
 		private void InitializeVideoBase() {
 			if (videoBaseInitialized) return;
