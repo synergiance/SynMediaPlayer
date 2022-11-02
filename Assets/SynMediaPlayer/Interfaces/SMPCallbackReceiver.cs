@@ -24,7 +24,7 @@ namespace Synergiance.MediaPlayer.Interfaces {
 		protected virtual void PlayerError(MediaError _error) {}
 		#endregion
 
-		public void SendCallback(CallbackEvent _event, VideoBehaviour _sender) {
+		public void _SendCallback(CallbackEvent _event, VideoBehaviour _sender) {
 			Log($"Received event from \"{(_sender == null ? "Unknown sender" : _sender.name)}\": {_event}");
 			switch (_event) {
 				case CallbackEvent.MediaLoading:

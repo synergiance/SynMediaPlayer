@@ -536,7 +536,7 @@ MonoBehaviour:
       Data: 28|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: UdonSharp.UdonSharpBehaviour[], UdonSharp.Runtime
+      Data: Synergiance.MediaPlayer.Interfaces.SMPCallbackReceiver[], Assembly-CSharp
     - Name: 
       Entry: 8
       Data: 

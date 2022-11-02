@@ -318,7 +318,7 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_id">ID of the video player we'd like to relay the event to.</param>
 		/// <param name="_error">The video error that occurred</param>
 		/// <returns>True if successful</returns>
-		public bool _RelayError(int _id, VideoError _error) {
+		public bool _RelayError(int _id, MediaError _error) {
 			Log($"Received video error {_error} for video player {_id}");
 			if (!ValidateId(_id)) return false;
 			videoPlayers[_id]._RelayVideoError(_error);

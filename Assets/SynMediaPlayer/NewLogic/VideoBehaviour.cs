@@ -1,6 +1,7 @@
 ﻿
 using System;
 using Synergiance.MediaPlayer.Diagnostics;
+using Synergiance.MediaPlayer.Interfaces;
 using UdonSharp;
 using UnityEngine;
 using VRC.SDK3.Components.Video;
@@ -17,7 +18,7 @@ namespace Synergiance.MediaPlayer {
 
 	public class VideoBehaviour : DiagnosticBehaviour {
 		protected override string DebugName => "Video Behaviour";
-		private UdonSharpBehaviour[] videoCallbacks;
+		private SMPCallbackReceiver[] videoCallbacks;
 		private int numVideoCallbacks;
 		private const int CallbacksArrayIncrement = 16;
 		private bool videoBaseInitialized;
@@ -26,14 +27,14 @@ namespace Synergiance.MediaPlayer {
 
 		private void InitializeVideoBase() {
 			if (videoBaseInitialized) return;
-			videoCallbacks = new UdonSharpBehaviour[CallbacksArrayIncrement];
+			videoCallbacks = new SMPCallbackReceiver[CallbacksArrayIncrement];
 			videoBaseInitialized = true;
 		}
 
 		private void ExpandVideoCallbacksArray() {
 			int oldLength = videoCallbacks.Length;
 			int newLength = oldLength + CallbacksArrayIncrement;
-			UdonSharpBehaviour[] tmp = new UdonSharpBehaviour[newLength];
+			SMPCallbackReceiver[] tmp = new SMPCallbackReceiver[newLength];
 			Array.Copy(videoCallbacks, tmp, oldLength);
 			videoCallbacks = tmp;
 		}
@@ -42,7 +43,7 @@ namespace Synergiance.MediaPlayer {
 		/// Registers a behaviour as a callback
 		/// </summary>
 		/// <param name="_callback">The behaviour to register</param>
-		public void _RegisterVideoCallback(UdonSharpBehaviour _callback) {
+		public void _RegisterVideoCallback(SMPCallbackReceiver _callback) {
 			InitializeVideoBase();
 			if (Array.IndexOf(videoCallbacks, _callback) >= 0) {
 				LogWarning("Callback already exists in the callback array!", this);
@@ -53,43 +54,39 @@ namespace Synergiance.MediaPlayer {
 			videoCallbacks[numVideoCallbacks++] = _callback;
 		}
 
-		public virtual void _SecurityUnlocked() {}
-		public virtual void _SecurityLocked() {}
-		public virtual void _GainedPrivileges() {}
+		public virtual void _SecurityUnlocked() { SendVideoCallback(CallbackEvent.PlayerUnlocked); }
+		public virtual void _SecurityLocked() { SendVideoCallback(CallbackEvent.PlayerLocked); }
+		public virtual void _GainedPrivileges() { SendVideoCallback(CallbackEvent.GainedPermissions); }
 
-		public virtual void _RelayVideoLoading() { SendVideoCallback("_RelayVideoLoading"); }
-		public virtual void _RelayVideoReady() { SendVideoCallback("_RelayVideoReady"); }
-		public virtual void _RelayVideoError(VideoError _error) { SendErrorCallback(_error); }
-		public virtual void _RelayVideoStart() { SendVideoCallback("_RelayVideoStart"); }
-		public virtual void _RelayVideoPlay() { SendVideoCallback("_RelayVideoPlay"); }
-		public virtual void _RelayVideoPause() { SendVideoCallback("_RelayVideoPause"); }
-		public virtual void _RelayVideoEnd() { SendVideoCallback("_RelayVideoEnd"); }
-		public virtual void _RelayVideoLoop() { SendVideoCallback("_RelayVideoLoop"); }
-		public virtual void _RelayVideoNext() { SendVideoCallback("_RelayVideoNext"); }
-		public virtual void _RelayVideoQueueLoading() { SendVideoCallback("_RelayVideoQueueLoading"); }
-		public virtual void _RelayVideoQueueReady() { SendVideoCallback("_RelayVideoQueueReady"); }
-		public virtual void _RelayVideoQueueError() { SendVideoCallback("_RelayVideoQueueError"); }
+		public virtual void _RelayVideoLoading() { SendVideoCallback(CallbackEvent.MediaLoading); }
+		public virtual void _RelayVideoReady() { SendVideoCallback(CallbackEvent.MediaReady); }
+		public virtual void _RelayVideoError(MediaError _error) { SendErrorCallback(_error); }
+		public virtual void _RelayVideoStart() { SendVideoCallback(CallbackEvent.MediaStart); }
+		public virtual void _RelayVideoPlay() { SendVideoCallback(CallbackEvent.MediaPlay); }
+		public virtual void _RelayVideoPause() { SendVideoCallback(CallbackEvent.MediaPause); }
+		public virtual void _RelayVideoEnd() { SendVideoCallback(CallbackEvent.MediaEnd); }
+		public virtual void _RelayVideoLoop() { SendVideoCallback(CallbackEvent.MediaLoop); }
+		public virtual void _RelayVideoNext() { SendVideoCallback(CallbackEvent.MediaNext); }
+		public virtual void _RelayVideoQueueLoading() { SendVideoCallback(CallbackEvent.QueueMediaLoading); }
+		public virtual void _RelayVideoQueueReady() { SendVideoCallback(CallbackEvent.QueueMediaReady); }
 
 		/// <summary>
 		/// Sends a callback to all registered callbacks
 		/// </summary>
-		/// <param name="_callbackName">Name of the callback to call</param>
-		protected void SendVideoCallback(string _callbackName) {
+		/// <param name="_event">Callback to send</param>
+		protected void SendVideoCallback(CallbackEvent _event) {
 			InitializeVideoBase();
-			foreach (UdonSharpBehaviour videoCallback in videoCallbacks)
-				videoCallback.SendCustomEvent(_callbackName);
+			foreach (SMPCallbackReceiver videoCallback in videoCallbacks)
+				videoCallback._SendCallback(_event, this);
 		}
 
 		/// <summary>
 		/// Sends an error callback to all registered callbacks
 		/// </summary>
 		/// <param name="_error">Relevant error</param>
-		protected void SendErrorCallback(VideoError _error) {
-			InitializeVideoBase();
-			foreach (UdonSharpBehaviour videoCallback in videoCallbacks) {
-				videoCallback.SetProgramVariable("relayVideoError", _error);
-				videoCallback.SendCustomEvent("_RelayVideoError");
-			}
+		protected void SendErrorCallback(MediaError _error) {
+			lastError = _error;
+			SendVideoCallback(CallbackEvent.PlayerError);
 		}
 	}
 }
