@@ -7,11 +7,12 @@ using VRC.SDK3.Components.Video;
 
 namespace Synergiance.MediaPlayer {
 	public enum CallbackEvent {
-		MediaLoading, MediaError, MediaReady, MediaStart, MediaEnd, MediaNext, MediaLoop, MediaPlay, MediaPause
+		MediaLoading, MediaReady, MediaStart, MediaEnd, MediaNext, MediaLoop, MediaPlay, MediaPause, QueueMediaLoading,
+		QueueMediaReady, PlayerLocked, PlayerUnlocked, PlayerInitialized, GainedPermissions, PlayerError
 	}
 
 	public enum MediaError {
-		RateLimited, UntrustedLink, InvalidLink, LoadingError, Unknown
+		RateLimited, UntrustedLink, UntrustedQueueLink, InvalidLink, InvalidQueueLink, LoadingError, LoadingErrorQueue, Unknown
 	}
 
 	public class VideoBehaviour : DiagnosticBehaviour {
