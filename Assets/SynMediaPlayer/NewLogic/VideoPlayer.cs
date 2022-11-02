@@ -71,7 +71,6 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private string playerName = "Video Player";
 		[Range(0, 1)] [SerializeField] private float volume = 0.55f;
 		private PlaylistManager playlistManager;
-		private VideoManager videoManager;
 
 		#region Network Sync Variables
 		private bool paused;

@@ -7,16 +7,7 @@ using UnityEngine;
 using VRC.SDK3.Components.Video;
 
 namespace Synergiance.MediaPlayer {
-	public enum CallbackEvent {
-		MediaLoading, MediaReady, MediaStart, MediaEnd, MediaNext, MediaLoop, MediaPlay, MediaPause, QueueMediaLoading,
-		QueueMediaReady, PlayerLocked, PlayerUnlocked, PlayerInitialized, GainedPermissions, PlayerError
-	}
-
-	public enum MediaError {
-		RateLimited, UntrustedLink, UntrustedQueueLink, InvalidLink, InvalidQueueLink, LoadingError, LoadingErrorQueue, Unknown
-	}
-
-	public class VideoBehaviour : DiagnosticBehaviour {
+	public class VideoBehaviour : SMPMediaController {
 		protected override string DebugName => "Video Behaviour";
 		private SMPCallbackReceiver[] videoCallbacks;
 		private int numVideoCallbacks;

@@ -6,8 +6,27 @@ using VRC.SDK3.Components.Video;
 using VRC.SDKBase;
 
 namespace Synergiance.MediaPlayer {
+	/// <summary>
+	/// Type of video we're trying to load
+	/// </summary>
 	public enum VideoType {
 		Video, Stream, LowLatency
+	}
+
+	/// <summary>
+	/// Events sent back from and between SMP behaviours
+	/// </summary>
+	public enum CallbackEvent {
+		MediaLoading, MediaReady, MediaStart, MediaEnd, MediaNext, MediaLoop, MediaPlay, MediaPause, QueueMediaLoading,
+		QueueMediaReady, PlayerLocked, PlayerUnlocked, PlayerInitialized, GainedPermissions, PlayerError
+	}
+
+	/// <summary>
+	/// Possible errors with media or media players
+	/// </summary>
+	public enum MediaError {
+		RateLimited, UntrustedLink, UntrustedQueueLink, InvalidLink, InvalidQueueLink, LoadingError, LoadingErrorQueue,
+		Unknown, Uninitialized, Invalid
 	}
 
 	[DefaultExecutionOrder(-30), UdonBehaviourSyncMode(BehaviourSyncMode.None)]
@@ -76,6 +95,7 @@ namespace Synergiance.MediaPlayer {
 		// Public Callback Variables
 		[HideInInspector] public int relayIdentifier;
 		[HideInInspector] public VideoError relayVideoError;
+		[HideInInspector] public MediaError lastError = MediaError.Unknown;
 
 		// Behaviour integrity
 		private bool initialized;
@@ -637,7 +657,7 @@ namespace Synergiance.MediaPlayer {
 			primaryLinks[_handle] = secondaryLinks[_handle];
 		}
 
-		private void SendRelayEvent(string _eventName, int _relay) {
+		private void SendRelayEvent(CallbackEvent _event, int _relay) {
 			// TODO: Send event
 		}
 
@@ -653,11 +673,11 @@ namespace Synergiance.MediaPlayer {
 			relays[_id]._Stop();
 			if (!HandleHasQueue(handle)) {
 				Log($"Video End on handle {handle} with no queued video.");
-				SendRelayEvent("_RelayVideoEnd", _id);
+				SendRelayEvent(CallbackEvent.MediaEnd, _id);
 				return;
 			}
 			_PlayNext(handle);
-			SendRelayEvent("_RelayVideoNext", _id);
+			SendRelayEvent(CallbackEvent.MediaNext, _id);
 		}
 
 		public void _RelayVideoReady(int _id) {
@@ -671,7 +691,7 @@ namespace Synergiance.MediaPlayer {
 			if (secondary) secondaryVideoDurations[handle] = relays[_id].Duration;
 			else primaryVideoDurations[handle] = relays[_id].Duration;
 			// TODO: What to do when this video is ready
-			SendRelayEvent(secondary ? "_RelayVideoQueueReady" : "_RelayVideoReady", _id);
+			SendRelayEvent(secondary ? CallbackEvent.QueueMediaReady : CallbackEvent.MediaReady, _id);
 		}
 
 		public void _RelayVideoError(int _id, VideoError _err) {
@@ -680,27 +700,34 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 
+			bool isSecondary = relayIsSecondary[_id];
+			MediaError err = MediaError.Unknown;
+
 			switch (_err) {
 				case VideoError.AccessDenied:
 					BlockingUntrustedLinks = true;
 					LogError("Allow Untrusted URLs needs to be enabled to load this video!");
+					err = isSecondary ? MediaError.UntrustedQueueLink : MediaError.UntrustedLink;
 					break;
 				case VideoError.RateLimited:
 					LogWarning("Rate limited! This means you are using a separate video object.");
+					err = MediaError.RateLimited;
 					// TODO: Requeue a rate limited video
 					return;
 				case VideoError.InvalidURL:
 					LogError("This video could not load because the URL is malformed!\nMake sure you're typing the URL correctly.");
+					err = isSecondary ? MediaError.InvalidQueueLink : MediaError.InvalidLink;
 					break;
 				case VideoError.Unknown:
 					LogError("This video could not load because it could not resolve in Youtube-DL!\nMake sure you're typing the URL correctly.");
 					break;
 				case VideoError.PlayerError:
 					LogError("Unsupported format or corrupt video file!");
+					err = isSecondary ? MediaError.LoadingErrorQueue : MediaError.LoadingError;
 					break;
 			}
 
-			SendRelayEvent(relayIsSecondary[_id] ? "_RelayVideoQueueError" : "_RelayVideoError", _id);
+			SendRelayEvent(CallbackEvent.PlayerError, _id);
 		}
 
 		public void _RelayVideoPlay(int _id) {
@@ -710,7 +737,7 @@ namespace Synergiance.MediaPlayer {
 			}
 			// TODO: What to do when video plays
 			if (relayIsSecondary[_id]) return;
-			SendRelayEvent("_RelayVideoPlay", _id);
+			SendRelayEvent(CallbackEvent.MediaPlay, _id);
 		}
 
 		public void _RelayVideoStart(int _id) {
@@ -720,7 +747,7 @@ namespace Synergiance.MediaPlayer {
 			}
 			// TODO: What to do when video starts
 			if (relayIsSecondary[_id]) return;
-			SendRelayEvent("_RelayVideoStart", _id);
+			SendRelayEvent(CallbackEvent.MediaStart, _id);
 		}
 
 		public void _RelayVideoLoop(int _id) {
@@ -730,7 +757,7 @@ namespace Synergiance.MediaPlayer {
 			}
 			// TODO: What to do when video loops
 			if (relayIsSecondary[_id]) return;
-			SendRelayEvent("_RelayVideoLoop", _id);
+			SendRelayEvent(CallbackEvent.MediaLoop, _id);
 		}
 
 		public void _RelayVideoPause(int _id) {
@@ -740,7 +767,7 @@ namespace Synergiance.MediaPlayer {
 			}
 			// TODO: What to do when video pauses
 			if (relayIsSecondary[_id]) return;
-			SendRelayEvent("_RelayVideoPause", _id);
+			SendRelayEvent(CallbackEvent.MediaPause, _id);
 		}
 
 		public void _RelayVideoTextureChange(int _id, Texture _texture) {
