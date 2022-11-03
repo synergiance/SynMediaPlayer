@@ -292,8 +292,8 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 
-			videoManager = playerManager.GetVideoManager();
-			if (videoManager == null) {
+			VideoManager = playerManager.GetVideoManager();
+			if (VideoManager == null) {
 				LogError("Video manager is missing!");
 				return;
 			}
