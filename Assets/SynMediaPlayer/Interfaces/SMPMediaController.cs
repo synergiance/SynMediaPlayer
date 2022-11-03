@@ -291,7 +291,7 @@ namespace Synergiance.MediaPlayer.Interfaces {
 					LogWarning("This code path should never happen!");
 					break;
 				case CallbackEvent.PlayerError:
-					LogWarning($"Please use _SendError instead when sending errors!");
+					LogWarning("Please use _SendError instead when sending errors!");
 					MediaError err = MediaError.Uninitialized;
 					if (VideoManager != null)
 						err = VideoManager.lastError;

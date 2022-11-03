@@ -6,26 +6,92 @@ namespace Synergiance.MediaPlayer.Interfaces {
 		protected override string DebugName => "Callback Receiver";
 
 		#region Virtual Methods
+		/// <summary>
+		/// Event method. This is fired when media begins loading.
+		/// </summary>
 		protected virtual void MediaLoading() {}
+
+		/// <summary>
+		/// Event method. This is fired when media becomes ready.
+		/// </summary>
 		protected virtual void MediaReady() {}
+
+		/// <summary>
+		/// Event method. This is fired when media starts playing.
+		/// </summary>
 		protected virtual void MediaStart() {}
+
+		/// <summary>
+		/// Event method. This is fired when media finishes playing.
+		/// </summary>
 		protected virtual void MediaEnd() {}
+
+		/// <summary>
+		/// Event method. This is fired when next media begins.
+		/// </summary>
 		protected virtual void MediaNext() {}
+
+		/// <summary>
+		/// Event method. This is fired when media loops.
+		/// </summary>
 		protected virtual void MediaLoop() {}
+
+		/// <summary>
+		/// Event method. This is fired when media resumes playing.
+		/// </summary>
 		protected virtual void MediaPlay() {}
+
+		/// <summary>
+		/// Event method. This is fired when media pauses.
+		/// </summary>
 		protected virtual void MediaPause() {}
+
+		/// <summary>
+		/// Event method. This is fired when queued media begins loading.
+		/// </summary>
 		protected virtual void QueuedMediaLoading() {}
+
+		/// <summary>
+		/// Event method. This is fired when queued media becomes ready.
+		/// </summary>
 		protected virtual void QueuedMediaReady() {}
 
+		/// <summary>
+		/// Event method. This is fired when the player is locked.
+		/// </summary>
 		protected virtual void PlayerLocked() {}
+
+		/// <summary>
+		/// Event method. This is fired when the player is unlocked.
+		/// </summary>
 		protected virtual void PlayerUnlocked() {}
+
+		/// <summary>
+		/// Event method. This is fired when the player is first initialized.
+		/// </summary>
 		protected virtual void PlayerInitialized() {}
+
+		/// <summary>
+		/// Event method. This is fired when user gains permissions. Permissions
+		/// are gained in very strict circumstances, so it will only be fired
+		/// once and never revoked.
+		/// </summary>
 		protected virtual void GainedPermissions() {}
+
+		/// <summary>
+		/// Event method. This is fired when an error is encountered
+		/// </summary>
+		/// <param name="_error">Error that was encountered</param>
 		protected virtual void PlayerError(MediaError _error) {}
 		#endregion
 
-		public void _SendCallback(CallbackEvent _event, VideoBehaviour _sender) {
-			Log($"Received event from \"{(_sender == null ? "Unknown sender" : _sender.name)}\": {_event}");
+		/// <summary>
+		/// Callback interface for Video Behaviour. Do not use unless you know
+		/// what you're doing.
+		/// </summary>
+		/// <param name="_event">Callback Event to call</param>
+		public void _SendCallback(CallbackEvent _event) {
+			Log($"Received event: {_event}");
 			switch (_event) {
 				case CallbackEvent.MediaLoading:
 					MediaLoading();
@@ -70,15 +136,23 @@ namespace Synergiance.MediaPlayer.Interfaces {
 					GainedPermissions();
 					break;
 				case CallbackEvent.PlayerError:
-					if (_sender == null) break;
-					MediaError err = _sender.lastError;
-					Log($"Error: {err}");
-					PlayerError(err);
+					LogWarning("Please use _SendError instead when sending errors!");
+					_SendError(MediaError.Internal);
 					break;
 				default:
 					LogWarning($"Unknown Event: {_event}");
 					break;
 			}
+		}
+
+		/// <summary>
+		/// Callback interface for errors. Do not use unless you know what
+		/// you're doing.
+		/// </summary>
+		/// <param name="_err">Error to be sent</param>
+		public void _SendError(MediaError _err) {
+			PlayerError(_err);
+			Log($"Error: {_err}");
 		}
 	}
 }

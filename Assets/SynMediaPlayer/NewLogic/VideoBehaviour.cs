@@ -68,7 +68,7 @@ namespace Synergiance.MediaPlayer {
 		protected void SendVideoCallback(CallbackEvent _event) {
 			InitializeVideoBase();
 			foreach (SMPCallbackReceiver videoCallback in videoCallbacks)
-				videoCallback._SendCallback(_event, this);
+				videoCallback._SendCallback(_event);
 		}
 
 		/// <summary>
@@ -77,7 +77,9 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_error">Relevant error</param>
 		protected void SendErrorCallback(MediaError _error) {
 			lastError = _error;
-			SendVideoCallback(CallbackEvent.PlayerError);
+			InitializeVideoBase();
+			foreach (SMPCallbackReceiver videoCallback in videoCallbacks)
+				videoCallback._SendError(_error);
 		}
 	}
 }
