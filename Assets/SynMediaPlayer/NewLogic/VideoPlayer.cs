@@ -250,7 +250,7 @@ namespace Synergiance.MediaPlayer {
 		public bool IsReady { private set; get; }
 		public bool UnlockedOrHasAccess => !IsLocked || securityManager.HasAccess;
 		public float CurrentTime => IsReady ? paused ? pauseTime : Time.time - beginTime : 0;
-		public float RawTime => IsReady ? playerManager._GetTime(identifier) : 0;
+		public float RawTime => IsReady ? MediaTime : 0;
 		public bool Playing => !paused;
 		public float Duration => GetDuration();
 		public float Volume => volume;
@@ -295,6 +295,11 @@ namespace Synergiance.MediaPlayer {
 			VideoManager = playerManager.GetVideoManager();
 			if (VideoManager == null) {
 				LogError("Video manager is missing!");
+				return;
+			}
+
+			if (!RegisterWithVideoManager(playerName)) {
+				LogError("Failed to register with video manager!");
 				return;
 			}
 
@@ -368,7 +373,7 @@ namespace Synergiance.MediaPlayer {
 
 			Log("Playing");
 			Paused = false;
-			playerManager._PlayVideo(identifier);
+			PlayMedia();
 		}
 
 		public void _Pause() {
@@ -376,7 +381,7 @@ namespace Synergiance.MediaPlayer {
 
 			Log("Pausing");
 			Paused = true;
-			playerManager._PauseVideo(identifier);
+			PauseMedia();
 		}
 
 		public void _Stop() {
@@ -385,7 +390,7 @@ namespace Synergiance.MediaPlayer {
 			Log("Stopping");
 			Paused = true;
 			// TODO: Set time to 0
-			playerManager._StopVideo(identifier);
+			StopMedia();
 		}
 
 		private bool CheckValidAndAccess(string _action) {
@@ -457,7 +462,7 @@ namespace Synergiance.MediaPlayer {
 			bool canBeVideo = (linkType | LinkVideoBit) > 0;
 			bool isLowLatency = (linkType | LinkLowLatencyBit) > 0;
 			VideoType videoType = canBeVideo ? VideoType.Video : isLowLatency ? VideoType.LowLatency : VideoType.Stream;
-			playerManager._LoadPrimaryVideo(identifier, currentVideoLink, videoType, playImmediately);
+			LoadMedia(currentVideoLink, videoType, playImmediately);
 			syncMode = ResyncMode.WaitForLoad;
 		}
 		#endregion
@@ -615,7 +620,7 @@ namespace Synergiance.MediaPlayer {
 		private void UpdateWaitSync() {
 			if (nextResync > Time.time) return;
 
-			playerManager._GetPlaying(identifier);
+			// TODO: Get Playing status and figure out what I wanted to do with it
 
 			if (drift < DriftTolerance) {
 				SetSyncMode(ResyncMode.Normal, true);
@@ -667,13 +672,13 @@ namespace Synergiance.MediaPlayer {
 			if (rawTime > currentTime + HotSpoolTime) return;
 
 			if (rawTime < currentTime) {
-				playerManager._PlayVideo(identifier);
+				PlayMedia();
 				ResyncTo(currentTime + HotSpoolTime, DriftCooldown);
 				SetSyncMode(ResyncMode.CatchUp, true);
 				return;
 			}
 
-			playerManager._PlayVideo(identifier);
+			PlayMedia();
 			ResyncTo(currentTime + HotSpoolTime, DriftCooldown);
 			SetSyncMode(ResyncMode.WaitForSync);
 			// TODO: Send callback for play
@@ -681,7 +686,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void UpdateWaitPause() {
 			if (RawTime < PauseTime) return;
-			playerManager._PauseVideo(identifier);
+			PauseMedia();
 			SetSyncMode(ResyncMode.Normal);
 			// TODO: Send callback for pause
 		}
@@ -712,9 +717,9 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private bool EnsurePlaying(bool _playing) {
-			if (playerManager._GetPlaying(identifier) == _playing) return true;
-			if (_playing) playerManager._PlayVideo(identifier);
-			else playerManager._PauseVideo(identifier);
+			if (Playing == _playing) return true;
+			if (_playing) PlayMedia();
+			else PauseMedia();
 			return false;
 		}
 
@@ -731,8 +736,8 @@ namespace Synergiance.MediaPlayer {
 
 		private void ResyncTo(float _time, float _cooldown) {
 			Log("Resync to " + _time.ToString("N2"));
-			playerManager._SeekTo(identifier, _time);
-			playerManager._PlayVideo(identifier);
+			MediaTime = _time;
+			PlayMedia();
 			lastResync = Time.time;
 			timeAtLastResync = RawTime;
 			nextResync = lastResync + _cooldown;

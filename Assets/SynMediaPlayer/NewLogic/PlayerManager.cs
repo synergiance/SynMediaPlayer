@@ -17,8 +17,8 @@ namespace Synergiance.MediaPlayer {
 		private VideoController[] videoControllers;
 
 		// Sync timing
-		private const float CHECK_COOLDOWN = 0.1f;
-		private float lastCheck = -CHECK_COOLDOWN;
+		private const float CheckCooldown = 0.1f;
+		private float lastCheck = -CheckCooldown;
 
 		public int NumVideoPlayers => hasVideoPlayers ? videoPlayers.Length : 0;
 
@@ -134,8 +134,6 @@ namespace Synergiance.MediaPlayer {
 			videoPlayerNames[videoPlayerId] = _name;
 			playerControllerBinds[videoPlayerId] = null;
 
-			videoManager._ResizeVideoPlayerArray();
-
 			return videoPlayerId;
 		}
 
@@ -192,50 +190,6 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			return numControllers;
-		}
-
-		public bool _PlayVideo(int _id) {
-			if (!ValidateId(_id)) return false;
-			Log("Playing id " + _id);
-			return videoManager._Play(_id);
-		}
-
-		public bool _PauseVideo(int _id) {
-			if (!ValidateId(_id)) return false;
-			Log("Pausing id " + _id);
-			return videoManager._Pause(_id);
-		}
-
-		public bool _StopVideo(int _id) {
-			if (!ValidateId(_id)) return false;
-			Log("Stopping id " + _id);
-			return videoManager._Stop(_id);
-		}
-
-		public bool _SeekTo(int _id, float _time) {
-			if (!ValidateId(_id)) return false;
-			Log($"Seeking to {_time:N2} seconds");
-			return videoManager._SeekTo(_id, _time);
-		}
-
-		public float _GetTime(int _id) {
-			if (!ValidateId(_id)) return -1;
-			return videoManager._GetTime(_id);
-		}
-
-		public bool _GetPlaying(int _id) {
-			if (!ValidateId(_id)) return false;
-			return videoManager._GetPlaying(_id);
-		}
-
-		public bool _LoadPrimaryVideo(int _id, VRCUrl _link, VideoType _videoType, bool _playImmediately = false) {
-			if (!ValidateId(_id)) return false;
-			return videoManager._LoadVideo(_link, _videoType, _id, _playImmediately);
-		}
-
-		public bool _LoadNextVideo(int _id, VRCUrl _link, VideoType _videoType) {
-			if (!ValidateId(_id)) return false;
-			return videoManager._LoadNextVideo(_link, _videoType, _id);
 		}
 
 		public bool _SwitchControllerSource(int _newSource, int _id) {
@@ -306,7 +260,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void Update() {
 			if (!isValid || !hasVideoPlayers) return;
-			if (lastCheck + CHECK_COOLDOWN > Time.time) return;
+			if (lastCheck + CheckCooldown > Time.time) return;
 			Log("Checking video players");
 			foreach (VideoPlayer videoPlayer in videoPlayers)
 				videoPlayer._UpdateSync();

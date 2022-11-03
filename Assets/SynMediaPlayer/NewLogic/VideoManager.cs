@@ -1,5 +1,6 @@
 ﻿using System;
 using Synergiance.MediaPlayer.Diagnostics;
+using Synergiance.MediaPlayer.Interfaces;
 using UdonSharp;
 using UnityEngine;
 using VRC.SDK3.Components.Video;
@@ -26,7 +27,7 @@ namespace Synergiance.MediaPlayer {
 	/// </summary>
 	public enum MediaError {
 		RateLimited, UntrustedLink, UntrustedQueueLink, InvalidLink, InvalidQueueLink, LoadingError, LoadingErrorQueue,
-		Unknown, Uninitialized, Invalid, OutOfRange, NoMedia, Internal
+		Unknown, Uninitialized, Invalid, OutOfRange, NoMedia, Internal, Success
 	}
 
 	[DefaultExecutionOrder(-30), UdonBehaviourSyncMode(BehaviourSyncMode.None)]
@@ -41,10 +42,15 @@ namespace Synergiance.MediaPlayer {
 		private bool[] relayIsSecondary; // True when this is the next video instead of the current
 
 		// Video player handles
-		[SerializeField] private PlayerManager playerManager; // Handle for video player manager, which drives our videos
+		private SMPMediaController[] mediaControllers; // Media controllers control our video player handles
 		private int[] primaryHandles; // Primary relay assigned to handle
 		private int[] secondaryHandles; // Secondary relay assigned to handle
 		private float[] videoPlayerVolumes; // Volume the video player is set to
+		private bool[] videoPlayerMute; // Mute state of the video player
+		private bool[] videoPlayerLoop; // Loop state of the video player
+		private bool[] videoPlayerResync; // Automatic AV Resync state of the video player
+		private const int VideoArrayIncrement = 8;
+		private int numVideoPlayers;
 
 		// Misc handles
 		[SerializeField] private DisplayManager displayManager; // Handle for display manager, which displays our videos
@@ -157,57 +163,76 @@ namespace Synergiance.MediaPlayer {
 			isValid = true;
 		}
 
+		public int _Register(SMPMediaController _mediaController, string _name) {
+			if (numVideoPlayers >= primaryHandles.Length && !ResizeVideoPlayerArray(numVideoPlayers + VideoArrayIncrement)) {
+				LogWarning("Unable to resize video array!");
+				return -1;
+			}
+
+			Log("Registering media controller");
+			mediaControllers[numVideoPlayers] = _mediaController;
+			if (string.IsNullOrWhiteSpace(_name))
+				LogWarning("Media controller name is null!");
+			Log($"Adding media controller \"{_name}\" to display manager");
+			displayManager._AddSource(_name);
+			int id = numVideoPlayers++;
+			return id;
+		}
+
 		/// <summary>
 		/// Interface for creating new bindings to match up with the player
 		/// manager.
 		/// </summary>
 		/// <returns>True on success, false if anything's wrong.</returns>
-		public bool _ResizeVideoPlayerArray() {
+		private bool ResizeVideoPlayerArray(int _newLength) {
 			Initialize();
 			if (!isValid) {
 				LogError("Invalid!");
+				lastError = MediaError.Invalid;
 				return false;
 			}
 
 			int prevLength = primaryHandles != null ? primaryHandles.Length : 0;
-			int newLength = playerManager.NumVideoPlayers;
-			Log($"Resizing video player handle references from {prevLength} to {newLength}");
+			Log($"Resizing video player handle references from {prevLength} to {_newLength}");
 
-			if (newLength <= prevLength) {
+			if (_newLength <= prevLength) {
 				LogError("This should never appear. Video player list will always expand.");
+				lastError = MediaError.Internal;
 				return false;
 			}
 
 			// Check to see whether handles arrays have been initialized
 			if (prevLength == 0) {
-				Log("Creating handle arrays of size " + newLength);
-				primaryHandles = new int[newLength];
-				secondaryHandles = new int[newLength];
-				primaryLinks = new VRCUrl[newLength];
-				secondaryLinks = new VRCUrl[newLength];
-				primaryLoadAttempts = new int[newLength];
-				secondaryLoadAttempts = new int[newLength];
-				primaryVideoTypes = new VideoType[newLength];
-				secondaryVideoTypes = new VideoType[newLength];
-				primaryVideoDurations = new float[newLength];
-				secondaryVideoDurations = new float[newLength];
+				Log("Creating handle arrays of size " + _newLength);
+				primaryHandles = new int[_newLength];
+				secondaryHandles = new int[_newLength];
+				primaryLinks = new VRCUrl[_newLength];
+				secondaryLinks = new VRCUrl[_newLength];
+				primaryLoadAttempts = new int[_newLength];
+				secondaryLoadAttempts = new int[_newLength];
+				primaryVideoTypes = new VideoType[_newLength];
+				secondaryVideoTypes = new VideoType[_newLength];
+				primaryVideoDurations = new float[_newLength];
+				secondaryVideoDurations = new float[_newLength];
+				mediaControllers = new SMPMediaController[_newLength];
 				hasPlayerHandles = true;
 			} else {
-				Log($"Expanding handle arrays from {prevLength} to {newLength}");
-				ExpandIntArray(ref primaryHandles, newLength);
-				ExpandIntArray(ref secondaryHandles, newLength);
-				ExpandIntArray(ref primaryLoadAttempts, newLength);
-				ExpandIntArray(ref secondaryLoadAttempts, newLength);
-				ExpandVideoTypeArray(ref primaryVideoTypes, newLength);
-				ExpandVideoTypeArray(ref secondaryVideoTypes, newLength);
-				ExpandLinkArray(ref primaryLinks, newLength);
-				ExpandLinkArray(ref secondaryLinks, newLength);
-				ExpandFloatArray(ref primaryVideoDurations, newLength);
-				ExpandFloatArray(ref secondaryVideoDurations, newLength);
+				Log($"Expanding handle arrays from {prevLength} to {_newLength}");
+				ExpandIntArray(ref primaryHandles, _newLength);
+				ExpandIntArray(ref secondaryHandles, _newLength);
+				ExpandIntArray(ref primaryLoadAttempts, _newLength);
+				ExpandIntArray(ref secondaryLoadAttempts, _newLength);
+				ExpandVideoTypeArray(ref primaryVideoTypes, _newLength);
+				ExpandVideoTypeArray(ref secondaryVideoTypes, _newLength);
+				ExpandLinkArray(ref primaryLinks, _newLength);
+				ExpandLinkArray(ref secondaryLinks, _newLength);
+				ExpandFloatArray(ref primaryVideoDurations, _newLength);
+				ExpandFloatArray(ref secondaryVideoDurations, _newLength);
+				ExpandMediaControllerArray(ref mediaControllers, _newLength);
 			}
 
 			Log("Initializing new handles");
-			for (int i = prevLength; i < newLength; i++) {
+			for (int i = prevLength; i < _newLength; i++) {
 				primaryHandles[i] = -1;
 				secondaryHandles[i] = -1;
 				primaryLinks[i] = VRCUrl.Empty;
@@ -218,11 +243,6 @@ namespace Synergiance.MediaPlayer {
 				secondaryVideoTypes[i] = VideoType.Video;
 				primaryVideoDurations[i] = -1;
 				secondaryVideoDurations[i] = -1;
-				string playerName = playerManager.GetVideoPlayerName(i);
-				if (string.IsNullOrWhiteSpace(playerName))
-					LogWarning("Video player name is null!");
-				Log($"Adding video player {playerName} to display manager");
-				displayManager._AddSource(playerName);
 			}
 
 			return true;
@@ -248,6 +268,12 @@ namespace Synergiance.MediaPlayer {
 
 		private void ExpandVideoTypeArray(ref VideoType[] _array, int _newLength) {
 			VideoType[] tmpArray = new VideoType[_newLength];
+			Array.Copy(_array, tmpArray, _array.Length);
+			_array = tmpArray;
+		}
+
+		private void ExpandMediaControllerArray(ref SMPMediaController[] _array, int _newLength) {
+			SMPMediaController[] tmpArray = new SMPMediaController[_newLength];
 			Array.Copy(_array, tmpArray, _array.Length);
 			_array = tmpArray;
 		}
@@ -437,61 +463,105 @@ namespace Synergiance.MediaPlayer {
 
 		public bool _GetPlaying(int _handle) {
 			int relay = GetPrimaryRelayAtHandle(_handle);
-			if (relay < 0) return true;
+			if (relay < 0) return false;
 			Log($"Getting paused state from video relay {relay} using handle {_handle}");
 			return relays[relay].IsPlaying;
 		}
 
 		public bool _SetVolume(int _handle, float _volume) {
+			if (_handle < 0 || _handle >= numVideoPlayers) {
+				lastError = MediaError.OutOfRange;
+				return false;
+			}
+
 			int relay = GetPrimaryRelayAtHandle(_handle);
-			if (relay < 0) return false;
-			relays[relay].Volume = _volume;
-			return false;
+			if (relay >= 0) relays[relay].Volume = _volume;
+
+			videoPlayerVolumes[_handle] = _volume;
+			lastError = MediaError.Success;
+			return true;
 		}
 
 		public float _GetVolume(int _handle) {
-			int relay = GetPrimaryRelayAtHandle(_handle);
-			if (relay < 0) return -1;
-			return relays[relay].Volume;
+			if (_handle < 0 || _handle >= numVideoPlayers) {
+				lastError = MediaError.OutOfRange;
+				return -1;
+			}
+
+			lastError = MediaError.Success;
+			return videoPlayerVolumes[_handle];
 		}
 
 		public bool _SetMute(int _handle, bool _mute) {
+			if (_handle < 0 || _handle >= numVideoPlayers) {
+				lastError = MediaError.OutOfRange;
+				return false;
+			}
+
 			int relay = GetPrimaryRelayAtHandle(_handle);
-			if (relay < 0) return false;
-			relays[relay].Mute = _mute;
-			return false;
+			if (relay >= 0) relays[relay].Mute = _mute;
+
+			videoPlayerMute[_handle] = _mute;
+			lastError = MediaError.Success;
+			return true;
 		}
 
 		public bool _GetMute(int _handle) {
-			int relay = GetPrimaryRelayAtHandle(_handle);
-			if (relay < 0) return false;
-			return relays[relay].Mute;
+			if (_handle < 0 || _handle >= numVideoPlayers) {
+				lastError = MediaError.OutOfRange;
+				return false;
+			}
+
+			lastError = MediaError.Success;
+			return videoPlayerMute[_handle];
 		}
 
 		public bool _SetLoop(int _handle, bool _loop) {
+			if (_handle < 0 || _handle >= numVideoPlayers) {
+				lastError = MediaError.OutOfRange;
+				return false;
+			}
+
 			int relay = GetPrimaryRelayAtHandle(_handle);
-			if (relay < 0) return false;
-			relays[relay].Loop = _loop;
-			return false;
+			if (relay >= 0) relays[relay].Loop = _loop;
+
+			videoPlayerLoop[_handle] = _loop;
+			lastError = MediaError.Success;
+			return true;
 		}
 
 		public bool _GetLoop(int _handle) {
-			int relay = GetPrimaryRelayAtHandle(_handle);
-			if (relay < 0) return false;
-			return relays[relay].Loop;
+			if (_handle < 0 || _handle >= numVideoPlayers) {
+				lastError = MediaError.OutOfRange;
+				return false;
+			}
+
+			lastError = MediaError.Success;
+			return videoPlayerLoop[_handle];
 		}
 
 		public bool _SetMediaResync(int _handle, bool _resync) {
+			if (_handle < 0 || _handle >= numVideoPlayers) {
+				lastError = MediaError.OutOfRange;
+				return false;
+			}
+
 			int relay = GetPrimaryRelayAtHandle(_handle);
-			if (relay < 0) return false;
-			relays[relay].AutomaticResync = _resync;
-			return false;
+			if (relay >= 0) relays[relay].AutomaticResync = _resync;
+
+			videoPlayerResync[_handle] = _resync;
+			lastError = MediaError.Success;
+			return true;
 		}
 
 		public bool _GetMediaResync(int _handle) {
-			int relay = GetPrimaryRelayAtHandle(_handle);
-			if (relay < 0) return false;
-			return relays[relay].AutomaticResync;
+			if (_handle < 0 || _handle >= numVideoPlayers) {
+				lastError = MediaError.OutOfRange;
+				return false;
+			}
+
+			lastError = MediaError.Success;
+			return videoPlayerResync[_handle];
 		}
 
 		public bool _GetMediaReady(int _handle) {

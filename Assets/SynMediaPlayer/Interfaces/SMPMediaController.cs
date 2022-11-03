@@ -92,14 +92,14 @@ namespace Synergiance.MediaPlayer.Interfaces {
 		/// to control it. Without this, Video Manager will not allocate a
 		/// virtual video player to us.
 		/// </summary>
-		protected void RegisterWithVideoManager() {
-			// TODO: Hook up to video manager
-			if (MediaControllerId >= 0) {
+		protected bool RegisterWithVideoManager(string _name) {
+			if (MediaControllerValid) {
 				LogWarning("Already registered!");
-				return;
+				return true;
 			}
 
-			MediaControllerId = 0;
+			MediaControllerId = VideoManager._Register(this, _name);
+			return MediaControllerValid;
 		}
 
 		#region Internal Setter Methods
