@@ -26,7 +26,7 @@ namespace Synergiance.MediaPlayer {
 	/// </summary>
 	public enum MediaError {
 		RateLimited, UntrustedLink, UntrustedQueueLink, InvalidLink, InvalidQueueLink, LoadingError, LoadingErrorQueue,
-		Unknown, Uninitialized, Invalid
+		Unknown, Uninitialized, Invalid, OutOfRange, NoMedia, Internal
 	}
 
 	[DefaultExecutionOrder(-30), UdonBehaviourSyncMode(BehaviourSyncMode.None)]
@@ -442,6 +442,32 @@ namespace Synergiance.MediaPlayer {
 			return relays[relay].IsPlaying;
 		}
 
+		public bool _SetVolume(int _handle, float _volume) {
+			int relay = GetPrimaryRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			relays[relay].Volume = _volume;
+			return false;
+		}
+
+		public float _GetVolume(int _handle) {
+			int relay = GetPrimaryRelayAtHandle(_handle);
+			if (relay < 0) return -1;
+			return relays[relay].Volume;
+		}
+
+		public bool _SetMute(int _handle, bool _mute) {
+			int relay = GetPrimaryRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			relays[relay].Mute = _mute;
+			return false;
+		}
+
+		public bool _GetMute(int _handle) {
+			int relay = GetPrimaryRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			return relays[relay].Mute;
+		}
+
 		/// <summary>
 		/// Gets the duration of the current or next video for a given video
 		/// player
@@ -465,17 +491,20 @@ namespace Synergiance.MediaPlayer {
 		public void _GetUpdatedAudioTemplate(int _handle) {
 			if (!isValid) {
 				LogError("Not Initialized!");
+				lastError = MediaError.Uninitialized;
 				return;
 			}
 
 			if (_handle < 0 || _handle >= primaryHandles.Length) {
 				LogError("Video player at that ID does not exist!");
+				lastError = MediaError.OutOfRange;
 				return;
 			}
 
 			int relay = GetPrimaryRelayAtHandle(_handle);
 			if (relay < 0) {
 				LogWarning($"Video player {_handle} not bound!");
+				lastError = MediaError.NoMedia;
 				return;
 			}
 
@@ -486,6 +515,7 @@ namespace Synergiance.MediaPlayer {
 			relay = GetSecondaryRelayAtHandle(_handle);
 			if (relay < 0) {
 				Log("No secondary relay bound to video player " + _handle);
+				lastError = MediaError.NoMedia;
 				return;
 			}
 			UpdateRelayAudio(relay, sources, volume, hasAudio);
@@ -493,28 +523,38 @@ namespace Synergiance.MediaPlayer {
 
 		// ReSharper disable Unity.PerformanceAnalysis
 		private int GetPrimaryRelayAtHandle(int _handle) {
-			if (!isValid) return -1;
+			if (!isValid) {
+				lastError = MediaError.Invalid;
+				return -1;
+			}
 			if (_handle < 0 || _handle > primaryHandles.Length) {
 				LogError("Handle index out of bounds!");
+				lastError = MediaError.OutOfRange;
 				return -1;
 			}
 			int relay = primaryHandles[_handle];
 			if (relay < 0) {
 				LogError("Handle not bound!");
+				lastError = MediaError.NoMedia;
 				return -1;
 			}
 			return relay;
 		}
 
 		private int GetSecondaryRelayAtHandle(int _handle) {
-			if (!isValid) return -1;
+			if (!isValid) {
+				lastError = MediaError.Invalid;
+				return -1;
+			}
 			if (_handle < 0 || _handle > primaryHandles.Length) {
 				LogError("Handle index out of bounds!");
+				lastError = MediaError.OutOfRange;
 				return -1;
 			}
 			int relay = secondaryHandles[_handle];
 			if (relay < 0) {
 				LogError("Handle not bound!");
+				lastError = MediaError.NoMedia;
 				return -1;
 			}
 			return relay;
@@ -562,24 +602,29 @@ namespace Synergiance.MediaPlayer {
 		private bool BindRelayToHandle(int _handle, int _relay, bool _secondary = false) {
 			if (_relay < 0 || _relay >= relays.Length) {
 				LogError("Relay out of bounds, cannot bind!");
+				lastError = MediaError.OutOfRange;
 				return false;
 			}
 			if (_handle < 0 || primaryHandles == null || _handle >= primaryHandles.Length) {
 				LogError("Handle out of bounds, cannot bind!");
+				lastError = MediaError.OutOfRange;
 				return false;
 			}
 			if (relayHandles[_relay] >= 0) {
 				LogError("Relay still bound!");
+				lastError = MediaError.Internal;
 				return false;
 			}
 			if (_secondary) {
 				if (secondaryHandles[_handle] >= 0) {
 					LogError("Secondary handle still bound!");
+					lastError = MediaError.Internal;
 					return false;
 				}
 			} else {
 				if (primaryHandles[_handle] >= 0) {
 					LogError("Primary handle still bound!");
+					lastError = MediaError.Internal;
 					return false;
 				}
 			}
@@ -598,14 +643,17 @@ namespace Synergiance.MediaPlayer {
 			Log($"Getting first unbound relay{(_startOffset != 0 ? $" starting at {_startOffset}" : "")}");
 			if (_startOffset >= relayHandles.Length) {
 				LogError("Start offset out of bounds!");
+				lastError = MediaError.OutOfRange;
 				return -1;
 			}
 			for (int i = _startOffset; i < relayHandles.Length; i++) {
 				if (relayHandles[i] >= 0) continue;
 				Log($"Found unbound relay at index {i}");
+				lastError = MediaError.Unknown;
 				return i;
 			}
 			Log("Found no unbound relay");
+			lastError = MediaError.Unknown;
 			return -1;
 		}
 
@@ -613,6 +661,7 @@ namespace Synergiance.MediaPlayer {
 			int handle = relayHandles[_relay];
 			if (handle < 0) {
 				LogWarning("Relay was not bound!");
+				lastError = MediaError.Internal;
 				return;
 			}
 
@@ -643,7 +692,17 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private int GetHandleFromRelayId(int _id) {
-			if (!isValid || _id < 0 || _id >= relays.Length) return -1;
+			if (!isValid) {
+				lastError = MediaError.Invalid;
+				return -1;
+			}
+
+			if (_id < 0 || _id >= relays.Length) {
+				lastError = MediaError.OutOfRange;
+				return -1;
+			}
+
+			lastError = MediaError.Unknown;
 			return relayHandles[_id];
 		}
 
@@ -674,6 +733,7 @@ namespace Synergiance.MediaPlayer {
 			if (!HandleHasQueue(handle)) {
 				Log($"Video End on handle {handle} with no queued video.");
 				SendRelayEvent(CallbackEvent.MediaEnd, _id);
+				lastError = MediaError.Unknown;
 				return;
 			}
 			_PlayNext(handle);
@@ -701,29 +761,29 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			bool isSecondary = relayIsSecondary[_id];
-			MediaError err = MediaError.Unknown;
+			lastError = MediaError.Unknown;
 
 			switch (_err) {
 				case VideoError.AccessDenied:
 					BlockingUntrustedLinks = true;
 					LogError("Allow Untrusted URLs needs to be enabled to load this video!");
-					err = isSecondary ? MediaError.UntrustedQueueLink : MediaError.UntrustedLink;
+					lastError = isSecondary ? MediaError.UntrustedQueueLink : MediaError.UntrustedLink;
 					break;
 				case VideoError.RateLimited:
 					LogWarning("Rate limited! This means you are using a separate video object.");
-					err = MediaError.RateLimited;
+					lastError = MediaError.RateLimited;
 					// TODO: Requeue a rate limited video
 					return;
 				case VideoError.InvalidURL:
 					LogError("This video could not load because the URL is malformed!\nMake sure you're typing the URL correctly.");
-					err = isSecondary ? MediaError.InvalidQueueLink : MediaError.InvalidLink;
+					lastError = isSecondary ? MediaError.InvalidQueueLink : MediaError.InvalidLink;
 					break;
 				case VideoError.Unknown:
 					LogError("This video could not load because it could not resolve in Youtube-DL!\nMake sure you're typing the URL correctly.");
 					break;
 				case VideoError.PlayerError:
 					LogError("Unsupported format or corrupt video file!");
-					err = isSecondary ? MediaError.LoadingErrorQueue : MediaError.LoadingError;
+					lastError = isSecondary ? MediaError.LoadingErrorQueue : MediaError.LoadingError;
 					break;
 			}
 

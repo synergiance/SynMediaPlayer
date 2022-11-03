@@ -9,15 +9,12 @@ namespace Synergiance.MediaPlayer.Interfaces {
 	public class SMPMediaController : DiagnosticBehaviour {
 		protected override string DebugName => "Media Controller";
 		protected VideoManager videoManager;
-		protected int mediaControllerId;
+		protected int mediaControllerId = -1;
 
-		protected bool MediaIsPlaying {
-			get => false;
-		}
-
-		protected bool MediaIsReady {
-			get => false;
-		}
+		protected bool MediaIsPlaying => MediaControllerValid && videoManager._GetPlaying(mediaControllerId);
+		protected float MediaDuration => MediaControllerValid ? videoManager._GetDuration(mediaControllerId) : -1;
+		protected bool MediaIsReady => false;
+		protected bool MediaControllerValid => mediaControllerId >= 0;
 
 		protected bool LoopMedia {
 			set;
@@ -30,38 +27,84 @@ namespace Synergiance.MediaPlayer.Interfaces {
 		}
 
 		protected bool MuteMedia {
-			set;
-			get;
+			set => SetMuteMedia(value);
+			get => MediaControllerValid && videoManager._GetMute(mediaControllerId);
 		}
 
-		protected float CurrentMediaTime {
-			set;
-			get;
-		}
-
-		protected float MediaDuration {
-			set;
-			get;
+		protected float MediaTime {
+			set => SetMediaTime(value);
+			get => MediaControllerValid ? videoManager._GetTime(mediaControllerId) : -1;
 		}
 
 		protected float MediaVolume {
-			set;
-			get;
+			set => SetMediaVolume(value);
+			get => MediaControllerValid ? videoManager._GetVolume(mediaControllerId) : -1;
 		}
 
 		protected void RegisterWithVideoManager() {
 			// TODO: Hook up to video manager
+			if (mediaControllerId >= 0) {
+				LogWarning("Already registered!");
+				return;
+			}
+
+			mediaControllerId = 0;
 		}
 
-		protected void PlayMedia() {}
+		private void SetMediaTime(float _value) {
+			if (!MediaControllerValid) return;
+			videoManager._SeekTo(mediaControllerId, _value);
+		}
 
-		protected void PauseMedia() {}
+		private void SetMuteMedia(bool _value) {
+			if (!MediaControllerValid) return;
+			videoManager._SetMute(mediaControllerId, _value);
+		}
 
-		protected void StopMedia() {}
+		private void SetMediaVolume(float _value) {
+			if (!MediaControllerValid) return;
+			videoManager._SetVolume(mediaControllerId, _value);
+		}
 
-		protected void LoadMedia(VRCUrl _link, bool _playImmediately) {}
+		private void SetLoopMedia(bool _value) {
+			if (!MediaControllerValid) return;
+			//
+		}
 
-		protected void SeekMedia(float _timestamp) {}
+		private void SetEnableMediaResync(bool _value) {
+			if (!MediaControllerValid) return;
+			//
+		}
+
+		protected void PlayMedia() {
+			if (!MediaControllerValid) return;
+			videoManager._Play(mediaControllerId);
+		}
+
+		protected void PauseMedia() {
+			if (!MediaControllerValid) return;
+			videoManager._Pause(mediaControllerId);
+		}
+
+		protected void StopMedia() {
+			if (!MediaControllerValid) return;
+			videoManager._Stop(mediaControllerId);
+		}
+
+		protected void PlayNextMedia() {
+			if (!MediaControllerValid) return;
+			videoManager._PlayNext(mediaControllerId);
+		}
+
+		protected void LoadMedia(VRCUrl _link, VideoType _type, bool _playImmediately = false) {
+			if (!MediaControllerValid) return;
+			videoManager._LoadVideo(_link, _type, mediaControllerId, _playImmediately);
+		}
+
+		protected void LoadNextMedia(VRCUrl _link, VideoType _type) {
+			if (!MediaControllerValid) return;
+			videoManager._LoadNextVideo(_link, _type, mediaControllerId);
+		}
 
 		#region Virtual Methods
 		protected virtual void MediaLoading() {}
