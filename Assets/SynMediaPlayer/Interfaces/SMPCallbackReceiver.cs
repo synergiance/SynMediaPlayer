@@ -86,11 +86,10 @@ namespace Synergiance.MediaPlayer.Interfaces {
 		#endregion
 
 		/// <summary>
-		/// Callback interface for Video Behaviour. Do not use unless you know
-		/// what you're doing.
+		/// Interface for callbacks. Do not use unless you know what you're doing.
 		/// </summary>
 		/// <param name="_event">Callback Event to call</param>
-		public void _SendCallback(CallbackEvent _event) {
+		public virtual void _SendCallback(CallbackEvent _event) {
 			Log($"Received event: {_event}");
 			switch (_event) {
 				case CallbackEvent.MediaLoading:

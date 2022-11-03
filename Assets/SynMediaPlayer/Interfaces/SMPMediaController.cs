@@ -1,12 +1,8 @@
 ﻿
-using Synergiance.MediaPlayer.Diagnostics;
-using UdonSharp;
-using UnityEngine;
 using VRC.SDKBase;
-using VRC.Udon;
 
 namespace Synergiance.MediaPlayer.Interfaces {
-	public class SMPMediaController : DiagnosticBehaviour {
+	public class SMPMediaController : SMPCallbackReceiver {
 		protected override string DebugName => "Media Controller";
 		private VideoManager videoManager;
 
@@ -188,129 +184,23 @@ namespace Synergiance.MediaPlayer.Interfaces {
 		}
 		#endregion
 
-		#region Virtual Methods
 		/// <summary>
-		/// Event method. This is fired when media begins loading.
-		/// </summary>
-		protected virtual void MediaLoading() {}
-
-		/// <summary>
-		/// Event method. This is fired when media becomes ready.
-		/// </summary>
-		protected virtual void MediaReady() {}
-
-		/// <summary>
-		/// Event method. This is fired when media starts playing.
-		/// </summary>
-		protected virtual void MediaStart() {}
-
-		/// <summary>
-		/// Event method. This is fired when media finishes playing.
-		/// </summary>
-		protected virtual void MediaEnd() {}
-
-		/// <summary>
-		/// Event method. This is fired when next media begins.
-		/// </summary>
-		protected virtual void MediaNext() {}
-
-		/// <summary>
-		/// Event method. This is fired when media loops.
-		/// </summary>
-		protected virtual void MediaLoop() {}
-
-		/// <summary>
-		/// Event method. This is fired when media resumes playing.
-		/// </summary>
-		protected virtual void MediaPlay() {}
-
-		/// <summary>
-		/// Event method. This is fired when media pauses.
-		/// </summary>
-		protected virtual void MediaPause() {}
-
-		/// <summary>
-		/// Event method. This is fired when queued media begins loading.
-		/// </summary>
-		protected virtual void QueuedMediaLoading() {}
-
-		/// <summary>
-		/// Event method. This is fired when queued media becomes ready.
-		/// </summary>
-		protected virtual void QueuedMediaReady() {}
-
-		/// <summary>
-		/// Event method. This is fired when an error is encountered
-		/// </summary>
-		/// <param name="_error">Error that was encountered</param>
-		protected virtual void PlayerError(MediaError _error) {}
-		#endregion
-
-		/// <summary>
-		/// Callback interface for Video Manager. Do not use unless you know
-		/// what you're doing.
+		/// Interface for callbacks on media controllers. Do not use unless you
+		/// know what you're doing.
 		/// </summary>
 		/// <param name="_event">Callback Event to call</param>
-		public void _SendCallback(CallbackEvent _event) {
-			Log($"Received event: {_event}");
+		public override void _SendCallback(CallbackEvent _event) {
 			switch (_event) {
-				case CallbackEvent.MediaLoading:
-					MediaLoading();
-					break;
-				case CallbackEvent.MediaReady:
-					MediaReady();
-					break;
-				case CallbackEvent.MediaStart:
-					MediaStart();
-					break;
-				case CallbackEvent.MediaEnd:
-					MediaEnd();
-					break;
-				case CallbackEvent.MediaNext:
-					MediaNext();
-					break;
-				case CallbackEvent.MediaLoop:
-					MediaLoop();
-					break;
-				case CallbackEvent.MediaPlay:
-					MediaPlay();
-					break;
-				case CallbackEvent.MediaPause:
-					MediaPause();
-					break;
-				case CallbackEvent.QueueMediaLoading:
-					QueuedMediaLoading();
-					break;
-				case CallbackEvent.QueueMediaReady:
-					QueuedMediaReady();
-					break;
 				case CallbackEvent.PlayerLocked:
 				case CallbackEvent.PlayerUnlocked:
 				case CallbackEvent.PlayerInitialized:
 				case CallbackEvent.GainedPermissions:
-					LogWarning("This code path should never happen!");
-					break;
-				case CallbackEvent.PlayerError:
-					LogWarning("Please use _SendError instead when sending errors!");
-					MediaError err = MediaError.Uninitialized;
-					if (VideoManager != null)
-						err = VideoManager.lastError;
-					_SendError(err);
+					LogWarning("Media controller should never receive events from itself or another media controller!");
 					break;
 				default:
-					LogWarning($"Unknown Event: {_event}");
+					base._SendCallback(_event);
 					break;
 			}
-		}
-
-		/// <summary>
-		/// Callback interface for errors. Do not use unless you know what
-		/// you're doing.
-		/// </summary>
-		/// <param name="_err">Error to be sent</param>
-		public void _SendError(MediaError _err) {
-			PlayerError(_err);
-			Log($"Error: {_err}");
 		}
 	}
 }
