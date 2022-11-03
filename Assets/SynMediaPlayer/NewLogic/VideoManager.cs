@@ -468,6 +468,38 @@ namespace Synergiance.MediaPlayer {
 			return relays[relay].Mute;
 		}
 
+		public bool _SetLoop(int _handle, bool _loop) {
+			int relay = GetPrimaryRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			relays[relay].Loop = _loop;
+			return false;
+		}
+
+		public bool _GetLoop(int _handle) {
+			int relay = GetPrimaryRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			return relays[relay].Loop;
+		}
+
+		public bool _SetMediaResync(int _handle, bool _resync) {
+			int relay = GetPrimaryRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			relays[relay].AutomaticResync = _resync;
+			return false;
+		}
+
+		public bool _GetMediaResync(int _handle) {
+			int relay = GetPrimaryRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			return relays[relay].AutomaticResync;
+		}
+
+		public bool _GetMediaReady(int _handle) {
+			int relay = GetPrimaryRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			return relays[relay].IsReady;
+		}
+
 		/// <summary>
 		/// Gets the duration of the current or next video for a given video
 		/// player

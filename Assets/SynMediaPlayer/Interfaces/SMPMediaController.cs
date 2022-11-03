@@ -13,17 +13,17 @@ namespace Synergiance.MediaPlayer.Interfaces {
 
 		protected bool MediaIsPlaying => MediaControllerValid && videoManager._GetPlaying(mediaControllerId);
 		protected float MediaDuration => MediaControllerValid ? videoManager._GetDuration(mediaControllerId) : -1;
-		protected bool MediaIsReady => false;
+		protected bool MediaIsReady => MediaControllerValid && videoManager._GetMediaReady(mediaControllerId);
 		protected bool MediaControllerValid => mediaControllerId >= 0;
 
 		protected bool LoopMedia {
-			set;
-			get;
+			set => SetLoopMedia(value);
+			get => MediaControllerValid && videoManager._GetLoop(mediaControllerId);
 		}
 
 		protected bool EnableMediaResync {
-			set;
-			get;
+			set => SetEnableMediaResync(value);
+			get => MediaControllerValid && videoManager._GetMediaResync(mediaControllerId);
 		}
 
 		protected bool MuteMedia {
@@ -68,12 +68,12 @@ namespace Synergiance.MediaPlayer.Interfaces {
 
 		private void SetLoopMedia(bool _value) {
 			if (!MediaControllerValid) return;
-			//
+			videoManager._SetLoop(mediaControllerId, _value);
 		}
 
 		private void SetEnableMediaResync(bool _value) {
 			if (!MediaControllerValid) return;
-			//
+			videoManager._SetMediaResync(mediaControllerId, _value);
 		}
 
 		protected void PlayMedia() {
