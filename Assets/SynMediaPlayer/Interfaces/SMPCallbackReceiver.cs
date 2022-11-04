@@ -149,7 +149,7 @@ namespace Synergiance.MediaPlayer.Interfaces {
 		/// you're doing.
 		/// </summary>
 		/// <param name="_err">Error to be sent</param>
-		public void _SendError(MediaError _err) {
+		public virtual void _SendError(MediaError _err) {
 			PlayerError(_err);
 			Log($"Error: {_err}");
 		}

@@ -1,4 +1,5 @@
-﻿using Synergiance.MediaPlayer.Diagnostics;
+﻿using System;
+using Synergiance.MediaPlayer.Diagnostics;
 using UdonSharp;
 using UnityEngine;
 using VRC.SDK3.Components.Video;
@@ -278,7 +279,7 @@ namespace Synergiance.MediaPlayer {
 			if (tempTexture != videoTextureCache) return;
 			Log("New Video Texture!");
 			videoTextureCache = tempTexture;
-			relayPoint._RelayVideoTextureChange(identifier, videoTextureCache);
+			relayPoint._RelayTextureChange(identifier, videoTextureCache);
 		}
 
 		private bool UninitializedLog(string _eventName) {
@@ -289,43 +290,61 @@ namespace Synergiance.MediaPlayer {
 
 		public override void OnVideoEnd() {
 			if (UninitializedLog("OnVideoEnd")) return;
-			relayPoint._RelayVideoEnd(identifier);
+			relayPoint._RelayEvent(CallbackEvent.MediaEnd, identifier);
 			CheckTextureChange();
 		}
 
 		public override void OnVideoReady() {
 			if (UninitializedLog("OnVideoReady")) return;
-			relayPoint._RelayVideoReady(identifier);
+			relayPoint._RelayEvent(CallbackEvent.MediaReady, identifier);
 			CheckTextureChange();
 		}
 
 		public override void OnVideoError(VideoError _videoError) {
 			if (UninitializedLog("OnVideoError")) return;
-			relayPoint._RelayVideoError(identifier, _videoError);
+			MediaError err = MediaError.Invalid;
+			switch (_videoError) {
+				case VideoError.RateLimited:
+					err = MediaError.RateLimited;
+					break;
+				case VideoError.InvalidURL:
+					err = MediaError.InvalidLink;
+					break;
+				case VideoError.AccessDenied:
+					err = MediaError.UntrustedLink;
+					break;
+				case VideoError.PlayerError:
+					err = MediaError.LoadingError;
+					break;
+				case VideoError.Unknown:
+					err = MediaError.Unknown;
+					break;
+			}
+			relayPoint._RelayError(identifier, err);
 			CheckTextureChange();
 		}
 
 		public override void OnVideoPlay() {
 			if (UninitializedLog("OnVideoPlay")) return;
-			relayPoint._RelayVideoPlay(identifier);
+			relayPoint._RelayEvent(CallbackEvent.MediaPlay, identifier);
 			CheckTextureChange();
 		}
 
 		public override void OnVideoStart() {
 			if (UninitializedLog("OnVideoStart")) return;
-			relayPoint._RelayVideoStart(identifier);
+			relayPoint._RelayEvent(CallbackEvent.MediaStart, identifier);
 			CheckTextureChange();
 		}
 
 		public override void OnVideoLoop() {
 			if (UninitializedLog("OnVideoLoop")) return;
-			relayPoint._RelayVideoLoop(identifier);
+			relayPoint._RelayEvent(CallbackEvent.MediaLoop, identifier);
 			CheckTextureChange();
 		}
 
 		public override void OnVideoPause() {
 			if (UninitializedLog("OnVideoPause")) return;
-			relayPoint._RelayVideoPause(identifier);
+			relayPoint._RelayEvent(CallbackEvent.MediaPause, identifier);
 			CheckTextureChange();
 		}
 	}

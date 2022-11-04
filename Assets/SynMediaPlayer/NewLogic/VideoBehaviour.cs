@@ -81,5 +81,15 @@ namespace Synergiance.MediaPlayer {
 			foreach (SMPCallbackReceiver videoCallback in videoCallbacks)
 				videoCallback._SendError(_error);
 		}
+
+		public override void _SendCallback(CallbackEvent _event) {
+			base._SendCallback(_event);
+			SendVideoCallback(_event);
+		}
+
+		public override void _SendError(MediaError _err) {
+			base._SendError(_err);
+			SendErrorCallback(_err);
+		}
 	}
 }

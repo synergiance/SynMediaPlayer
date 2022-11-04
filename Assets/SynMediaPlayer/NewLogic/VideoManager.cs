@@ -845,11 +845,15 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void SendRelayEvent(CallbackEvent _event, int _relay) {
-			// TODO: Send event
+			mediaControllers[_relay]._SendCallback(_event);
+		}
+
+		private void SendError(MediaError _error, int _relay) {
+			mediaControllers[_relay]._SendError(_error);
 		}
 
 		// Relay callbacks
-		public void _RelayVideoEnd(int _id) {
+		public void MediaEnd(int _id) {
 			Initialize();
 			int handle = GetHandleFromRelayId(_id);
 			if (handle < 0) {
@@ -868,7 +872,7 @@ namespace Synergiance.MediaPlayer {
 			SendRelayEvent(CallbackEvent.MediaNext, _id);
 		}
 
-		public void _RelayVideoReady(int _id) {
+		public void MediaReady(int _id) {
 			int handle = GetHandleFromRelayId(_id);
 			if (handle < 0) {
 				Log($"Ignoring Video Ready callback from relay {_id}");
@@ -882,83 +886,114 @@ namespace Synergiance.MediaPlayer {
 			SendRelayEvent(secondary ? CallbackEvent.QueueMediaReady : CallbackEvent.MediaReady, _id);
 		}
 
-		public void _RelayVideoError(int _id, VideoError _err) {
+		public void _RelayError(int _id, MediaError _err) {
 			if (!isValid || relayHandles[_id] < 0) {
 				Log($"Ignoring Video Error callback from relay {_id}");
 				return;
 			}
 
 			bool isSecondary = relayIsSecondary[_id];
-			lastError = MediaError.Unknown;
+			lastError = _err;
 
 			switch (_err) {
-				case VideoError.AccessDenied:
+				case MediaError.UntrustedLink:
 					BlockingUntrustedLinks = true;
 					LogError("Allow Untrusted URLs needs to be enabled to load this video!");
-					lastError = isSecondary ? MediaError.UntrustedQueueLink : MediaError.UntrustedLink;
+					if (isSecondary) lastError = MediaError.UntrustedQueueLink;
 					break;
-				case VideoError.RateLimited:
+				case MediaError.RateLimited:
 					LogWarning("Rate limited! This means you are using a separate video object.");
-					lastError = MediaError.RateLimited;
 					// TODO: Requeue a rate limited video
 					return;
-				case VideoError.InvalidURL:
+				case MediaError.InvalidLink:
 					LogError("This video could not load because the URL is malformed!\nMake sure you're typing the URL correctly.");
-					lastError = isSecondary ? MediaError.InvalidQueueLink : MediaError.InvalidLink;
+					if (isSecondary) lastError = MediaError.InvalidQueueLink;
 					break;
-				case VideoError.Unknown:
+				case MediaError.Unknown:
 					LogError("This video could not load because it could not resolve in Youtube-DL!\nMake sure you're typing the URL correctly.");
 					break;
-				case VideoError.PlayerError:
+				case MediaError.LoadingError:
 					LogError("Unsupported format or corrupt video file!");
-					lastError = isSecondary ? MediaError.LoadingErrorQueue : MediaError.LoadingError;
+					if (isSecondary) lastError = MediaError.LoadingErrorQueue;
+					break;
+				case MediaError.Invalid:
+					LogError("VRChat just spat an unknown video error at us. Please update SMP, contact Synergiance, or contact VRChat");
 					break;
 			}
 
-			SendRelayEvent(CallbackEvent.PlayerError, _id);
+			SendError(lastError, relayHandles[_id]);
 		}
 
-		public void _RelayVideoPlay(int _id) {
+		public void _RelayEvent(CallbackEvent _event, int _id) {
+			switch (_event) {
+				case CallbackEvent.MediaReady:
+					MediaReady(_id);
+					break;
+				case CallbackEvent.MediaStart:
+					MediaStart(_id);
+					break;
+				case CallbackEvent.MediaEnd:
+					MediaEnd(_id);
+					break;
+				case CallbackEvent.MediaLoop:
+					MediaLoop(_id);
+					break;
+				case CallbackEvent.MediaPlay:
+					MediaPlay(_id);
+					break;
+				case CallbackEvent.MediaPause:
+					MediaPause(_id);
+					break;
+				case CallbackEvent.PlayerError:
+					LogWarning("Warning: Do not send error events to VideoManager!");
+					break;
+				default:
+					LogWarning("Warning: Do not send random events to VideoManager!");
+					break;
+			}
+		}
+
+		private void MediaPlay(int _id) {
 			if (!isValid || relayHandles[_id] < 0) {
 				Log($"Ignoring Video Play callback from relay {_id}");
 				return;
 			}
 			// TODO: What to do when video plays
 			if (relayIsSecondary[_id]) return;
-			SendRelayEvent(CallbackEvent.MediaPlay, _id);
+			SendRelayEvent(CallbackEvent.MediaPlay, relayHandles[_id]);
 		}
 
-		public void _RelayVideoStart(int _id) {
+		private void MediaStart(int _id) {
 			if (!isValid || relayHandles[_id] < 0) {
 				Log($"Ignoring Video Start callback from relay {_id}");
 				return;
 			}
 			// TODO: What to do when video starts
 			if (relayIsSecondary[_id]) return;
-			SendRelayEvent(CallbackEvent.MediaStart, _id);
+			SendRelayEvent(CallbackEvent.MediaStart, relayHandles[_id]);
 		}
 
-		public void _RelayVideoLoop(int _id) {
+		private void MediaLoop(int _id) {
 			if (!isValid || relayHandles[_id] < 0) {
 				Log($"Ignoring Video Loop callback from relay {_id}");
 				return;
 			}
 			// TODO: What to do when video loops
 			if (relayIsSecondary[_id]) return;
-			SendRelayEvent(CallbackEvent.MediaLoop, _id);
+			SendRelayEvent(CallbackEvent.MediaLoop, relayHandles[_id]);
 		}
 
-		public void _RelayVideoPause(int _id) {
+		private void MediaPause(int _id) {
 			if (!isValid || relayHandles[_id] < 0) {
 				Log($"Ignoring Video Pause callback from relay {_id}");
 				return;
 			}
 			// TODO: What to do when video pauses
 			if (relayIsSecondary[_id]) return;
-			SendRelayEvent(CallbackEvent.MediaPause, _id);
+			SendRelayEvent(CallbackEvent.MediaPause, relayHandles[_id]);
 		}
 
-		public void _RelayVideoTextureChange(int _id, Texture _texture) {
+		public void _RelayTextureChange(int _id, Texture _texture) {
 			if (!isValid || relayHandles[_id] < 0) {
 				Log("Ignoring texture change since relay is unbound");
 				return;

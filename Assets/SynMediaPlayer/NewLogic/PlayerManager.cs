@@ -245,38 +245,12 @@ namespace Synergiance.MediaPlayer {
 			return false;
 		}
 
-		/// <summary>
-		/// Relay an event to the specified video player
-		/// </summary>
-		/// <param name="_id">ID of the video player we'd like to relay the event to.</param>
-		/// <param name="_event">Event we'd like to send to the video player</param>
-		/// <returns>True if successful</returns>
-		public bool _RelayEvent(int _id, string _event) {
-			Log($"Received video event \"{_event}\" for video player {_id}");
-			if (!ValidateId(_id)) return false;
-			videoPlayers[_id].SendCustomEvent(_event);
-			return true;
-		}
-
 		private void Update() {
 			if (!isValid || !hasVideoPlayers) return;
 			if (lastCheck + CheckCooldown > Time.time) return;
 			Log("Checking video players");
 			foreach (VideoPlayer videoPlayer in videoPlayers)
 				videoPlayer._UpdateSync();
-		}
-
-		/// <summary>
-		/// Relay a video player error to the specified video player
-		/// </summary>
-		/// <param name="_id">ID of the video player we'd like to relay the event to.</param>
-		/// <param name="_error">The video error that occurred</param>
-		/// <returns>True if successful</returns>
-		public bool _RelayError(int _id, MediaError _error) {
-			Log($"Received video error {_error} for video player {_id}");
-			if (!ValidateId(_id)) return false;
-			videoPlayers[_id]._RelayVideoError(_error);
-			return true;
 		}
 	}
 }
