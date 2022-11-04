@@ -16,7 +16,7 @@ namespace Synergiance.MediaPlayer {
 	/// <summary>
 	/// Modes of operation for an instance of a media player in SMP
 	/// </summary>
-	public enum ResyncMode {
+	public enum PlayerState {
 		Normal, Resync, CatchUp, WaitForSync, WaitForVideo, Seek, WaitForLoad,
 		WaitToPlay, WaitToPause, WaitForData
 	}
@@ -96,7 +96,7 @@ namespace Synergiance.MediaPlayer {
 		#endregion
 
 		#region Video Sync Variables
-		private ResyncMode syncMode;
+		private PlayerState syncMode;
 		private const float ResyncThreshold = 5.0f;
 		private const float ResyncCooldown = 30.0f;
 		private const float ResyncDetect = 0.1f;
@@ -444,14 +444,14 @@ namespace Synergiance.MediaPlayer {
 			if (!isValid) return;
 
 			if (syncIndex != queue.SyncIndex) {
-				syncMode = ResyncMode.WaitForData;
+				syncMode = PlayerState.WaitForData;
 				return;
 			}
 
 			VRCUrl link = queue.CurrentVideo;
 			if (Equals(link, currentVideoLink)) {
-				if (syncMode == ResyncMode.WaitForData) {
-					syncMode = ResyncMode.Normal;
+				if (syncMode == PlayerState.WaitForData) {
+					syncMode = PlayerState.Normal;
 				}
 				return;
 			}
@@ -463,7 +463,7 @@ namespace Synergiance.MediaPlayer {
 			bool isLowLatency = (linkType | LinkLowLatencyBit) > 0;
 			VideoType videoType = canBeVideo ? VideoType.Video : isLowLatency ? VideoType.LowLatency : VideoType.Stream;
 			LoadMedia(currentVideoLink, videoType, playImmediately);
-			syncMode = ResyncMode.WaitForLoad;
+			syncMode = PlayerState.WaitForLoad;
 		}
 		#endregion
 
@@ -549,31 +549,31 @@ namespace Synergiance.MediaPlayer {
 			if (!IsReady || (paused && syncMode == 0)) return;
 			drift = RawTime - CurrentTime;
 			switch (syncMode) {
-				case ResyncMode.Resync:
+				case PlayerState.Resync:
 					UpdateResync();
 					break;
-				case ResyncMode.CatchUp:
+				case PlayerState.CatchUp:
 					UpdateCatchUp();
 					break;
-				case ResyncMode.WaitForSync:
+				case PlayerState.WaitForSync:
 					UpdateWaitSync();
 					break;
-				case ResyncMode.WaitForVideo:
+				case PlayerState.WaitForVideo:
 					UpdateWaitVideo();
 					break;
-				case ResyncMode.Seek:
+				case PlayerState.Seek:
 					UpdateSeek();
 					break;
-				case ResyncMode.WaitForLoad:
+				case PlayerState.WaitForLoad:
 					UpdateWaitLoad();
 					break;
-				case ResyncMode.WaitToPlay:
+				case PlayerState.WaitToPlay:
 					UpdateWaitPlay();
 					break;
-				case ResyncMode.WaitToPause:
+				case PlayerState.WaitToPause:
 					UpdateWaitPause();
 					break;
-				case ResyncMode.WaitForData:
+				case PlayerState.WaitForData:
 					UpdateWaitData();
 					break;
 				default: // Default to normal
@@ -584,17 +584,17 @@ namespace Synergiance.MediaPlayer {
 
 		private void UpdateNormal() {
 			if (Mathf.Abs(drift) > ResyncThreshold) {
-				syncMode = ResyncMode.Resync;
+				syncMode = PlayerState.Resync;
 				UpdateResync();
 			}
 
 			if (drift > DriftTolerance) {
-				syncMode = ResyncMode.WaitForSync;
+				syncMode = PlayerState.WaitForSync;
 				UpdateWaitSync();
 			}
 
 			if (drift < -DriftTolerance) {
-				syncMode = ResyncMode.CatchUp;
+				syncMode = PlayerState.CatchUp;
 				UpdateCatchUp();
 			}
 		}
@@ -605,12 +605,12 @@ namespace Synergiance.MediaPlayer {
 
 			if (Mathf.Abs(RawTime - timeAtLastResync) < ResyncDetect) {
 				if (Time.time - lastResync < ResyncTimeout) return;
-				SetSyncMode(ResyncMode.WaitForVideo);
+				SetSyncMode(PlayerState.WaitForVideo);
 				return;
 			}
 
 			if (drift > -DriftTolerance) {
-				SetSyncMode(ResyncMode.Normal, true);
+				SetSyncMode(PlayerState.Normal, true);
 				return;
 			}
 
@@ -623,7 +623,7 @@ namespace Synergiance.MediaPlayer {
 			// TODO: Get Playing status and figure out what I wanted to do with it
 
 			if (drift < DriftTolerance) {
-				SetSyncMode(ResyncMode.Normal, true);
+				SetSyncMode(PlayerState.Normal, true);
 				return;
 			}
 
@@ -674,20 +674,20 @@ namespace Synergiance.MediaPlayer {
 			if (rawTime < currentTime) {
 				PlayMedia();
 				ResyncTo(currentTime + HotSpoolTime, DriftCooldown);
-				SetSyncMode(ResyncMode.CatchUp, true);
+				SetSyncMode(PlayerState.CatchUp, true);
 				return;
 			}
 
 			PlayMedia();
 			ResyncTo(currentTime + HotSpoolTime, DriftCooldown);
-			SetSyncMode(ResyncMode.WaitForSync);
+			SetSyncMode(PlayerState.WaitForSync);
 			// TODO: Send callback for play
 		}
 
 		private void UpdateWaitPause() {
 			if (RawTime < PauseTime) return;
 			PauseMedia();
-			SetSyncMode(ResyncMode.Normal);
+			SetSyncMode(PlayerState.Normal);
 			// TODO: Send callback for pause
 		}
 
@@ -705,14 +705,14 @@ namespace Synergiance.MediaPlayer {
 		private bool CheckResync() {
 			if (Mathf.Abs(RawTime - timeAtLastResync) > ResyncDetect) return false;
 			if (Time.time - lastResync < ResyncTimeout) return true;
-			SetSyncMode(ResyncMode.WaitForVideo);
+			SetSyncMode(PlayerState.WaitForVideo);
 			return true;
 		}
 
 		// ReSharper disable Unity.PerformanceAnalysis
 		private bool CheckDrift(float _threshold) {
 			if (Mathf.Abs(drift) > _threshold) return false;
-			SetSyncMode(ResyncMode.Normal, true);
+			SetSyncMode(PlayerState.Normal, true);
 			return true;
 		}
 
@@ -723,14 +723,14 @@ namespace Synergiance.MediaPlayer {
 			return false;
 		}
 
-		private void SetSyncMode(ResyncMode _mode, bool _callNormal = false) {
+		private void SetSyncMode(PlayerState _mode, bool _callNormal = false) {
 			Log($"Setting sync mode to: {GetResyncModeName(_mode)} ({(int)_mode})");
 			syncMode = _mode;
 			if (!_callNormal) return;
 			UpdateNormal();
 		}
 
-		private string GetResyncModeName(ResyncMode _mode) {
+		private string GetResyncModeName(PlayerState _mode) {
 			return (int)_mode >= syncModeNames.Length ? "Unknown" : syncModeNames[(int)_mode];
 		}
 
@@ -788,7 +788,7 @@ namespace Synergiance.MediaPlayer {
 
 			// TODO: Determine what to do when variables change
 			if (cSyncIndex) _CheckQueue();
-			if (cPaused && syncMode != ResyncMode.WaitForData) {
+			if (cPaused && syncMode != PlayerState.WaitForData) {
 				if (paused) {
 					DirectPauseVideo();
 				} else {

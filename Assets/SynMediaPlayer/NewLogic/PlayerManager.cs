@@ -5,6 +5,10 @@ using VRC.SDK3.Components.Video;
 using VRC.SDKBase;
 
 namespace Synergiance.MediaPlayer {
+	public enum ControllerSetting {
+		Volume, Mute, Loop, Lock, Resync, Playback, Time, Duration, Link, MediaType, Active, State
+	}
+
 	[DefaultExecutionOrder(-20)]
 	public class PlayerManager : DiagnosticBehaviour {
 		[SerializeField] private PlaylistManager playlistManager;
@@ -251,6 +255,74 @@ namespace Synergiance.MediaPlayer {
 			Log("Checking video players");
 			foreach (VideoPlayer videoPlayer in videoPlayers)
 				videoPlayer._UpdateSync();
+		}
+
+		public void _SendEvent(CallbackEvent _event, int _id) {
+			switch (_event) {
+				case CallbackEvent.MediaLoading:
+					break;
+				case CallbackEvent.MediaReady:
+					break;
+				case CallbackEvent.MediaStart:
+					break;
+				case CallbackEvent.MediaEnd:
+					break;
+				case CallbackEvent.MediaNext:
+					break;
+				case CallbackEvent.MediaLoop:
+					break;
+				case CallbackEvent.MediaPlay:
+					break;
+				case CallbackEvent.MediaPause:
+					break;
+				case CallbackEvent.QueueMediaLoading:
+					break;
+				case CallbackEvent.QueueMediaReady:
+					break;
+				case CallbackEvent.PlayerLocked:
+					break;
+				case CallbackEvent.PlayerUnlocked:
+					break;
+				case CallbackEvent.PlayerInitialized:
+					break;
+				case CallbackEvent.GainedPermissions:
+					break;
+				case CallbackEvent.PlayerError:
+					break;
+			}
+		}
+
+		public void _SendError(MediaError _error, int _id) {
+			switch (_error) {
+				case MediaError.RateLimited:
+					break;
+				case MediaError.UntrustedLink:
+					break;
+				case MediaError.UntrustedQueueLink:
+					break;
+				case MediaError.InvalidLink:
+					break;
+				case MediaError.InvalidQueueLink:
+					break;
+				case MediaError.LoadingError:
+					break;
+				case MediaError.LoadingErrorQueue:
+					break;
+				case MediaError.Unknown:
+					break;
+				case MediaError.Uninitialized:
+					break;
+				case MediaError.Invalid:
+					break;
+				case MediaError.OutOfRange:
+					break;
+				case MediaError.NoMedia:
+					break;
+				case MediaError.Internal:
+					break;
+				case MediaError.Success:
+					break;
+			}
 		}
 	}
 }

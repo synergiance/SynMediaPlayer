@@ -2137,7 +2137,7 @@ MonoBehaviour:
       Data: 113|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: Synergiance.MediaPlayer.ResyncMode, Assembly-CSharp
+      Data: Synergiance.MediaPlayer.PlayerState, Assembly-CSharp
     - Name: 
       Entry: 8
       Data: 

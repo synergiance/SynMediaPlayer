@@ -288,6 +288,21 @@ namespace Synergiance.MediaPlayer {
 			return true;
 		}
 
+		protected override string DumpState() {
+			if (!initialized) return "Uninitialized!";
+			string dumpStr = $"Video Source: {videoSource}";
+			if (videoRendererSource != null) dumpStr += $", Video Renderer: {videoRendererSource}, Material Index: {videoMaterialIndex}";
+			dumpStr += $"\nVideo Material: {(videoMaterial == null ? "null" : videoMaterial.ToString())}, Texture Name: {videoTextureName}";
+			dumpStr += $"\nVideo Type: {videoType}, Video Name: {videoName}, Automatic Resync: {AutomaticResync}\n";
+			dumpStr += $"\nReady: {IsReady}, Playing: {IsPlaying}, Duration: {Duration}, Time: {Time}";
+			int numSpeakers = speakers == null ? 0 : speakers.Length;
+			dumpStr += $"Speakers: {(numSpeakers == 0 ? "None attached" : speakers[0] == null ? "Null" : speakers[0].name)}";
+			for (int i = 1; i < numSpeakers; i++) dumpStr += $", {(speakers[i] == null ? "Null" : speakers[i].name)}";
+			dumpStr += $"\nVolume: {volume}, Relative Volume: {relativeVolume}, Applied Volume: {Volume}, Muted: {muted}, Speakers Active: {speakersActive}";
+			dumpStr += $"\nRelay Point: {(relayPoint == null ? "Null" : relayPoint.name)}, ID: {identifier}";
+			return dumpStr;
+		}
+
 		public override void OnVideoEnd() {
 			if (UninitializedLog("OnVideoEnd")) return;
 			relayPoint._RelayEvent(CallbackEvent.MediaEnd, identifier);
