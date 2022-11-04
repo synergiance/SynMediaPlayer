@@ -852,8 +852,8 @@ namespace Synergiance.MediaPlayer {
 			mediaControllers[_relay]._SendError(_error);
 		}
 
-		// Relay callbacks
-		public void MediaEnd(int _id) {
+		#region Relay Callbacks
+		private void MediaEnd(int _id) {
 			Initialize();
 			int handle = GetHandleFromRelayId(_id);
 			if (handle < 0) {
@@ -872,7 +872,7 @@ namespace Synergiance.MediaPlayer {
 			SendRelayEvent(CallbackEvent.MediaNext, _id);
 		}
 
-		public void MediaReady(int _id) {
+		private void MediaReady(int _id) {
 			int handle = GetHandleFromRelayId(_id);
 			if (handle < 0) {
 				Log($"Ignoring Video Ready callback from relay {_id}");
@@ -886,6 +886,11 @@ namespace Synergiance.MediaPlayer {
 			SendRelayEvent(secondary ? CallbackEvent.QueueMediaReady : CallbackEvent.MediaReady, _id);
 		}
 
+		/// <summary>
+		/// Event receiver for errors
+		/// </summary>
+		/// <param name="_id">ID of the video relay</param>
+		/// <param name="_err">Error being sent</param>
 		public void _RelayError(int _id, MediaError _err) {
 			if (!isValid || relayHandles[_id] < 0) {
 				Log($"Ignoring Video Error callback from relay {_id}");
@@ -924,6 +929,11 @@ namespace Synergiance.MediaPlayer {
 			SendError(lastError, relayHandles[_id]);
 		}
 
+		/// <summary>
+		/// Event receiver for VideoRelay
+		/// </summary>
+		/// <param name="_event">Event being relayed</param>
+		/// <param name="_id">ID of the VideoRelay</param>
 		public void _RelayEvent(CallbackEvent _event, int _id) {
 			switch (_event) {
 				case CallbackEvent.MediaReady:
@@ -1001,5 +1011,6 @@ namespace Synergiance.MediaPlayer {
 
 			displayManager._SetVideoTexture(relayHandles[_id], _texture, relayIsSecondary[_id] ? 1 : 0);
 		}
+		#endregion
 	}
 }
