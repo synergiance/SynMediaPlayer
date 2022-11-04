@@ -215,6 +215,10 @@ namespace Synergiance.MediaPlayer {
 				primaryVideoDurations = new float[_newLength];
 				secondaryVideoDurations = new float[_newLength];
 				mediaControllers = new SMPMediaController[_newLength];
+				videoPlayerVolumes = new float[_newLength];
+				videoPlayerMute = new bool[_newLength];
+				videoPlayerLoop = new bool[_newLength];
+				videoPlayerResync = new bool[_newLength];
 				hasPlayerHandles = true;
 			} else {
 				Log($"Expanding handle arrays from {prevLength} to {_newLength}");
@@ -229,6 +233,10 @@ namespace Synergiance.MediaPlayer {
 				ExpandFloatArray(ref primaryVideoDurations, _newLength);
 				ExpandFloatArray(ref secondaryVideoDurations, _newLength);
 				ExpandMediaControllerArray(ref mediaControllers, _newLength);
+				ExpandFloatArray(ref videoPlayerVolumes, _newLength);
+				ExpandBoolArray(ref videoPlayerLoop, _newLength);
+				ExpandBoolArray(ref videoPlayerMute, _newLength);
+				ExpandBoolArray(ref videoPlayerResync, _newLength);
 			}
 
 			Log("Initializing new handles");
@@ -243,6 +251,10 @@ namespace Synergiance.MediaPlayer {
 				secondaryVideoTypes[i] = VideoType.Video;
 				primaryVideoDurations[i] = -1;
 				secondaryVideoDurations[i] = -1;
+				videoPlayerVolumes[i] = 1;
+				videoPlayerMute[i] = false;
+				videoPlayerLoop[i] = false;
+				videoPlayerResync[i] = true;
 			}
 
 			return true;
@@ -256,6 +268,12 @@ namespace Synergiance.MediaPlayer {
 
 		private void ExpandFloatArray(ref float[] _array, int _newLength) {
 			float[] tmpArray = new float[_newLength];
+			Array.Copy(_array, tmpArray, _array.Length);
+			_array = tmpArray;
+		}
+
+		private void ExpandBoolArray(ref bool[] _array, int _newLength) {
+			bool[] tmpArray = new bool[_newLength];
 			Array.Copy(_array, tmpArray, _array.Length);
 			_array = tmpArray;
 		}
@@ -737,6 +755,7 @@ namespace Synergiance.MediaPlayer {
 			relayHandles[_relay] = _handle;
 			relayIsSecondary[_relay] = _secondary;
 			FindAndUpdateRelayAudio(_relay, _handle);
+			UpdateRelaySettings(_relay, _handle);
 			Log($"Successfully bound relay {_relay} to{(_secondary ? " secondary" : "")} handle {_handle}");
 			return true;
 		}
@@ -781,6 +800,13 @@ namespace Synergiance.MediaPlayer {
 
 			bool hasAudio = displayManager._GetAudioTemplate(_handle, out AudioSource[] sources, out float volume);
 			UpdateRelayAudio(_relay, sources, volume, hasAudio);
+		}
+
+		private void UpdateRelaySettings(int _relay, int _handle) {
+			relays[_relay].Loop = videoPlayerLoop[_handle];
+			relays[_relay].Mute = videoPlayerMute[_handle];
+			relays[_relay].Volume = videoPlayerVolumes[_handle];
+			relays[_relay].AutomaticResync = videoPlayerResync[_handle];
 		}
 
 		private void UpdateRelayAudio(int _relay, AudioSource[] _templateAudio, float _templateVolume, bool _hasAudio) {
