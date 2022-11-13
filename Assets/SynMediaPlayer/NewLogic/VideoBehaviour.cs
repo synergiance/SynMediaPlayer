@@ -1,10 +1,7 @@
 ﻿
 using System;
-using Synergiance.MediaPlayer.Diagnostics;
 using Synergiance.MediaPlayer.Interfaces;
-using UdonSharp;
 using UnityEngine;
-using VRC.SDK3.Components.Video;
 
 namespace Synergiance.MediaPlayer {
 	public class VideoBehaviour : SMPMediaController {
@@ -44,22 +41,6 @@ namespace Synergiance.MediaPlayer {
 				ExpandVideoCallbacksArray();
 			videoCallbacks[numVideoCallbacks++] = _callback;
 		}
-
-		public virtual void _SecurityUnlocked() { SendVideoCallback(CallbackEvent.PlayerUnlocked); }
-		public virtual void _SecurityLocked() { SendVideoCallback(CallbackEvent.PlayerLocked); }
-		public virtual void _GainedPrivileges() { SendVideoCallback(CallbackEvent.GainedPermissions); }
-
-		public virtual void _RelayVideoLoading() { SendVideoCallback(CallbackEvent.MediaLoading); }
-		public virtual void _RelayVideoReady() { SendVideoCallback(CallbackEvent.MediaReady); }
-		public virtual void _RelayVideoError(MediaError _error) { SendErrorCallback(_error); }
-		public virtual void _RelayVideoStart() { SendVideoCallback(CallbackEvent.MediaStart); }
-		public virtual void _RelayVideoPlay() { SendVideoCallback(CallbackEvent.MediaPlay); }
-		public virtual void _RelayVideoPause() { SendVideoCallback(CallbackEvent.MediaPause); }
-		public virtual void _RelayVideoEnd() { SendVideoCallback(CallbackEvent.MediaEnd); }
-		public virtual void _RelayVideoLoop() { SendVideoCallback(CallbackEvent.MediaLoop); }
-		public virtual void _RelayVideoNext() { SendVideoCallback(CallbackEvent.MediaNext); }
-		public virtual void _RelayVideoQueueLoading() { SendVideoCallback(CallbackEvent.QueueMediaLoading); }
-		public virtual void _RelayVideoQueueReady() { SendVideoCallback(CallbackEvent.QueueMediaReady); }
 
 		/// <summary>
 		/// Sends a callback to all registered callbacks

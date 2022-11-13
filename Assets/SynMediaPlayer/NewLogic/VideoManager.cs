@@ -27,7 +27,7 @@ namespace Synergiance.MediaPlayer {
 	/// </summary>
 	public enum MediaError {
 		RateLimited, UntrustedLink, UntrustedQueueLink, InvalidLink, InvalidQueueLink, LoadingError, LoadingErrorQueue,
-		Unknown, Uninitialized, Invalid, OutOfRange, NoMedia, Internal, Success
+		Unknown, Uninitialized, Invalid, OutOfRange, NoMedia, Internal, Success, NoError
 	}
 
 	[DefaultExecutionOrder(-30), UdonBehaviourSyncMode(BehaviourSyncMode.None)]
@@ -78,6 +78,7 @@ namespace Synergiance.MediaPlayer {
 
 		// Video states
 		private bool[] isPlaying;
+		private bool[] isPreroll;
 
 		// Video load queue
 		private VRCUrl[] videosToLoad; // Queue of videos to load
@@ -438,6 +439,30 @@ namespace Synergiance.MediaPlayer {
 			return relays[relay]._Play();
 		}
 
+		public bool _PrePlayNext(int _handle) {
+			int relay = GetSecondaryRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			Log($"Pre-playing next video relay {relay} using handle {_handle}");
+			if (Mathf.Abs(relays[_handle].Time) > 0.01f) relays[_handle].Time = 0;
+			return relays[relay]._Play();
+		}
+
+		public bool _PrerollNext(int _handle) {
+			int relay = GetSecondaryRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			Log($"Starting preroll on next video relay {relay} using handle {_handle}");
+			if (Mathf.Abs(relays[_handle].Time) > 0.01f) relays[_handle].Time = 0;
+			return relays[relay]._Play();
+		}
+
+		public bool _StopPrerollNext(int _handle) {
+			int relay = GetSecondaryRelayAtHandle(_handle);
+			if (relay < 0) return false;
+			Log($"Stopping preroll on next video relay {relay} using handle {_handle}");
+			relays[_handle].Time = 0;
+			return relays[_handle]._Pause();
+		}
+
 		/// <summary>
 		/// Pause a given video player
 		/// </summary>
@@ -647,17 +672,21 @@ namespace Synergiance.MediaPlayer {
 				lastError = MediaError.Invalid;
 				return -1;
 			}
+
 			if (_handle < 0 || _handle > primaryHandles.Length) {
 				LogError("Handle index out of bounds!");
 				lastError = MediaError.OutOfRange;
 				return -1;
 			}
+
 			int relay = primaryHandles[_handle];
 			if (relay < 0) {
 				LogError("Handle not bound!");
 				lastError = MediaError.NoMedia;
 				return -1;
 			}
+
+			lastError = MediaError.NoError;
 			return relay;
 		}
 
@@ -666,17 +695,21 @@ namespace Synergiance.MediaPlayer {
 				lastError = MediaError.Invalid;
 				return -1;
 			}
+
 			if (_handle < 0 || _handle > primaryHandles.Length) {
 				LogError("Handle index out of bounds!");
 				lastError = MediaError.OutOfRange;
 				return -1;
 			}
+
 			int relay = secondaryHandles[_handle];
 			if (relay < 0) {
 				LogError("Handle not bound!");
 				lastError = MediaError.NoMedia;
 				return -1;
 			}
+
+			lastError = MediaError.NoError;
 			return relay;
 		}
 
@@ -700,11 +733,13 @@ namespace Synergiance.MediaPlayer {
 				LogError("No unbound compatible relays!");
 				return -1;
 			}
+
 			Log($"Found unbound relay: {relay}");
 			if (!BindRelayToHandle(_handle, relay, _secondary)) {
 				LogError("Unable to bind!");
 				return -1;
 			}
+
 			return relay;
 		}
 
@@ -713,9 +748,11 @@ namespace Synergiance.MediaPlayer {
 			while (relay >= 0) {
 				if (relays[relay].VideoType == _videoType)
 					return relay;
+
 				if (++relay >= relays.Length) break;
 				relay = GetFirstUnboundRelay(relay);
 			}
+
 			return -1;
 		}
 
@@ -725,16 +762,19 @@ namespace Synergiance.MediaPlayer {
 				lastError = MediaError.OutOfRange;
 				return false;
 			}
+
 			if (_handle < 0 || primaryHandles == null || _handle >= primaryHandles.Length) {
 				LogError("Handle out of bounds, cannot bind!");
 				lastError = MediaError.OutOfRange;
 				return false;
 			}
+
 			if (relayHandles[_relay] >= 0) {
 				LogError("Relay still bound!");
 				lastError = MediaError.Internal;
 				return false;
 			}
+
 			if (_secondary) {
 				if (secondaryHandles[_handle] >= 0) {
 					LogError("Secondary handle still bound!");
@@ -748,6 +788,8 @@ namespace Synergiance.MediaPlayer {
 					return false;
 				}
 			}
+
+			lastError = MediaError.NoError;
 
 			// Actual bind
 			if (_secondary) secondaryHandles[_handle] = _relay;
@@ -767,12 +809,14 @@ namespace Synergiance.MediaPlayer {
 				lastError = MediaError.OutOfRange;
 				return -1;
 			}
+
 			for (int i = _startOffset; i < relayHandles.Length; i++) {
 				if (relayHandles[i] >= 0) continue;
 				Log($"Found unbound relay at index {i}");
-				lastError = MediaError.Unknown;
+				lastError = MediaError.NoError;
 				return i;
 			}
+
 			Log("Found no unbound relay");
 			lastError = MediaError.Unknown;
 			return -1;
@@ -785,6 +829,8 @@ namespace Synergiance.MediaPlayer {
 				lastError = MediaError.Internal;
 				return;
 			}
+
+			lastError = MediaError.NoError;
 
 			relayHandles[_relay] = -1;
 			if (relayIsSecondary[_relay])
@@ -830,7 +876,7 @@ namespace Synergiance.MediaPlayer {
 				return -1;
 			}
 
-			lastError = MediaError.Unknown;
+			lastError = MediaError.NoError;
 			return relayHandles[_id];
 		}
 
@@ -860,7 +906,7 @@ namespace Synergiance.MediaPlayer {
 				Log($"Ignoring Video End callback from relay {_id}");
 				return;
 			}
-			int nextRelay;
+
 			relays[_id]._Stop();
 			if (!HandleHasQueue(handle)) {
 				Log($"Video End on handle {handle} with no queued video.");
@@ -868,7 +914,10 @@ namespace Synergiance.MediaPlayer {
 				lastError = MediaError.Unknown;
 				return;
 			}
-			_PlayNext(handle);
+
+			lastError = MediaError.NoError;
+			if (!relays[secondaryHandles[handle]].IsPlaying) _PlayNext(handle);
+			else SwapRelayToPrimary(handle);
 			SendRelayEvent(CallbackEvent.MediaNext, _id);
 		}
 

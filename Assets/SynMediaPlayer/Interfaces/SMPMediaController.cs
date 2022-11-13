@@ -12,11 +12,13 @@ namespace Synergiance.MediaPlayer.Interfaces {
 		protected int MediaControllerId { get; private set; } = -1;
 
 		/// <summary>
-		/// Sets and returns the video manager associated with this media controller.
+		/// Sets and returns the video manager associated with this media
+		/// controller. This cannot be modified after registering with video
+		/// manager. We do not want to lose this reference.
 		/// </summary>
 		protected VideoManager VideoManager {
 			set {
-				if (MediaControllerId >= 0) {
+				if (MediaControllerValid) {
 					LogError("Error: Video Manager cannot be set after registering!");
 					return;
 				}

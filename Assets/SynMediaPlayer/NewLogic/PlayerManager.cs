@@ -5,7 +5,7 @@ using VRC.SDK3.Components.Video;
 using VRC.SDKBase;
 
 namespace Synergiance.MediaPlayer {
-	public enum ControllerSetting {
+	public enum PlayerSetting {
 		Volume, Mute, Loop, Lock, Resync, Playback, Time, Duration, Link, MediaType, Active, State
 	}
 
@@ -33,6 +33,20 @@ namespace Synergiance.MediaPlayer {
 		private bool isValid;
 
 		private bool hasVideoPlayers;
+
+		#region Public Read Variables
+		public float volume;
+		public bool mute;
+		public bool loop;
+		public bool isLocked;
+		public bool resync;
+		public float time;
+		public float duration;
+		public VRCUrl link;
+		public MediaType mediaType;
+		public bool active;
+		public PlayerState state;
+		#endregion
 
 		void Start() {
 			Initialize();
@@ -255,6 +269,35 @@ namespace Synergiance.MediaPlayer {
 			Log("Checking video players");
 			foreach (VideoPlayer videoPlayer in videoPlayers)
 				videoPlayer._UpdateSync();
+		}
+
+		public void _ChangeSetting(PlayerSetting _setting, int _id) {
+			switch (_setting) {
+				case PlayerSetting.Volume:
+					break;
+				case PlayerSetting.Mute:
+					break;
+				case PlayerSetting.Loop:
+					break;
+				case PlayerSetting.Lock:
+					break;
+				case PlayerSetting.Resync:
+					break;
+				case PlayerSetting.Playback:
+					break;
+				case PlayerSetting.Time:
+					break;
+				case PlayerSetting.Duration:
+					break;
+				case PlayerSetting.Link:
+					break;
+				case PlayerSetting.MediaType:
+					break;
+				case PlayerSetting.Active:
+					break;
+				case PlayerSetting.State:
+					break;
+			}
 		}
 
 		public void _SendEvent(CallbackEvent _event, int _id) {
