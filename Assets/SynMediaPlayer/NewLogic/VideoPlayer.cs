@@ -96,7 +96,7 @@ namespace Synergiance.MediaPlayer {
 		#endregion
 
 		#region Video Sync Variables
-		private PlayerState syncMode;
+		private PlayerState playerState;
 		private const float ResyncThreshold = 5.0f;
 		private const float ResyncCooldown = 30.0f;
 		private const float ResyncDetect = 0.1f;
@@ -444,14 +444,14 @@ namespace Synergiance.MediaPlayer {
 			if (!isValid) return;
 
 			if (syncIndex != queue.SyncIndex) {
-				syncMode = PlayerState.WaitForData;
+				playerState = PlayerState.WaitForData;
 				return;
 			}
 
 			VRCUrl link = queue.CurrentVideo;
 			if (Equals(link, currentVideoLink)) {
-				if (syncMode == PlayerState.WaitForData) {
-					syncMode = PlayerState.Normal;
+				if (playerState == PlayerState.WaitForData) {
+					playerState = PlayerState.Normal;
 				}
 				return;
 			}
@@ -463,7 +463,7 @@ namespace Synergiance.MediaPlayer {
 			bool isLowLatency = (linkType | LinkLowLatencyBit) > 0;
 			VideoType videoType = canBeVideo ? VideoType.Video : isLowLatency ? VideoType.LowLatency : VideoType.Stream;
 			LoadMedia(currentVideoLink, videoType, playImmediately);
-			syncMode = PlayerState.WaitForLoad;
+			playerState = PlayerState.WaitForLoad;
 		}
 		#endregion
 
@@ -546,9 +546,9 @@ namespace Synergiance.MediaPlayer {
 		#region Video Sync
 		public void _UpdateSync() {
 			Log("Update Sync");
-			if (!IsReady || (paused && syncMode == 0)) return;
+			if (!IsReady || (paused && playerState == 0)) return;
 			drift = RawTime - CurrentTime;
-			switch (syncMode) {
+			switch (playerState) {
 				case PlayerState.Resync:
 					UpdateResync();
 					break;
@@ -584,17 +584,17 @@ namespace Synergiance.MediaPlayer {
 
 		private void UpdateNormal() {
 			if (Mathf.Abs(drift) > ResyncThreshold) {
-				syncMode = PlayerState.Resync;
+				playerState = PlayerState.Resync;
 				UpdateResync();
 			}
 
 			if (drift > DriftTolerance) {
-				syncMode = PlayerState.WaitForSync;
+				playerState = PlayerState.WaitForSync;
 				UpdateWaitSync();
 			}
 
 			if (drift < -DriftTolerance) {
-				syncMode = PlayerState.CatchUp;
+				playerState = PlayerState.CatchUp;
 				UpdateCatchUp();
 			}
 		}
@@ -725,7 +725,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void SetSyncMode(PlayerState _mode, bool _callNormal = false) {
 			Log($"Setting sync mode to: {GetResyncModeName(_mode)} ({(int)_mode})");
-			syncMode = _mode;
+			playerState = _mode;
 			if (!_callNormal) return;
 			UpdateNormal();
 		}
@@ -788,7 +788,7 @@ namespace Synergiance.MediaPlayer {
 
 			// TODO: Determine what to do when variables change
 			if (cSyncIndex) _CheckQueue();
-			if (cPaused && syncMode != PlayerState.WaitForData) {
+			if (cPaused && playerState != PlayerState.WaitForData) {
 				if (paused) {
 					DirectPauseVideo();
 				} else {
@@ -823,23 +823,24 @@ namespace Synergiance.MediaPlayer {
 
 		#region Induced Direct Methods
 		private void DirectPlayVideo() {
-			//
+			// TODO: Play video
+			playerState = PlayerState.WaitToPlay;
 		}
 
 		private void DirectPauseVideo() {
-			//
+			// TODO: Pause video
 		}
 
 		private void DirectSeekPaused() {
-			//
+			// TODO: Set pause time
 		}
 
 		private void DirectSeekVideo() {
-			//
+			// TODO: Set start offset
 		}
 
 		private void DirectChangeMediaType() {
-			//
+			// TODO: Determine whether we need to reload media
 		}
 		#endregion
 

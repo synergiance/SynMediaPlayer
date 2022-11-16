@@ -165,7 +165,8 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public int _Register(SMPMediaController _mediaController, string _name) {
-			if (numVideoPlayers >= primaryHandles.Length && !ResizeVideoPlayerArray(numVideoPlayers + VideoArrayIncrement)) {
+			if ((primaryHandles == null || numVideoPlayers >= primaryHandles.Length) &&
+			    !ResizeVideoPlayerArray(numVideoPlayers + VideoArrayIncrement)) {
 				LogWarning("Unable to resize video array!");
 				return -1;
 			}
