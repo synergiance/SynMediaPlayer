@@ -84,6 +84,8 @@ namespace Synergiance.MediaPlayer {
 		/// </summary>
 		private const int ArrayIncrement = 16;
 
+		#region Editor Helper Functions
+
 		#if !COMPILER_UDONSHARP && UNITY_EDITOR
 		public void RebuildSerialized(bool _fullRebuild) {
 			// We will make numPlaylists 0 if it's null, which will prevent null data access
@@ -278,9 +280,8 @@ namespace Synergiance.MediaPlayer {
 		private Video[] LoadPlaylistFrom(string _path) {
 			List<Video> videos = new List<Video>();
 			StreamReader reader = new StreamReader(_path);
-			bool reachedEnd = false;
 			string line1 = null, line2 = null, line3 = null;
-			while (!reachedEnd) {
+			while (true) {
 				if (!ReadLine(ref line1, reader)) break;
 				if (!ReadLine(ref line2, reader)) break;
 				if (!ReadLine(ref line3, reader)) break;
@@ -336,6 +337,8 @@ namespace Synergiance.MediaPlayer {
 			return found;
 		}
 		#endif
+
+		#endregion
 
 		void Start() {
 			Initialize();

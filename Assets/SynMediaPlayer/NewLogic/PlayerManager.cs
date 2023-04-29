@@ -20,10 +20,6 @@ namespace Synergiance.MediaPlayer {
 		private string[] videoControllerPreferred;
 		private VideoController[] videoControllers;
 
-		// Sync timing
-		private const float CheckCooldown = 0.1f;
-		private float lastCheck = -CheckCooldown;
-
 		public int NumVideoPlayers => hasVideoPlayers ? videoPlayers.Length : 0;
 
 		protected override string DebugName => "Player Manager";
@@ -261,14 +257,6 @@ namespace Synergiance.MediaPlayer {
 			if (isValid && hasVideoPlayers && _id >= 0 && _id < videoPlayers.Length) return true;
 			LogWarning("Invalid video player ID!");
 			return false;
-		}
-
-		private void Update() {
-			if (!isValid || !hasVideoPlayers) return;
-			if (lastCheck + CheckCooldown > Time.time) return;
-			Log("Checking video players");
-			foreach (VideoPlayer videoPlayer in videoPlayers)
-				videoPlayer._UpdateSync();
 		}
 
 		public void _ChangeSetting(PlayerSetting _setting, int _id) {

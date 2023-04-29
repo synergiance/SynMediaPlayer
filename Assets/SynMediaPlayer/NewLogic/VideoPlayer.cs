@@ -17,8 +17,8 @@ namespace Synergiance.MediaPlayer {
 	/// Modes of operation for an instance of a media player in SMP
 	/// </summary>
 	public enum PlayerState {
-		Normal, Resync, CatchUp, WaitForSync, WaitForVideo, Seek, WaitForLoad,
-		WaitToPlay, WaitToPause, WaitForData
+		Playing, Resync, CatchUp, WaitForSync, WaitForVideo, Seek, WaitForLoad,
+		WaitToPlay, WaitToPause, WaitForData, Idle
 	}
 
 	/// <summary>
@@ -97,6 +97,7 @@ namespace Synergiance.MediaPlayer {
 
 		#region Video Sync Variables
 		private PlayerState playerState;
+		private const float CheckCooldown = 0.1f;
 		private const float ResyncThreshold = 5.0f;
 		private const float ResyncCooldown = 30.0f;
 		private const float ResyncDetect = 0.1f;
@@ -108,12 +109,12 @@ namespace Synergiance.MediaPlayer {
 		private const float ResyncTimeout = 3.0f;
 		private const float ReloadTimeout = 10.0f;
 		private const float BacktrackOnResume = 1.0f;
-		private const float ResumeGracePeriod = 0.5f;
-		private const float PauseDelay = 0.5f;
+		private const float ResumeGracePeriod = 1.0f;
 		private float drift;
 		private float nextResync = -1;
 		private float lastResync = -1;
 		private float timeAtLastResync = -1;
+		private float lastCheck = -CheckCooldown;
 		#endregion
 
 		#region Video Playlist Data
@@ -202,6 +203,16 @@ namespace Synergiance.MediaPlayer {
 				Sync();
 			}
 		}
+
+		public float CurrentTime {
+			get => IsReady ? paused ? pauseTime : Time.time - beginTime : 0;
+			set {
+				if (!IsReady || Math.Abs(value - (paused ? pauseTime : Time.time - beginTime)) < 0.001f) return;
+				if (!CheckValidAndAccess("seek")) return;
+				Log("Seeking");
+				TranslatedBeginNetTime = Time.time - value;
+			}
+		}
 		#endregion
 
 		#region Synced Variables
@@ -222,6 +233,19 @@ namespace Synergiance.MediaPlayer {
 				beginNetTimeSync = value;
 				Log("Setting begin net time to " + value);
 				Sync();
+			}
+		}
+
+		private float TranslatedBeginNetTime {
+			set {
+				int differenceInMilliseconds = Mathf.FloorToInt((Time.time - value) * 1000);
+				BeginNetTime = Networking.GetServerTimeInMilliseconds() - differenceInMilliseconds;
+			}
+			get {
+				int differenceInMilliseconds = Networking.GetServerTimeInMilliseconds() - BeginNetTime;
+				float translatedTime = Time.time - differenceInMilliseconds * 0.001f;
+				if (differenceInMilliseconds > 0) translatedTime -= uint.MaxValue * 0.001f;
+				return translatedTime;
 			}
 		}
 
@@ -249,7 +273,6 @@ namespace Synergiance.MediaPlayer {
 		#region Accessors
 		public bool IsReady { private set; get; }
 		public bool UnlockedOrHasAccess => !IsLocked || securityManager.HasAccess;
-		public float CurrentTime => IsReady ? paused ? pauseTime : Time.time - beginTime : 0;
 		public float RawTime => IsReady ? MediaTime : 0;
 		public bool Playing => !paused;
 		public float Duration => GetDuration();
@@ -317,6 +340,7 @@ namespace Synergiance.MediaPlayer {
 			Log("Successfully validated!");
 
 			isLocked = lockByDefault && securityManager.HasSecurity;
+			playerState = PlayerState.Idle;
 			isValid = true;
 		}
 		#endregion
@@ -451,7 +475,7 @@ namespace Synergiance.MediaPlayer {
 			VRCUrl link = queue.CurrentVideo;
 			if (Equals(link, currentVideoLink)) {
 				if (playerState == PlayerState.WaitForData) {
-					playerState = PlayerState.Normal;
+					playerState = PlayerState.Playing;
 				}
 				return;
 			}
@@ -544,8 +568,11 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		#region Video Sync
+		private void Update() {
+			_UpdateSync();
+		}
+
 		public void _UpdateSync() {
-			Log("Update Sync");
 			if (!IsReady || (paused && playerState == 0)) return;
 			drift = RawTime - CurrentTime;
 			switch (playerState) {
@@ -576,13 +603,26 @@ namespace Synergiance.MediaPlayer {
 				case PlayerState.WaitForData:
 					UpdateWaitData();
 					break;
-				default: // Default to normal
-					UpdateNormal();
+				case PlayerState.Playing:
+					UpdatePlaying();
+					break;
+				case PlayerState.Idle:
+					break;
+				default:
+					playerState = PlayerState.Playing;
 					break;
 			}
 		}
 
-		private void UpdateNormal() {
+		private bool WaitForCooldown() {
+			if (lastCheck + CheckCooldown > Time.time) return true;
+			lastCheck = Time.time;
+			return false;
+		}
+
+		private void UpdatePlaying() {
+			if (WaitForCooldown()) return;
+
 			if (Mathf.Abs(drift) > ResyncThreshold) {
 				playerState = PlayerState.Resync;
 				UpdateResync();
@@ -610,7 +650,7 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			if (drift > -DriftTolerance) {
-				SetSyncMode(PlayerState.Normal, true);
+				SetSyncMode(PlayerState.Playing, true);
 				return;
 			}
 
@@ -623,7 +663,7 @@ namespace Synergiance.MediaPlayer {
 			// TODO: Get Playing status and figure out what I wanted to do with it
 
 			if (drift < DriftTolerance) {
-				SetSyncMode(PlayerState.Normal, true);
+				SetSyncMode(PlayerState.Playing, true);
 				return;
 			}
 
@@ -687,7 +727,7 @@ namespace Synergiance.MediaPlayer {
 		private void UpdateWaitPause() {
 			if (RawTime < PauseTime) return;
 			PauseMedia();
-			SetSyncMode(PlayerState.Normal);
+			SetSyncMode(PlayerState.Playing);
 			// TODO: Send callback for pause
 		}
 
@@ -712,7 +752,7 @@ namespace Synergiance.MediaPlayer {
 		// ReSharper disable Unity.PerformanceAnalysis
 		private bool CheckDrift(float _threshold) {
 			if (Mathf.Abs(drift) > _threshold) return false;
-			SetSyncMode(PlayerState.Normal, true);
+			SetSyncMode(PlayerState.Playing, true);
 			return true;
 		}
 
@@ -727,7 +767,7 @@ namespace Synergiance.MediaPlayer {
 			Log($"Setting sync mode to: {GetResyncModeName(_mode)} ({(int)_mode})");
 			playerState = _mode;
 			if (!_callNormal) return;
-			UpdateNormal();
+			UpdatePlaying();
 		}
 
 		private string GetResyncModeName(PlayerState _mode) {
@@ -796,13 +836,7 @@ namespace Synergiance.MediaPlayer {
 				}
 			}
 
-			if (cLocked) {
-				if (isLocked) {
-					// Lock
-				} else {
-					// Unlock
-				}
-			}
+			if (cLocked) SendVideoCallback(isLocked ? CallbackEvent.PlayerLocked : CallbackEvent.PlayerUnlocked);
 
 			if (cPauseTime && paused) {
 				// Seek to a different position and respool video
@@ -828,15 +862,16 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void DirectPauseVideo() {
-			// TODO: Pause video
+			PauseMedia();
 		}
 
 		private void DirectSeekPaused() {
-			// TODO: Set pause time
+			MediaTime = pauseTime;
 		}
 
 		private void DirectSeekVideo() {
-			// TODO: Set start offset
+			beginTime = TranslatedBeginNetTime;
+			playerState = PlayerState.Seek;
 		}
 
 		private void DirectChangeMediaType() {

@@ -293,6 +293,7 @@ MonoBehaviour:
   debug: 1
   diagnostics: {fileID: 584252724}
   securityManager: {fileID: 2070887407}
+  lastError: 7
   playerManager: {fileID: 1573663344}
   defaultPlayer: Video Player 2
   disableSwitchingSource: 0
@@ -1300,6 +1301,7 @@ MonoBehaviour:
   debug: 1
   diagnostics: {fileID: 584252724}
   securityManager: {fileID: 2070887407}
+  lastError: 7
   playerManager: {fileID: 1573663344}
   defaultPlayer: Video Player 1
   disableSwitchingSource: 0
@@ -1397,11 +1399,11 @@ MonoBehaviour:
   - {fileID: 1561205260}
   - {fileID: 927178380}
   - {fileID: 883825465}
-  playerManager: {fileID: 1573663344}
   displayManager: {fileID: 2088542773}
   audioLink: {fileID: 0}
   relayIdentifier: 0
   relayVideoError: 0
+  lastError: 7
 --- !u!4 &1009701419
 Transform:
   m_ObjectHideFlags: 0
@@ -1639,6 +1641,11 @@ PrefabInstance:
       propertyPath: diagnostics
       value: 
       objectReference: {fileID: 584252724}
+    - target: {fileID: 6943983999584890998, guid: c624bfa2af1dc7b438dfeeb3d35bdc15,
+        type: 3}
+      propertyPath: securityManager
+      value: 
+      objectReference: {fileID: 2070887407}
     - target: {fileID: 6943983999584890998, guid: c624bfa2af1dc7b438dfeeb3d35bdc15,
         type: 3}
       propertyPath: serializationData.Prefab
@@ -2203,6 +2210,18 @@ MonoBehaviour:
   diagnostics: {fileID: 584252724}
   playlistManager: {fileID: 621912733}
   videoManager: {fileID: 1009701418}
+  volume: 0
+  mute: 0
+  loop: 0
+  isLocked: 0
+  resync: 0
+  time: 0
+  duration: 0
+  link:
+    url: 
+  mediaType: 0
+  active: 0
+  state: 0
 --- !u!4 &2061942653 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6943984000944056892, guid: c624bfa2af1dc7b438dfeeb3d35bdc15,
@@ -2647,6 +2666,11 @@ PrefabInstance:
       propertyPath: diagnostics
       value: 
       objectReference: {fileID: 584252724}
+    - target: {fileID: 6943983999584890998, guid: c624bfa2af1dc7b438dfeeb3d35bdc15,
+        type: 3}
+      propertyPath: securityManager
+      value: 
+      objectReference: {fileID: 2070887407}
     - target: {fileID: 6943983999584890998, guid: c624bfa2af1dc7b438dfeeb3d35bdc15,
         type: 3}
       propertyPath: serializationData.Prefab
