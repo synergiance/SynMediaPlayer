@@ -109,7 +109,7 @@ namespace Synergiance.MediaPlayer {
 		private const float ResyncTimeout = 3.0f;
 		private const float ReloadTimeout = 10.0f;
 		private const float BacktrackOnResume = 1.0f;
-		private const float ResumeGracePeriod = 1.0f;
+		private const float ResumeGracePeriod = 2.0f;
 		private float drift;
 		private float nextResync = -1;
 		private float lastResync = -1;

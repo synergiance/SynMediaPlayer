@@ -5,6 +5,10 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace Synergiance.MediaPlayer.Diagnostics {
+	public enum DiagnosticLogType {
+		Info, Warning, Error
+	}
+
 	public class Diagnostics : UdonSharpBehaviour {
 		[SerializeField] private bool globalDebug;
 		[SerializeField] private bool diagnosticDebug;
@@ -144,7 +148,7 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 		///     object if null</param>
 		public void _Log(int _id, string _message, Object _context = null) {
 			if (!globalDebug) return;
-			LogType(0, _id, _message, _context);
+			LogType(DiagnosticLogType.Info, _id, _message, _context);
 		}
 
 		/// <summary>
@@ -156,7 +160,7 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 		/// <param name="_context">Object to attach as context, uses current
 		///     object if null</param>
 		public void _LogWarning(int _id, string _message, Object _context = null) {
-			LogType(1, _id, _message, _context);
+			LogType(DiagnosticLogType.Warning, _id, _message, _context);
 		}
 
 		/// <summary>
@@ -168,22 +172,25 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 		/// <param name="_context">Object to attach as context, uses current
 		///     object if null</param>
 		public void _LogError(int _id, string _message, Object _context = null) {
-			LogType(2, _id, _message, _context);
+			LogType(DiagnosticLogType.Error, _id, _message, _context);
 		}
 
-		private void LogType(int _type, int _id, string _message, Object _context) {
+		private void LogType(DiagnosticLogType _type, int _id, string _message, Object _context) {
 			Initialize();
 			if (_id >= numRegistered || _id < 0) return;
 			string message = prefixes[_id] + _message;
 			switch (_type) {
-				case 0:
+				case DiagnosticLogType.Info:
 					Debug.Log(message, _context);
 					break;
-				case 1:
+				case DiagnosticLogType.Warning:
 					Debug.LogWarning(message, _context);
 					break;
-				case 2:
+				case DiagnosticLogType.Error:
 					Debug.LogError(message, _context);
+					break;
+				default:
+					Debug.LogError($"{prefixes[_id]}Invalid log type! ({(int)_type}) This code path should never run.\n{message}", _context);
 					break;
 			}
 		}
