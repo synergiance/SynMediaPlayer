@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using VRC.SDK3.Components;
 
 namespace Synergiance.MediaPlayer {
 	/// <summary>
@@ -8,6 +9,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private PlayerManager playerManager;
 		[SerializeField] private string defaultPlayer;
 		[SerializeField] private bool disableSwitchingSource;
+		[SerializeField] private VRCUrlInputField urlField;
 		private VideoDisplay display;
 		private bool displayLinked;
 		private bool settingDisplay;
@@ -20,6 +22,8 @@ namespace Synergiance.MediaPlayer {
 
 		protected override string DebugName => "Video Controller";
 		protected override string DebugColor => ColorToHtmlStringRGB(new Color(0.15f, 0.45f, 0.65f));
+
+		private const string NotHookedUpWarningMsg = "This video controller is not hooked up to a video player.";
 
 		void Start() {
 			Initialize();
@@ -151,10 +155,59 @@ namespace Synergiance.MediaPlayer {
 			return true;
 		}
 
-		public void _Play() {}
-		public void _Pause() {}
-		public void _Stop() {}
-		public void _PlayPause() {}
-		public void _PlayPauseStop() {}
+		private bool NotHookedUp() {
+			bool notHookedUp = currentId < 0;
+			if (notHookedUp) LogWarning(NotHookedUpWarningMsg);
+			return notHookedUp;
+		}
+
+		public void _Play() {
+			if (NotHookedUp()) return;
+			Log("Click play");
+			playerManager._Play(currentId);
+		}
+
+		public void _Pause() {
+			if (NotHookedUp()) return;
+			Log("Click pause");
+			playerManager._Pause(currentId);
+		}
+
+		public void _Stop() {
+			if (NotHookedUp()) return;
+			Log("Click stop");
+			playerManager._Stop(currentId);
+		}
+
+		public void _PlayPause() {
+			if (NotHookedUp()) return;
+			Log("Click play/pause");
+			LogWarning("Combined buttons not implemented!");
+		}
+
+		public void _PlayPauseStop() {
+			if (NotHookedUp()) return;
+			Log("Click play/pause/stop");
+			LogWarning("Combined buttons not implemented!");
+		}
+
+		public void _Previous() {
+			if (NotHookedUp()) return;
+			Log("Click previous");
+			LogWarning("Queue not implemented!");
+		}
+
+		public void _Next() {
+			if (NotHookedUp()) return;
+			Log("Click next");
+			LogWarning("Queue not implemented!");
+		}
+
+		public void _Load() {
+			if (NotHookedUp()) return;
+			Log("Click load");
+			Log("Found URL: " + urlField.GetUrl().ToString());
+			playerManager._LoadVideo(currentId, urlField.GetUrl(), true);
+		}
 	}
 }

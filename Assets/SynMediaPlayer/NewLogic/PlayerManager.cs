@@ -255,8 +255,43 @@ namespace Synergiance.MediaPlayer {
 		private bool ValidateId(int _id) {
 			Initialize();
 			if (isValid && hasVideoPlayers && _id >= 0 && _id < videoPlayers.Length) return true;
-			LogWarning("Invalid video player ID!");
+			LogWarning($"Invalid video player ID! ({_id})");
 			return false;
+		}
+
+		public void _Play(int _id) {
+			if (!ValidateId(_id)) return;
+			videoPlayers[_id]._Play();
+		}
+
+		public void _Pause(int _id) {
+			if (!ValidateId(_id)) return;
+			videoPlayers[_id]._Pause();
+		}
+
+		public void _Stop(int _id) {
+			if (!ValidateId(_id)) return;
+			videoPlayers[_id]._Stop();
+		}
+
+		public void _LoadVideo(int _id, VRCUrl _link, bool _playImmediately = false) {
+			if (!ValidateId(_id)) return;
+			videoPlayers[_id]._LoadVideo(_link, _playImmediately);
+		}
+
+		public void _LoadFromPlaylist(int _id, int _listType, int _listId, int _videoIdx, string _variant = null, bool _playImmediately = false) {
+			if (!ValidateId(_id)) return;
+			videoPlayers[_id]._LoadFromPlaylist(_listType, _listId, _videoIdx, _variant, _playImmediately);
+		}
+
+		public void _Lock(int _id) {
+			if (!ValidateId(_id)) return;
+			videoPlayers[_id]._Lock();
+		}
+
+		public void _Unlock(int _id) {
+			if (!ValidateId(_id)) return;
+			videoPlayers[_id]._Unlock();
 		}
 
 		public void _ChangeSetting(PlayerSetting _setting, int _id) {
