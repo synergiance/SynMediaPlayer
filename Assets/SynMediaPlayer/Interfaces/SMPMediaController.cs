@@ -101,6 +101,8 @@ namespace Synergiance.MediaPlayer.Interfaces {
 			}
 
 			MediaControllerId = VideoManager._Register(this, _name);
+			if (!MediaControllerValid) LogWarning("Registering media controller failed!");
+			else Log($"Successfully registered with ID {MediaControllerId}");
 			return MediaControllerValid;
 		}
 

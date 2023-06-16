@@ -667,6 +667,36 @@ namespace Synergiance.MediaPlayer {
 			UpdateRelayAudio(relay, sources, volume, hasAudio);
 		}
 
+		public bool _HasVideo(int _handle) {
+			if (!isValid) {
+				lastError = MediaError.Invalid;
+				return false;
+			}
+
+			if (_handle < 0 || _handle >= primaryHandles.Length) {
+				LogError($"Handle index {_handle} out of bounds!");
+				lastError = MediaError.OutOfRange;
+				return false;
+			}
+
+			return primaryHandles[_handle] >= 0;
+		}
+
+		public bool _HasQueuedVideo(int _handle) {
+			if (!isValid) {
+				lastError = MediaError.Invalid;
+				return false;
+			}
+
+			if (_handle < 0 || _handle >= secondaryHandles.Length) {
+				LogError($"Handle index {_handle} out of bounds!");
+				lastError = MediaError.OutOfRange;
+				return false;
+			}
+
+			return secondaryHandles[_handle] >= 0;
+		}
+
 		// ReSharper disable Unity.PerformanceAnalysis
 		private int GetPrimaryRelayAtHandle(int _handle) {
 			if (!isValid) {
@@ -674,15 +704,15 @@ namespace Synergiance.MediaPlayer {
 				return -1;
 			}
 
-			if (_handle < 0 || _handle > primaryHandles.Length) {
-				LogError("Handle index out of bounds!");
+			if (_handle < 0 || _handle >= primaryHandles.Length) {
+				LogError($"Handle index {_handle} out of bounds!");
 				lastError = MediaError.OutOfRange;
 				return -1;
 			}
 
 			int relay = primaryHandles[_handle];
 			if (relay < 0) {
-				LogError("Handle not bound!");
+				LogError($"Handle {_handle} not bound!");
 				lastError = MediaError.NoMedia;
 				return -1;
 			}
@@ -697,7 +727,7 @@ namespace Synergiance.MediaPlayer {
 				return -1;
 			}
 
-			if (_handle < 0 || _handle > primaryHandles.Length) {
+			if (_handle < 0 || _handle >= secondaryHandles.Length) {
 				LogError("Handle index out of bounds!");
 				lastError = MediaError.OutOfRange;
 				return -1;

@@ -394,6 +394,7 @@ namespace Synergiance.MediaPlayer {
 
 		public void _Play() {
 			if (!CheckValidAndAccess("play")) return;
+			if (!CheckHasVideo()) return;
 
 			Log("Playing");
 			Paused = false;
@@ -402,6 +403,7 @@ namespace Synergiance.MediaPlayer {
 
 		public void _Pause() {
 			if (!CheckValidAndAccess("pause")) return;
+			if (!CheckHasVideo()) return;
 
 			Log("Pausing");
 			Paused = true;
@@ -410,11 +412,26 @@ namespace Synergiance.MediaPlayer {
 
 		public void _Stop() {
 			if (!CheckValidAndAccess("stop")) return;
+			if (!CheckHasVideo()) return;
 
 			Log("Stopping");
 			Paused = true;
 			// TODO: Set time to 0
 			StopMedia();
+		}
+
+		private bool CheckHasVideo() {
+			// TODO: Do this a little better
+			bool hasVideo = VideoManager._HasVideo(MediaControllerId);
+			if (!hasVideo) LogWarning("No video!");
+			return hasVideo;
+		}
+
+		private bool CheckHasQueuedVideo() {
+			// TODO: Do this a little better
+			bool hasQueuedVideo = VideoManager._HasQueuedVideo(MediaControllerId);
+			if (!hasQueuedVideo) LogWarning("No queued video!");
+			return hasQueuedVideo;
 		}
 
 		private bool CheckValidAndAccess(string _action) {
@@ -563,6 +580,8 @@ namespace Synergiance.MediaPlayer {
 			if (Array.IndexOf(audioOnlyHosts, videoHost) >= 0) linkType |= LinkAudioOnlyBit;
 			if (Array.IndexOf(lowLatencyProtocols, videoProtocol) >= 0) linkType |= LinkStreamBit | LinkLowLatencyBit;
 			_linkType = (LinkType)linkType;
+
+			Log($"Link Type: {_linkType}");
 
 			return true;
 		}
