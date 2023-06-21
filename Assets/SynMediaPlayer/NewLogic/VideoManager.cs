@@ -966,6 +966,17 @@ namespace Synergiance.MediaPlayer {
 			SendRelayEvent(secondary ? CallbackEvent.QueueMediaReady : CallbackEvent.MediaReady, _id);
 		}
 
+		private void MediaLoading(int _id) {
+			int handle = GetHandleFromRelayId(_id);
+			if (handle < 0) {
+				Log($"Ignoring Video Ready callback from relay {_id}");
+				return;
+			}
+
+			bool secondary = relayIsSecondary[_id];
+			SendRelayEvent(secondary ? CallbackEvent.QueueMediaLoading : CallbackEvent.MediaLoading, _id);
+		}
+
 		/// <summary>
 		/// Event receiver for errors
 		/// </summary>
@@ -1016,6 +1027,9 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_id">ID of the VideoRelay</param>
 		public void _RelayEvent(CallbackEvent _event, int _id) {
 			switch (_event) {
+				case CallbackEvent.MediaLoading:
+					MediaLoading(_id);
+					break;
 				case CallbackEvent.MediaReady:
 					MediaReady(_id);
 					break;

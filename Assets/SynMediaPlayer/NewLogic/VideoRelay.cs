@@ -254,6 +254,7 @@ namespace Synergiance.MediaPlayer {
 			if (!initialized) return false;
 			if (_playImmediately) videoSource.PlayURL(_link);
 			else videoSource.LoadURL(_link);
+			relayPoint._RelayEvent(CallbackEvent.MediaLoading, identifier);
 			return true;
 		}
 

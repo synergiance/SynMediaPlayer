@@ -945,6 +945,23 @@ namespace Synergiance.MediaPlayer {
 			foreach (UdonSharpBehaviour callback in callbacks)
 				callback.SendCustomEvent(_message);
 		}
+
+		protected override void MediaLoading() {
+			Log("Media Loading Callback");
+		}
+
+		protected override void QueuedMediaLoading() {
+			Log("Queued Media Loading Callback");
+		}
+
+		protected override void MediaReady() {
+			Log("Media Ready Callback");
+		}
+
+		protected override void QueuedMediaReady() {
+			Log("Queued Media Ready Callback");
+		}
+
 		#endregion
 	}
 }
