@@ -10,6 +10,8 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private bool allowWorldMaster = true;
 		[SerializeField] private bool allowWorldOwner = true;
 
+		// TODO: Groups+ moderators if VRChat ever exposes it
+
 		private UdonSharpBehaviour[] callbacks;
 
 		protected override string DebugName => "Security Manager";
@@ -52,8 +54,10 @@ namespace Synergiance.MediaPlayer {
 		private void Initialize() {
 			if (initialized) return;
 			hasSecurity = !((moderators == null || moderators.Length <= 0) && !allowWorldMaster && !allowWorldOwner);
-			if (!hasSecurity) Log("No moderators, no owner and master control, security disengaged.");
-			if (hasSecurity) hasAccess = true;
+			if (!hasSecurity) {
+				LogWarning("No moderators, no owner and master control, security disengaged.");
+				hasAccess = true;
+			}
 			initialized = true;
 		}
 

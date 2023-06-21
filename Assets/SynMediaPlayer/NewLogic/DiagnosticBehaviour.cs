@@ -45,6 +45,13 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 		public bool DiagnosticMode { set; protected get; }
 
 		/// <summary>
+		/// Retrieves whether the Log method will print anything to screen. You
+		/// can use this to spare yourself from performing expensive string
+		/// operations when they will not see the light of day.
+		/// </summary>
+		protected bool DiagnosticLogEnabled => DiagnosticMode || debug;
+
+		/// <summary>
 		/// This method will initialize the diagnostic behaviour. It can either
 		/// be called from the initialization method, or it will fire the first
 		/// time its needed.

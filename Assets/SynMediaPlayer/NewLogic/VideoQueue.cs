@@ -84,7 +84,7 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			Log($"Initializing queue of length {maxQueueLength}");
-			queuedVideos._Initialize(maxQueueLength);
+			queuedVideos._Initialize(maxQueueLength, securityManager);
 
 			// TODO: Make sure you're master
 			Sync();
@@ -159,16 +159,43 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_link">The link of the current video</param>
 		/// <returns>True if successful</returns>
 		public bool _SetCurrentVideo(VRCUrl _link) {
+			Initialize();
+			if (!isValid) {
+				LogError("Not Valid!");
+				return false;
+			}
+			Log($"Switching current video in queue to: {_link}");
+			queuedVideos._SetVideo(currentIndex, _link);
+			return true;
+		}
+
+		/// <summary>
+		/// Deletes all videos from the queue.
+		/// </summary>
+		public bool _ClearQueue() {
+			Initialize();
+			if (!isValid) {
+				LogError("Not Valid!");
+				return false;
+			}
+			Log("Clearing queue");
+			videosInQueue = 0;
+			Sync();
 			return true;
 		}
 
 		private void Sync() {
 			Log("Sync!");
+			syncIndexSync = ++syncIndex;
+			currentIndexSync = currentIndex;
+			videosInQueueSync = videosInQueue;
 		}
 
 		public override void OnDeserialization() {
 			if (syncIndex == syncIndexSync) return;
 			syncIndex = syncIndexSync;
+			videosInQueue = videosInQueueSync;
+			currentIndex = currentIndexSync;
 			if (PlayerCallback == null) return;
 			PlayerCallback._CheckQueue();
 		}

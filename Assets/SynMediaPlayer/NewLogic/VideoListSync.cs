@@ -13,6 +13,7 @@ namespace Synergiance.MediaPlayer {
 	public class VideoListSync : DiagnosticBehaviour {
 		[UdonSynced] private VRCUrl[] videos;
 		[UdonSynced] private int[] syncIndex;
+		private SecurityManager securityManager;
 
 		private bool initialized;
 		public int Length => videos != null ? videos.Length : -1;
@@ -25,7 +26,8 @@ namespace Synergiance.MediaPlayer {
 		/// size of <paramref name="_length"/>.
 		/// </summary>
 		/// <param name="_length">Number of videos this will be able to contain</param>
-		public void _Initialize(int _length) {
+		/// <param name="_securityManager">Security manager cannot be null</param>
+		public void _Initialize(int _length, SecurityManager _securityManager) {
 			if (initialized) return;
 
 			// TODO: Figure out how to tell if we're initializing the world
@@ -38,6 +40,11 @@ namespace Synergiance.MediaPlayer {
 
 			if (_length <= 0) {
 				LogError("Cannot initialize a negative or zero size array");
+				return;
+			}
+
+			if (_securityManager == null) {
+				LogError("Must contain security manager!");
 				return;
 			}
 
@@ -60,13 +67,16 @@ namespace Synergiance.MediaPlayer {
 				LogError("Not initialized!");
 				return;
 			}
+
 			videos[_idx] = _video;
 			Sync();
 		}
 
 		private void Sync() {
 			Log("Sync!");
-			// TODO: Actually sync
+			if (IsEditor) return;
+			Networking.SetOwner(Networking.LocalPlayer, gameObject);
+			RequestSerialization();
 		}
 	}
 }

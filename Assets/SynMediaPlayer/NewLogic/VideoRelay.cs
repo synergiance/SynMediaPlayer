@@ -143,6 +143,8 @@ namespace Synergiance.MediaPlayer {
 
 			if (speakers == null) speakers = new AudioSource[0];
 
+			Log($"Initialized with relay point {_relayPoint.name} with ID {_identifier}");
+
 			relayPoint = _relayPoint;
 			identifier = _identifier;
 			initialized = true;
@@ -265,6 +267,7 @@ namespace Synergiance.MediaPlayer {
 		private void UpdateSpeakers() {
 			if (!initialized) return;
 			int numSpeakers = Mathf.Min(speakersActive, speakers.Length);
+			Log($"Updating {numSpeakers}/{speakers.Length} speakers and muting the rest.");
 			for (int i = 0; i < numSpeakers; i++) {
 				speakers[i].volume = volume * relativeVolume;
 				speakers[i].mute = muted;

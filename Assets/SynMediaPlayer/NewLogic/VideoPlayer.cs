@@ -186,8 +186,8 @@ namespace Synergiance.MediaPlayer {
 			private set {
 				if (isLocked == isLockedSync == value) return;
 				// TODO: Permission check and sync
-				isLocked = value;
-				Log($"{(isLocked ? "Locking" : "Unlocking")} the player");
+				isLockedSync = value;
+				Log($"{(value ? "Locking" : "Unlocking")} the player");
 				//CallCallbacks(isLocked ? "_SecurityLocked" : "_SecurityUnlocked");
 				Sync();
 			}
@@ -205,9 +205,9 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public float CurrentTime {
-			get => IsReady ? paused ? pauseTime : Time.time - beginTime : 0;
+			get => IsReady ? Paused ? PauseTime : Time.time - beginTime : 0;
 			set {
-				if (!IsReady || Math.Abs(value - (paused ? pauseTime : Time.time - beginTime)) < 0.001f) return;
+				if (!IsReady || Math.Abs(value - (Paused ? PauseTime : Time.time - beginTime)) < 0.001f) return;
 				if (!CheckValidAndAccess("seek")) return;
 				Log("Seeking");
 				TranslatedBeginNetTime = Time.time - value;
@@ -274,7 +274,7 @@ namespace Synergiance.MediaPlayer {
 		public bool IsReady { private set; get; }
 		public bool UnlockedOrHasAccess => !IsLocked || securityManager.HasAccess;
 		public float RawTime => IsReady ? MediaTime : 0;
-		public bool Playing => !paused;
+		public bool Playing => !Paused;
 		public float Duration => GetDuration();
 		public float Volume => volume;
 		public int CurrentPlaylistType => currentPlaylistType;
@@ -339,6 +339,7 @@ namespace Synergiance.MediaPlayer {
 
 			Log("Successfully validated!");
 
+			// This needs to be set to a reasonable state before data comes in
 			isLocked = lockByDefault && securityManager.HasSecurity;
 			playerState = PlayerState.Idle;
 			isValid = true;
@@ -453,14 +454,18 @@ namespace Synergiance.MediaPlayer {
 				Log("No security, cannot lock!");
 				return;
 			}
+
+			// Needs internal variable
 			if (isLocked) {
 				Log("Already locked!");
 				return;
 			}
+
 			if (!securityManager.HasAccess) {
 				LogWarning("You don't have access to lock the player!");
 				return;
 			}
+
 			IsLocked = true;
 		}
 
@@ -469,14 +474,18 @@ namespace Synergiance.MediaPlayer {
 				Log("No security, already unlocked!");
 				return;
 			}
+
+			// Needs internal variable
 			if (!isLocked) {
 				Log("Already unlocked!");
 				return;
 			}
+
 			if (!securityManager.HasAccess) {
 				LogWarning("You don't have access to unlock the player!");
 				return;
 			}
+
 			IsLocked = false;
 		}
 
@@ -484,8 +493,11 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isValid) return;
 
-			if (syncIndex != queue.SyncIndex) {
+			Log("Checking queue");
+
+			if (SyncIndex != queue.SyncIndex) {
 				playerState = PlayerState.WaitForData;
+				Log("Waiting for new queue video");
 				return;
 			}
 
@@ -493,10 +505,12 @@ namespace Synergiance.MediaPlayer {
 			if (Equals(link, currentVideoLink)) {
 				if (playerState == PlayerState.WaitForData) {
 					playerState = PlayerState.Playing;
+					Log("Video already in player!");
 				}
 				return;
 			}
 
+			Log("New link pulled from queue: " + (link ?? VRCUrl.Empty).ToString());
 			currentVideoLink = link;
 			// ReSharper disable once LocalVariableHidesMember
 			int linkType = (int)this.linkType;
@@ -525,7 +539,7 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			queue._SetCurrentVideo(_link);
-			syncIndex++;
+			SyncIndex++;
 			Sync();
 		}
 
@@ -592,7 +606,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _UpdateSync() {
-			if (!IsReady || (paused && playerState == 0)) return;
+			if (!IsReady || (Paused && playerState == 0)) return;
 			drift = RawTime - CurrentTime;
 			switch (playerState) {
 				case PlayerState.Resync:
@@ -814,8 +828,8 @@ namespace Synergiance.MediaPlayer {
 			RequestSerialization();
 		}
 
-		public override void OnDeserialization() {
-			Log("On Deserialization");
+		public override void OnDeserialization(DeserializationResult _result) {
+			Log($"Received new data. Data was in flight for {_result.receiveTime - _result.sendTime:N2} seconds.");
 			ApplySyncData();
 		}
 
@@ -844,6 +858,32 @@ namespace Synergiance.MediaPlayer {
 			isLocked = isLockedSync;
 			mediaType = mediaTypeSync;
 			syncIndex = syncIndexSync;
+
+			int updatedSyncVars = 0;
+			if (cPaused) updatedSyncVars++;
+			if (cBeginNetTime) updatedSyncVars++;
+			if (cPauseTime) updatedSyncVars++;
+			if (cLocked) updatedSyncVars++;
+			if (cMediaType) updatedSyncVars++;
+			if (cSyncIndex) updatedSyncVars++;
+
+			if (updatedSyncVars == 0) {
+				Log("Ignoring unchanged data");
+				return;
+			}
+
+			if (DiagnosticLogEnabled) {
+				string[] updatedSyncDataNames = new string[updatedSyncVars];
+				int dataIndex = 0;
+				if (cPaused) updatedSyncDataNames[dataIndex++] = "Pause";
+				if (cBeginNetTime) updatedSyncDataNames[dataIndex++] = "Begin Net Time";
+				if (cPauseTime) updatedSyncDataNames[dataIndex++] = "Pause Time";
+				if (cLocked) updatedSyncDataNames[dataIndex++] = "Lock";
+				if (cMediaType) updatedSyncDataNames[dataIndex++] = "Media Type";
+				if (cSyncIndex) updatedSyncDataNames[dataIndex] = "Sync Index";
+
+				Log($"Applying sync data: {string.Join(", ", updatedSyncDataNames)}");
+			}
 
 			// TODO: Determine what to do when variables change
 			if (cSyncIndex) _CheckQueue();
@@ -885,7 +925,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void DirectSeekPaused() {
-			MediaTime = pauseTime;
+			MediaTime = PauseTime;
 		}
 
 		private void DirectSeekVideo() {

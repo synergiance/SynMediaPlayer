@@ -33,12 +33,20 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_callback">The behaviour to register</param>
 		public void _RegisterVideoCallback(SMPCallbackReceiver _callback) {
 			InitializeVideoBase();
+
+			if (_callback == null) {
+				LogError("Cannot register null callback!");
+				return;
+			}
+
 			if (Array.IndexOf(videoCallbacks, _callback) >= 0) {
 				LogWarning("Callback already exists in the callback array!", this);
 				return;
 			}
+
 			if (numVideoCallbacks >= videoCallbacks.Length)
 				ExpandVideoCallbacksArray();
+
 			videoCallbacks[numVideoCallbacks++] = _callback;
 		}
 
@@ -48,8 +56,8 @@ namespace Synergiance.MediaPlayer {
 		/// <param name="_event">Callback to send</param>
 		protected void SendVideoCallback(CallbackEvent _event) {
 			InitializeVideoBase();
-			foreach (SMPCallbackReceiver videoCallback in videoCallbacks)
-				videoCallback._SendCallback(_event);
+			for (int i = 0; i < numVideoCallbacks; i++)
+				videoCallbacks[i]._SendCallback(_event);
 		}
 
 		/// <summary>
@@ -59,8 +67,8 @@ namespace Synergiance.MediaPlayer {
 		protected void SendErrorCallback(MediaError _error) {
 			lastError = _error;
 			InitializeVideoBase();
-			foreach (SMPCallbackReceiver videoCallback in videoCallbacks)
-				videoCallback._SendError(_error);
+			for (int i = 0; i < numVideoCallbacks; i++)
+				videoCallbacks[i]._SendError(_error);
 		}
 
 		public override void _SendCallback(CallbackEvent _event) {
