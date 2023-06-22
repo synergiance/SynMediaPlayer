@@ -60,11 +60,12 @@ MonoBehaviour:
   diagnostics: {fileID: 0}
   videoSource: {fileID: 0}
   videoRendererSource: {fileID: 4137137890304969767}
+  videoMaterialIndex: 0
   videoTextureName: _MainTex
-  speakers:
-  - {fileID: 1212093815803161405}
   videoType: 0
   videoName: 
+  speakers:
+  - {fileID: 1212093815803161405}
 --- !u!114 &553920032776333293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -140,7 +141,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: 5b6440c53658ff44fa8c7b4c2d76dc7f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

@@ -113,6 +113,9 @@ namespace Synergiance.MediaPlayer {
 			Log("Initialize!");
 			CheckValid();
 			initialized = true;
+
+			// TODO: Remove this
+			AudioActive = true;
 		}
 
 		private void CheckValid() {
@@ -230,6 +233,12 @@ namespace Synergiance.MediaPlayer {
 		/// <returns>True on success</returns>
 		public bool _SetVideoTexture(int _type, Texture _texture) {
 			if (!isValid) return false;
+
+			if (_texture == null) {
+				LogWarning("Received null texture!");
+				return false;
+			}
+
 			string texProp;
 			switch (_type) {
 				case 0:
@@ -247,6 +256,8 @@ namespace Synergiance.MediaPlayer {
 					LogError("Invalid texture type!");
 					return false;
 			}
+
+			Log($"Setting texture on \"{texProp}\" to texture of type {_type} and dimensions {_texture.width}x{_texture.height}");
 			videoMaterial.SetTexture(texProp, _texture);
 			return true;
 		}

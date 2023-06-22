@@ -121,11 +121,20 @@ namespace Synergiance.MediaPlayer {
 					continue;
 				}
 
-				if (displayWeights[display] < bestWeight) continue;
+				if (displayWeights[display] < bestWeight) {
+					Log($"Skipping {display} because its weight ({displayWeights[display]}) is less than the best weight ({bestWeight})");
+					continue;
+				}
 
-				if (!displays[display].HasAudio) continue;
+				if (!displays[display].HasAudio) {
+					Log($"Display {display} has no audio!");
+					continue;
+				}
 
-				if (!displays[display].AudioActive) continue;
+				if (!displays[display].AudioActive) {
+					Log($"Display {display} has inactive audio!");
+					continue;
+				}
 
 				bestDisplay = display;
 				bestWeight = displayWeights[display];

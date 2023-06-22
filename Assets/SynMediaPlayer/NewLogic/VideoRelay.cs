@@ -101,6 +101,7 @@ namespace Synergiance.MediaPlayer {
 		private int identifier;
 		private Texture videoTextureCache;
 		private Material videoMaterial;
+		private MaterialPropertyBlock videoPropertyBlock;
 
 		private bool muted;
 		private float volume;
@@ -142,6 +143,8 @@ namespace Synergiance.MediaPlayer {
 			if (string.IsNullOrWhiteSpace(videoName)) videoName = gameObject.name;
 
 			if (speakers == null) speakers = new AudioSource[0];
+
+			videoPropertyBlock = new MaterialPropertyBlock();
 
 			Log($"Initialized with relay point {_relayPoint.name} with ID {_identifier}");
 
@@ -279,11 +282,28 @@ namespace Synergiance.MediaPlayer {
 
 		// ReSharper disable Unity.PerformanceAnalysis
 		private void CheckTextureChange() {
-			Texture tempTexture = videoMaterial.GetTexture(videoTextureName);
-			if (tempTexture != videoTextureCache) return;
+			Texture tempTexture;
+
+			if (videoType == VideoType.Video) {
+				videoRendererSource.GetPropertyBlock(videoPropertyBlock);
+				tempTexture = videoPropertyBlock.GetTexture(videoTextureName);
+			} else {
+				tempTexture = videoMaterial.GetTexture(videoTextureName);
+			}
+
+			if (tempTexture == videoTextureCache) return;
 			Log("New Video Texture!");
 			videoTextureCache = tempTexture;
 			relayPoint._RelayTextureChange(identifier, videoTextureCache);
+		}
+
+		private void CheckMaterialChange() {
+			Log("Checking for new material");
+			Material newVideoMaterial = videoRendererSource.materials[videoMaterialIndex];
+			if (newVideoMaterial != videoMaterial) {
+				Log("New video material found!");
+				videoMaterial = newVideoMaterial;
+			}
 		}
 
 		private bool UninitializedLog(string _eventName) {
@@ -316,6 +336,7 @@ namespace Synergiance.MediaPlayer {
 		public override void OnVideoReady() {
 			if (UninitializedLog("OnVideoReady")) return;
 			relayPoint._RelayEvent(CallbackEvent.MediaReady, identifier);
+			CheckMaterialChange();
 			CheckTextureChange();
 		}
 
