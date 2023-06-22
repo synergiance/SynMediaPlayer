@@ -234,11 +234,6 @@ namespace Synergiance.MediaPlayer {
 		public bool _SetVideoTexture(int _type, Texture _texture) {
 			if (!isValid) return false;
 
-			if (_texture == null) {
-				LogWarning("Received null texture!");
-				return false;
-			}
-
 			string texProp;
 			switch (_type) {
 				case 0:
@@ -257,7 +252,10 @@ namespace Synergiance.MediaPlayer {
 					return false;
 			}
 
-			Log($"Setting texture on \"{texProp}\" to texture of type {_type} and dimensions {_texture.width}x{_texture.height}");
+			Log(_texture == null
+				? $"Setting texture on \"{texProp}\" to null"
+				: $"Setting texture on \"{texProp}\" to texture of dimensions {_texture.width}x{_texture.height}");
+
 			videoMaterial.SetTexture(texProp, _texture);
 			return true;
 		}
@@ -385,6 +383,19 @@ namespace Synergiance.MediaPlayer {
 
 		public override void OnPlayerCollisionExit(VRCPlayerApi _player) {
 			if (ValidatePlayer(_player)) _RelayExit();
+		}
+
+		protected override string DumpState() {
+			if (!initialized) return "Uninitialized";
+			if (!isValid) return "Invalid";
+			string state = "Audio " + (audioActive ? "Active" : "Inactive");
+			state += ", Video Controller " + (videoControllerLinked ? "Linked" : "Unlinked");
+			state += $", Setting Controller Source: {settingControllerSource}\n";
+			state += $"Secondary Weight: {secondaryWeight:N3}, Overlay Weight: {overlayWeight:N3}\n";
+			state += $"Has texture properties: Secondary: {hasSecondaryTexProp}, Weight: {hasSecondaryWeightProp}";
+			state += $", Overlay: {hasOverlayTexProp}, Weight: {hasOverlayWeightProp}\n";
+			state += $"Identifier: {identifier}, Default ID: {defaultId}, Current ID: {currentId}\n";
+			return state;
 		}
 	}
 }

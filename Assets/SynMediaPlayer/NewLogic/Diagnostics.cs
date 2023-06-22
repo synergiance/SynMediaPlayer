@@ -77,7 +77,7 @@ namespace Synergiance.MediaPlayer.Diagnostics {
 
 			for (int i = 0; i < numRegistered; i++) {
 				if (behaviours[i]._DumpState(out string state))
-					diagnosticsString += $"\n{prefixes[i]}\n{state}";
+					diagnosticsString += $"\n{prefixes[i]}State Dump:\n{state}\n";
 			}
 
 			diagnosticsString += $"{DiagnosticPrefix} End diagnostics dump at time: {Time.time:N2}";
