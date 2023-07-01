@@ -43,6 +43,8 @@ Assets/UdonSharp/
 Assets/UdonSharp.meta
 Assets/Gizmos/
 Assets/Gizmos.meta
+Assets/AVProVideo/
+Assets/AVProVideo.meta
 .*.swp
 
 .idea/
