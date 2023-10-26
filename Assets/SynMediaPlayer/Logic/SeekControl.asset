@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: SeekControl
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 9a1d2ddfa7bb68440961421bfabfe62a,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 0bac29f4a0b58d74d91443777ab4e24d,
     type: 2}
   udonAssembly: 
   assemblyError: 

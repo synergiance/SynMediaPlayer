@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: VideoInterpolator
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 2d7b04a85179ae3449068aaa527e9842,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: bf2fe738e63e31f4d846c05a9709cf10,
     type: 2}
   udonAssembly: 
   assemblyError: 

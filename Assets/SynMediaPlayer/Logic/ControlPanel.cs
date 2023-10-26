@@ -103,7 +103,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private void Activate() {
 			Log("First Activation", this);
 			if (!mediaPlayer.IsPlaying) InitializeDefaultPlaylist();
-			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
+			SendCustomEventDelayedSeconds(nameof(_SlowUpdate), timeBetweenUpdates);
 			UpdateMethods();
 			hasActivated = true;
 			CheckDeserialization();
@@ -112,7 +112,7 @@ namespace Synergiance.MediaPlayer.UI {
 		public void _SlowUpdate() {
 			if (Time.time < lastSlowUpdate + timeBetweenUpdates * 0.9f) return;
 			lastSlowUpdate = Time.time;
-			SendCustomEventDelayedSeconds("_SlowUpdate", timeBetweenUpdates);
+			SendCustomEventDelayedSeconds(nameof(_SlowUpdate), timeBetweenUpdates);
 			UpdateMethods();
 		}
 
@@ -801,6 +801,9 @@ namespace Synergiance.MediaPlayer.UI {
 				           !string.Equals(statusText, "Stabilizing") &&
 				           mediaPlayer.MediaType == 0;
 				if (!mediaPlayer.Ready) hideTime = true;
+				string statusDebugMsg = $"Status Text Set To: {statusText}, Media Type: {mediaPlayer.MediaType}";
+				statusDebugMsg += $", Ready: {mediaPlayer.Ready}, Hide Time: {hideTime}";
+				Log(statusDebugMsg, this);
 				if (!hideTime) UpdateTimeAndStatus();
 				else statusField._SetText(statusText);
 				UpdateResyncButton();

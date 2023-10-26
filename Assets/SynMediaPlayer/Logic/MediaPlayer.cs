@@ -180,7 +180,7 @@ namespace Synergiance.MediaPlayer {
 
 		private ushort localVersionMajor =  1; // Major version number
 		private ushort localVersionMinor =  0; // Minor version number
-		private ushort localVersionPatch =  5; // Patch version number
+		private ushort localVersionPatch =  6; // Patch version number
 		private ushort localVersionBeta  =  0; // Beta number
 
 		private ushort worldVersionMajor; // Major version number
@@ -214,7 +214,7 @@ namespace Synergiance.MediaPlayer {
 			initialized = true;
 			SetPlayerStatusText("Initializing");
 			UpdateStatus();
-			SendCustomEventDelayedSeconds("_Activate", activateAfter);
+			SendCustomEventDelayedSeconds(nameof(_Activate), activateAfter);
 		}
 
 		// Activate for the first time
@@ -428,6 +428,7 @@ namespace Synergiance.MediaPlayer {
 			Log(isActive ? "Activating" : "Deactivating", this);
 			if (isActive) {
 				isWakingUp = true;
+				if (hasCallback) callback.SendCustomEvent("_Activate");
 				SetPlayerStatusText("No Video"); // Catch all for if nothing sets the status text
 				CheckDeserializedData(); // Deserialization is paused and flushed while inactive
 				// Unprivileged player should not retain ownership of player if player is locked

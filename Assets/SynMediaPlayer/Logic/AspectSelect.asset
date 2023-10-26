@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: AspectSelect
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: b9550b9f6821fbd41bb225beb0f59241,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 37b42508eebe1b34b8b1fbf251bc729e,
     type: 2}
   udonAssembly: 
   assemblyError: 
