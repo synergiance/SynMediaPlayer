@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6716506193763951260}
   - component: {fileID: 4208934614908773784}
   m_Layer: 0
-  m_Name: Video Player Relay
+  m_Name: Video Player Relay Old
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

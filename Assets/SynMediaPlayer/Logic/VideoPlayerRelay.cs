@@ -17,7 +17,7 @@ namespace Synergiance.MediaPlayer {
 	public class VideoPlayerRelay : UdonSharpBehaviour {
 		[Header("Player Settings")] // Video Player Settings
 		[SerializeField] private BaseVRCVideoPlayer videoPlayer;
-		[SerializeField] private AudioSource speaker;
+		[SerializeField] private AudioSource[] speakers;
 		[SerializeField] private string playerName = "Video Player";
 		[SerializeField] private bool isStream;
 
@@ -27,8 +27,24 @@ namespace Synergiance.MediaPlayer {
 
 		private bool isValid;
 
+		private bool[] speakersPlaying;
+
 		private void Start() {
-			isValid = videoPlayer;
+			isValid = false;
+			if (!videoPlayer) return;
+			if (speakers == null) return;
+			if (speakers.Length < 1) return;
+			speakersPlaying = new bool[speakers.Length];
+			isValid = true;
+		}
+
+		private void CheckAudioSources(string method) {
+			for (int i = 0; i < speakers.Length; i++) {
+				if (speakers[i].isPlaying != speakersPlaying[i]) {
+					speakersPlaying[i] = !speakersPlaying[i];
+					Debug.Log($"Speaker {i} is now {(speakersPlaying[i] ? "playing" : "not playing")}.");
+				}
+			}
 		}
 
 		public void _Play() { if (isValid) videoPlayer.Play(); }
@@ -38,14 +54,14 @@ namespace Synergiance.MediaPlayer {
 		public void _PlayURL(VRCUrl url) { if (isValid) videoPlayer.PlayURL(url); }
 
 		public bool Loop { set { if (isValid) videoPlayer.Loop = value; } get => isValid && videoPlayer.Loop; }
-		public float Volume { set { if (isValid) speaker.volume = value; } get => isValid ? speaker.volume : 0; }
+		public float Volume { set { if (isValid) foreach (AudioSource speaker in speakers) { speaker.volume = value; } } get => isValid ? speakers[0].volume : 0; }
 		public float Time { set { if (isValid) videoPlayer.SetTime(value); } get => isValid ? videoPlayer.GetTime() : 0; }
 		public float Duration => isValid ? videoPlayer.GetDuration() : 0;
 		public bool IsReady => isValid && videoPlayer.IsReady;
 		public bool IsPlaying => isValid && videoPlayer.IsPlaying;
 		public string PlayerName => playerName;
 		public bool IsStream => isStream;
-		public AudioSource Speaker => speaker;
+		public AudioSource Speaker => isValid ? speakers[0] : null;
 
 		private void SendRelayEvent(string eventName) {
 			relayPoint.SetProgramVariable("relayIdentifier", identifier);
@@ -57,6 +73,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public override void OnVideoReady() {
+			CheckAudioSources("OnVideoReady");
 			SendRelayEvent("_RelayVideoReady");
 		}
 

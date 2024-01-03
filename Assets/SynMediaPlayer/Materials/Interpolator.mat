@@ -94,14 +94,14 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _ShowPlaceholder: 1
+    - _ShowPlaceholder: 0
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _StreamContrib: 0
     - _StreamGamma: 1
     - _UVSec: 0
-    - _UnityContrib: 0
+    - _UnityContrib: 1
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
