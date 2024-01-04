@@ -18,6 +18,7 @@ namespace Synergiance.MediaPlayer {
 		[Header("Player Settings")] // Video Player Settings
 		[SerializeField] private BaseVRCVideoPlayer videoPlayer;
 		[SerializeField] private AudioSource[] speakers;
+		[SerializeField] private Transform monoSpeakerLocation;
 		[SerializeField] private string playerName = "Video Player";
 		[SerializeField] private bool isStream;
 
@@ -27,23 +28,34 @@ namespace Synergiance.MediaPlayer {
 
 		private bool isValid;
 
-		private bool[] speakersPlaying;
+		private Vector3 normalSpeakerPosition;
+		private Vector3 fallbackSpeakerPosition;
+		private bool speakerNormallySpatialized;
 
 		private void Start() {
 			isValid = false;
 			if (!videoPlayer) return;
 			if (speakers == null) return;
 			if (speakers.Length < 1) return;
-			speakersPlaying = new bool[speakers.Length];
+			fallbackSpeakerPosition = monoSpeakerLocation == null ? transform.position : monoSpeakerLocation.position;
+			normalSpeakerPosition = speakers[0].transform.position;
+			speakerNormallySpatialized = speakers[0].spatialize;
 			isValid = true;
 		}
 
-		private void CheckAudioSources(string method) {
-			for (int i = 0; i < speakers.Length; i++) {
-				if (speakers[i].isPlaying != speakersPlaying[i]) {
-					speakersPlaying[i] = !speakersPlaying[i];
-					Debug.Log($"Speaker {i} is now {(speakersPlaying[i] ? "playing" : "not playing")}.");
-				}
+		private void CheckAudioSources() {
+			if (!isValid) return;
+			if (speakers.Length == 1) return;
+
+			int numActiveSpeakers = 0;
+			foreach (AudioSource speaker in speakers) if (speaker.isPlaying) numActiveSpeakers++;
+
+			if (numActiveSpeakers == 1) {
+				speakers[0].transform.position = fallbackSpeakerPosition;
+				speakers[0].spatialize = false;
+			} else if (numActiveSpeakers > 1) {
+				speakers[0].transform.position = normalSpeakerPosition;
+				speakers[0].spatialize = speakerNormallySpatialized;
 			}
 		}
 
@@ -73,7 +85,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public override void OnVideoReady() {
-			CheckAudioSources("OnVideoReady");
+			CheckAudioSources();
 			SendRelayEvent("_RelayVideoReady");
 		}
 

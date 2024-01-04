@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1270269624820942567
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8335258767790517553}
+  m_Layer: 0
+  m_Name: Mono Speaker Location
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8335258767790517553
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1270269624820942567}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6763134855384777538}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1652789072495669842
 GameObject:
   m_ObjectHideFlags: 0
@@ -1236,9 +1267,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5125739690807394719, guid: f9658c11da5ddc343a6c55f7f19fc76b,
         type: 3}
+      propertyPath: monoSpeakerLocation
+      value: 
+      objectReference: {fileID: 8335258767790517553}
+    - target: {fileID: 5125739690807394719, guid: f9658c11da5ddc343a6c55f7f19fc76b,
+        type: 3}
       propertyPath: speakers.Array.size
       value: 8
       objectReference: {fileID: 0}
+    - target: {fileID: 5125739690807394719, guid: f9658c11da5ddc343a6c55f7f19fc76b,
+        type: 3}
+      propertyPath: singleSpeakerLocation
+      value: 
+      objectReference: {fileID: 8335258767790517553}
     - target: {fileID: 5125739690807394719, guid: f9658c11da5ddc343a6c55f7f19fc76b,
         type: 3}
       propertyPath: speakers.Array.data[0]
@@ -1298,6 +1339,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4076113837371642441, guid: f9658c11da5ddc343a6c55f7f19fc76b,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8335258767790517553}
     - targetCorrespondingSourceObject: {fileID: 4088866826101538972, guid: f9658c11da5ddc343a6c55f7f19fc76b,
         type: 3}
       insertIndex: -1
@@ -1332,6 +1377,12 @@ PrefabInstance:
       addedObject: {fileID: 165589363418232581}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f9658c11da5ddc343a6c55f7f19fc76b, type: 3}
+--- !u!4 &6763134855384777538 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4076113837371642441, guid: f9658c11da5ddc343a6c55f7f19fc76b,
+    type: 3}
+  m_PrefabInstance: {fileID: 7298708410849202443}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6770223159036334487 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4088866826101538972, guid: f9658c11da5ddc343a6c55f7f19fc76b,
