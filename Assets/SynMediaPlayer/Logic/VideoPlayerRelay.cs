@@ -2,6 +2,7 @@
 using UdonSharp;
 using UnityEngine;
 using VRC.SDK3.Components.Video;
+using VRC.SDK3.Video.Components;
 using VRC.SDK3.Video.Components.Base;
 using VRC.SDKBase;
 
@@ -19,6 +20,8 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField] private BaseVRCVideoPlayer videoPlayer;
 		[SerializeField] private AudioSource[] speakers;
 		[SerializeField] private Transform monoSpeakerLocation;
+		[SerializeField] private Renderer targetRenderer;
+		[SerializeField] private string targetProperty;
 		[SerializeField] private string playerName = "Video Player";
 		[SerializeField] private bool isStream;
 
@@ -32,15 +35,29 @@ namespace Synergiance.MediaPlayer {
 		private Vector3 fallbackSpeakerPosition;
 		private bool speakerNormallySpatialized;
 
+		private Texture videoTextureInternal;
+		private Material videoMaterial;
+		private MaterialPropertyBlock videoPropertyBlock;
+
 		private void Start() {
 			isValid = false;
 			if (!videoPlayer) return;
 			if (speakers == null) return;
 			if (speakers.Length < 1) return;
+			if (targetRenderer == null) return;
+			if (string.IsNullOrWhiteSpace(targetProperty)) return;
+			videoMaterial = targetRenderer.material;
+			if (videoMaterial == null) return;
+			if (!videoMaterial.HasTexture(targetProperty)) return;
+			videoPropertyBlock = new MaterialPropertyBlock();
 			fallbackSpeakerPosition = monoSpeakerLocation == null ? transform.position : monoSpeakerLocation.position;
 			normalSpeakerPosition = speakers[0].transform.position;
 			speakerNormallySpatialized = speakers[0].spatialize;
 			isValid = true;
+		}
+
+		private void Update() {
+			CheckTextureChange();
 		}
 
 		private void CheckAudioSources() {
@@ -59,6 +76,22 @@ namespace Synergiance.MediaPlayer {
 			}
 		}
 
+		private void CheckTextureChange() {
+			Texture targetTexture;
+
+			if (isStream) {
+				targetTexture = videoMaterial.GetTexture(targetProperty);
+			} else {
+				targetRenderer.GetPropertyBlock(videoPropertyBlock);
+				targetTexture = videoPropertyBlock.GetTexture(targetProperty);
+			}
+
+			if (targetTexture == videoTextureInternal) return;
+
+			videoTextureInternal = targetTexture;
+			SendRelayEvent("_RelayTextureChange");
+		}
+
 		public void _Play() { if (isValid) videoPlayer.Play(); }
 		public void _Pause() { if (isValid) videoPlayer.Pause(); }
 		public void _Stop() { if (isValid) videoPlayer.Stop(); }
@@ -74,6 +107,7 @@ namespace Synergiance.MediaPlayer {
 		public string PlayerName => playerName;
 		public bool IsStream => isStream;
 		public AudioSource Speaker => isValid ? speakers[0] : null;
+		public Texture videoTexture => videoTextureInternal;
 
 		private void SendRelayEvent(string eventName) {
 			relayPoint.SetProgramVariable("relayIdentifier", identifier);

@@ -59,5 +59,4 @@
 			ENDCG
 		}
 	}
-	CustomEditor "EmissiveScreen3DGui"
 }

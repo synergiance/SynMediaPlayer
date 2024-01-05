@@ -82,7 +82,7 @@ PrefabInstance:
     - target: {fileID: 6222196718315666946, guid: f9658c11da5ddc343a6c55f7f19fc76b,
         type: 3}
       propertyPath: m_Name
-      value: Video Player Single Speaker
+      value: Video Player Relay
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

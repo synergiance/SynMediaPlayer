@@ -72,7 +72,7 @@ PrefabInstance:
     - target: {fileID: 8353547702050110139, guid: d0e7c3aa9ebdfd94aab7624c208d14f1,
         type: 3}
       propertyPath: m_Name
-      value: Unity Video Player Variant
+      value: Unity Video Player
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -83,6 +83,12 @@ PrefabInstance:
       insertIndex: 1
       addedObject: {fileID: 4469106441855290836}
   m_SourcePrefab: {fileID: 100100000, guid: d0e7c3aa9ebdfd94aab7624c208d14f1, type: 3}
+--- !u!23 &2104243627812372802 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 4644719820377209957, guid: d0e7c3aa9ebdfd94aab7624c208d14f1,
+    type: 3}
+  m_PrefabInstance: {fileID: 6721229364592016679}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &3362879537927178140 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8353547702050110139, guid: d0e7c3aa9ebdfd94aab7624c208d14f1,
@@ -106,10 +112,10 @@ MonoBehaviour:
     url: 
   autoPlay: 0
   loop: 0
-  renderMode: 0
+  renderMode: 1
   targetTexture: {fileID: 0}
-  targetMaterialRenderer: {fileID: 0}
-  targetMaterialProperty: 
+  targetMaterialRenderer: {fileID: 2104243627812372802}
+  targetMaterialProperty: _MainTex
   aspectRatio: 5
   targetAudioSources:
   - {fileID: 3965753532617341613}

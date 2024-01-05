@@ -12,6 +12,7 @@ namespace Synergiance.MediaPlayer {
 		// Settings
 		[SerializeField]  private VideoPlayerRelay[] mediaPlayers;
 		[SerializeField]  private string[]           interpolationProps;
+		[SerializeField]  private string[]           interpolatorTextureNames;
 		[SerializeField]  private Material           interpolatorMaterial;
 		[SerializeField]  private string             placeholderPropName;
 		[SerializeField]  private bool               gaplessSupport;
@@ -19,7 +20,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField]  private int                activeID;
 		[SerializeField]  private bool               enableDebug;
 		[SerializeField]  private bool               disableBlackingOut;
-		
+
 		[Header("Callback Settings")] // Settings for callback
 		[SerializeField]  private UdonSharpBehaviour callback;
 		[SerializeField]  private int                identifier;
@@ -63,10 +64,10 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (id == activeID) return;
 			if (id >= (gaplessSupport ? mediaPlayers.Length - 1 : mediaPlayers.Length) || id < 0) {
-				Error("Switching Players: Identifier (" + id + ") out of range! (" + mediaPlayers.Length + ")");
+				Error($"Switching Players: Identifier ({id}) out of range! ({mediaPlayers.Length})");
 				return;
 			}
-			Log("Switching from " + PlayerNameAndIDString(activeID) + " to " + PlayerNameAndIDString(id));
+			Log($"Switching from {PlayerNameAndIDString(activeID)} to {PlayerNameAndIDString(id)}");
 			SwitchPlayerInternal(id);
 			if (gaplessSupport && id == 0) nextID = mediaPlayers.Length - 1;
 		}
@@ -101,7 +102,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!gaplessLoaded) return;
 			if (!mediaPlayers[nextID].IsReady) return;
-			Log("Stopping " + PlayerNameAndIDString(activeID) + " and playing " + PlayerNameAndIDString(nextID));
+			Log($"Stopping {PlayerNameAndIDString(activeID)} and playing {PlayerNameAndIDString(nextID)}");
 			int tradesies = activeID;
 			SwitchPlayerInternal(nextID);
 			nextID = tradesies;
@@ -122,7 +123,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!gaplessLoaded) return;
 			if (!mediaPlayers[nextID].IsReady) return;
-			Log("Playing " + PlayerNameAndIDString(nextID) + " early");
+			Log($"Playing {PlayerNameAndIDString(nextID)} early");
 			if (!mediaPlayers[nextID].IsPlaying) mediaPlayers[nextID]._Play();
 			else mediaPlayers[nextID].Time = 0;
 			playingNextEarly = true;
@@ -260,6 +261,7 @@ namespace Synergiance.MediaPlayer {
 		private int GetPublicActiveID() { return gaplessSupport && activeID == mediaPlayers.Length - 1 ? 0 : activeID; }
 		private void LogPlayer(string message, int id) { Log("(" + mediaPlayers[id].PlayerName + ") " + message); }
 		private void Log(string message) { if (enableDebug) Debug.Log(debugPrefix + message, this); }
+		private void Warning(string message) { Debug.LogWarning(debugPrefix + message, this); }
 		private void Error(string message) { Debug.LogError(debugPrefix + message, this); }
 
 		// ------------------- Callback Methods -------------------
@@ -270,7 +272,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoReady() {
-			LogPlayer("Ready (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
+			LogPlayer($"Ready ({relayIdentifier},{activeID},{nextID})", relayIdentifier);
 			if (gaplessSupport && relayIdentifier == nextID) {
 				SendCallback("_RelayVideoQueueReady");
 				return;
@@ -280,7 +282,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoEnd() {
-			LogPlayer("End (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
+			LogPlayer($"End ({relayIdentifier},{activeID},{nextID})", relayIdentifier);
 			if (gaplessSupport && gaplessLoaded && GetPublicActiveID() == 0) {
 				_PlayNext();
 				return;
@@ -290,7 +292,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoError() {
-			LogPlayer("Error (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
+			LogPlayer($"Error ({relayIdentifier},{activeID},{nextID})", relayIdentifier);
 			if (gaplessSupport && gaplessLoaded && relayIdentifier == nextID) {
 				callback.SetProgramVariable("relayVideoError", relayVideoError);
 				SendCallback("_RelayVideoQueueError");
@@ -302,27 +304,41 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayVideoStart() {
-			LogPlayer("Start (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
+			LogPlayer($"Start ({relayIdentifier},{activeID},{nextID})", relayIdentifier);
 			if (relayIdentifier != activeID) return;
 			SendCallback("_RelayVideoStart");
 		}
 
 		public void _RelayVideoPlay() {
-			LogPlayer("Play (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
+			LogPlayer($"Play ({relayIdentifier},{activeID},{nextID})", relayIdentifier);
 			if (relayIdentifier != activeID) return;
 			SendCallback("_RelayVideoPlay");
 		}
 
 		public void _RelayVideoPause() {
-			LogPlayer("Pause (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
+			LogPlayer($"Pause ({relayIdentifier},{activeID},{nextID})", relayIdentifier);
 			if (relayIdentifier != activeID) return;
 			SendCallback("_RelayVideoPause");
 		}
 
 		public void _RelayVideoLoop() {
-			LogPlayer("Loop (" + relayIdentifier + "," + activeID + "," + nextID + ")", relayIdentifier);
+			LogPlayer($"Loop ({relayIdentifier},{activeID},{nextID})", relayIdentifier);
 			if (relayIdentifier != activeID) return;
 			SendCallback("_RelayVideoLoop");
+		}
+
+		public void _RelayTextureChange() {
+			if (relayIdentifier >= interpolatorTextureNames.Length || relayIdentifier < 0) {
+				Warning($"Relay identifier ({relayIdentifier}) out of range! (0-{interpolatorTextureNames.Length - 1})");
+				return;
+			}
+
+			Texture texture = mediaPlayers[relayIdentifier].videoTexture;
+			string texDesc = texture == null ? "null" : $"{texture.width}x{texture.height} texture";
+
+			LogPlayer($"Texture Change ({relayIdentifier},{activeID},{nextID}) ({texDesc})", relayIdentifier);
+
+			interpolatorMaterial.SetTexture(interpolatorTextureNames[relayIdentifier], texture);
 		}
 	}
 }

@@ -44,11 +44,11 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _GaplessTex:
-        m_Texture: {fileID: 8400000, guid: 325d7741e22732540a57835258218dcd, type: 2}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _LowLatencyTex:
-        m_Texture: {fileID: 8600000, guid: 553ffe904dedd6241a0771b7d289014a, type: 2}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
@@ -72,11 +72,11 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _StreamTex:
-        m_Texture: {fileID: 8600000, guid: 1df076f76318c774da5d68e309d806cc, type: 2}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _UnityTex:
-        m_Texture: {fileID: 8400000, guid: 66d5fde8dfb3d47478d5be9bb1b4dec7, type: 2}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -94,14 +94,14 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _ShowPlaceholder: 1
+    - _ShowPlaceholder: 0
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _StreamContrib: 0
     - _StreamGamma: 1
     - _UVSec: 0
-    - _UnityContrib: 0
+    - _UnityContrib: 1
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
