@@ -38,5 +38,5 @@
 		}
 		ENDCG
 	}
-	CustomEditor "EmissiveScreen3DGui"
+	CustomEditor "Synergiance.MediaPlayer.EmissiveScreenGui"
 }

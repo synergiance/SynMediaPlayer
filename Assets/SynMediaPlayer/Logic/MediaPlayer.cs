@@ -9,6 +9,8 @@ using VRC.SDKBase;
 using VRC.Udon;
 using Synergiance.MediaPlayer.UI;
 using VRC.Udon.Common.Interfaces;
+using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
 
 namespace Synergiance.MediaPlayer {
 	[DefaultExecutionOrder(100)]
@@ -65,6 +67,7 @@ namespace Synergiance.MediaPlayer {
 		[UdonSynced]      private bool               remoteQueueNow;                // Network sync play queue video now
 		[UdonSynced]      private float              remoteQueueTime;               // Network sync play queue video time
 		[UdonSynced]      private ulong              remoteVersion;                 // Network sync SMP version number
+		[UdonSynced]      private ulong              remoteValidation;              // Network sync validation  value tells whether this data is legit.
 		                  private float              localTime;                     // Local variables are used for local use of network variables.
 		                  private bool               localIsPlaying;                // Before use, they will be checked against for changes.
 		                  private VRCUrl             localURL = VRCUrl.Empty;       // Upon change, the proper methods will be called.
@@ -234,7 +237,7 @@ namespace Synergiance.MediaPlayer {
 				// Make sure initial status is shown
 				SetPlayerStatusText("No Video");
 			}
-			CheckDeserializedData();
+			DecodeDeserializedData();
 			if (hasCallback) callback.SendCustomEvent("_Activate");
 			hasActivated = true;
 		}
@@ -249,7 +252,7 @@ namespace Synergiance.MediaPlayer {
 			UpdateDiagnostics();
 		}
 
-		// ---------------------- UI Methods ----------------------
+		#region UI Methods
 
 		public int GetUrlId(string url, int currentID) {
 			return CheckURL(url, currentID);
@@ -430,7 +433,7 @@ namespace Synergiance.MediaPlayer {
 				isWakingUp = true;
 				if (hasCallback) callback.SendCustomEvent("_Activate");
 				SetPlayerStatusText("No Video"); // Catch all for if nothing sets the status text
-				CheckDeserializedData(); // Deserialization is paused and flushed while inactive
+				DecodeDeserializedData(); // Deserialization is paused and flushed while inactive
 				// Unprivileged player should not retain ownership of player if player is locked
 				if (masterLock && !isEditor && CheckPrivilegedInternal(Networking.LocalPlayer)) VerifyProperOwnership();
 			} else {
@@ -457,8 +460,10 @@ namespace Synergiance.MediaPlayer {
 			CancelDiagnostics();
 		}
 
-		// ---------------------- Accessors -----------------------
-		
+		#endregion
+
+		#region Accessors
+
 		public bool IsLocked => masterLock;
 		public bool HasPermissions => hasPermissions;
 		public bool AllowRetries => allowRetryWhenLoaded;
@@ -495,7 +500,9 @@ namespace Synergiance.MediaPlayer {
 		public bool GetIsLoggingDiagnostics() { return isLoggingDiagnostics; } // Deprecated
 		public bool CheckPrivileged(VRCPlayerApi vrcPlayer) { return CheckPrivilegedInternal(vrcPlayer); }
 
-		// ------------------ External Utilities ------------------
+		#endregion
+
+		#region External Utilities
 
 		public void SetLastVideoLoadTime(float time) {
 			// Sanity check unsafe time input to ensure we don't disable the video player unintentionally,
@@ -503,7 +510,9 @@ namespace Synergiance.MediaPlayer {
 			if (time > lastVideoLoadTime && time <= Time.time) lastVideoLoadTime = time;
 		}
 
-		// ----------------- Internal UI Methods ------------------
+		#endregion
+
+		#region Internal UI Methods
 
 		// Gets the status and the time of the current video player and
 		// displays them in a text UI element
@@ -548,16 +557,25 @@ namespace Synergiance.MediaPlayer {
 			UpdateStatus();
 		}
 
-		// --------------------- Sync Methods ---------------------
+		#endregion
+
+		#region Sync Methods
 
 		// Whenever a network sync happens, this method is called to give an opportunity to grab the data ASAP.
 		public override void OnDeserialization() {
 			if (!isActive) return;
-			CheckDeserializedData();
+			if (ValidateDeserializedData()) Debug.Log("Validated remote data!");
+			else Debug.LogWarning("Could not verify remote data!");
+			DecodeDeserializedData();
+		}
+
+		private bool ValidateDeserializedData() {
+			ulong localValidation = GenerateValidation();
+			return localValidation == remoteValidation;
 		}
 
 		// Extension of OnDeserialization to let it be called internally.  This method checks local copies of variables against remote ones.
-		private void CheckDeserializedData() {
+		private void DecodeDeserializedData() {
 			waitForNextNetworkSync = false; // Cancel any waiting, this will 99.9% of the time be the correct value
 			bool hasNewPlayerID = remotePlayerID != localPlayerID;
 			// Cache local and remote strings so ToString() doesn't get called multiple times
@@ -575,12 +593,14 @@ namespace Synergiance.MediaPlayer {
 			bool hasNewQueueNow = remoteQueueNow != localQueueNow;
 			bool hasNewQueueTime = Mathf.Abs(remoteQueueTime - localQueueTime) > 0.1f;
 			bool hasNewVersionNumber = localVersion != remoteVersion;
+
 			if (hasNewPlayerID) { // Determines whether we swapped media type
 				Log("Deserialization found new Media Player: " + mediaPlayers.GetPlayerName(remotePlayerID), this);
 				localPlayerID = remotePlayerID;
 				SetPlayerID(localPlayerID);
 				SetPlayingInternal(localIsPlaying);
 			}
+
 			if (hasNewUrl) { // Load the new video if it has changed
 				Log("Deserialization found new URL: " + remoteStr, this);
 				Log("Old URL: " + localStr, this);
@@ -591,6 +611,7 @@ namespace Synergiance.MediaPlayer {
 				}
 				SetVideoURLFromLocal();
 			}
+
 			if (hasNewQueueUrl) { // Load the new video if it has changed
 				newVideoLoading = !isWakingUp;
 				Log("Deserialization found new queue URL: " + remoteQueueStr, this);
@@ -598,41 +619,49 @@ namespace Synergiance.MediaPlayer {
 				localQueueURL = remoteQueueURL;
 				SetQueueVideoURLFromLocal();
 			}
+
 			if (hasNewIsPlaying) { // Update playing status if changed.
 				Log("Deserialization found new playing status: " + (remoteIsPlaying ? "Playing" : "Paused"), this);
 				SetPlayingInternal(localIsPlaying = remoteIsPlaying);
 			}
+
 			if (hasNewTime) { // Update local reference time if seek occurred
 				Log("Deserialization found new seek position: " + remoteTime, this);
 				localTime = remoteTime;
 				SoftResync();
 			}
+
 			if (hasNewLock) {
 				Log("Deserialization found lock status changed! Now " + (remoteLock ? "locked" : "unlocked"), this);
 				localLock = remoteLock;
 				SetLockStateInternal(localLock);
 			}
+
 			if (hasNewLooping) {
 				Log("Deserialization found video is " + (remoteLooping ? "now" : "no longer") + " looping", this);
 				localLooping = remoteLooping;
 				SetLoopingInternal();
 			}
+
 			if (hasNewQueueNow) {
 				Log("Queue Now network state changed from " + localQueueNow + " to " + remoteQueueNow, this);
 				localQueueNow = remoteQueueNow;
 				if (localQueueNow) PlayQueueNowInternal();
 				else CancelQueueNowInternal();
 			}
+
 			if (hasNewQueueTime) {
 				float newTime = CalcWithTime(localQueueTime = remoteQueueTime);
 				Log("Deserialization found new sync queue video time: " + newTime, this);
 				SetQueueVideoLoadTimeInternal(newTime);
 			}
+
 			if (hasNewVersionNumber) {
 				Log("Deserialization found new network version: " + remoteVersion.ToString("X16"), this);
 				localVersion = remoteVersion;
 				GetNetworkVersion();
 			}
+
 			isWakingUp = false;
 		}
 
@@ -804,7 +833,7 @@ namespace Synergiance.MediaPlayer {
 				Networking.SetOwner(Networking.LocalPlayer, gameObject);
 			if (syncingNextFrame) return;
 			syncingNextFrame = true;
-			SendCustomEventDelayedFrames("_Serialize", 0);
+			SendCustomEventDelayedFrames(nameof(_Serialize), 0);
 		}
 
 		private void SetRemoteVariables() {
@@ -839,6 +868,7 @@ namespace Synergiance.MediaPlayer {
 			}
 			Log("Serializing", this);
 			SetRemoteVariables();
+			remoteValidation = GenerateValidation();
 			RequestSerialization();
 			syncingNextFrame = false;
 		}
@@ -854,8 +884,10 @@ namespace Synergiance.MediaPlayer {
 			if (estimate > 86400 * 2) estimate -= 0xFFFFFFF * 0.001f;
 			return estimate;
 		}
-		
-		// ----------------- Player Stats Methods -----------------
+
+		#endregion
+
+		#region Player Stats Methods
 
 		public override void OnOwnershipTransferred(VRCPlayerApi player) {
 			Initialize();
@@ -870,7 +902,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void ResetLastPingTime() {
 			lastActivePing = Time.time;
-			takeOwnershipAfter = pingActiveEvery * (1.1f + UnityEngine.Random.value * 0.3f + (!hasPermissions && masterLock ? 0.2f : 0));
+			takeOwnershipAfter = pingActiveEvery * (1.1f + Random.value * 0.3f + (!hasPermissions && masterLock ? 0.2f : 0));
 			ownershipTransferPending = false;
 		}
 
@@ -942,7 +974,9 @@ namespace Synergiance.MediaPlayer {
 			if (numReadyPlayers < lowReadyCount) numReadyPlayers = lowReadyCount;
 		}
 
-		// ------------------ Video Sync Methods ------------------
+		#endregion
+
+		#region Video Sync Methods
 
 		private void UpdateVideoPlayer() {
 			if (!isPlaying && playerReady) {
@@ -1230,7 +1264,7 @@ namespace Synergiance.MediaPlayer {
 
 		private void SetLoadTimeToNow() {
 			// Adds a random value to the last video load time to randomize the time interval between loads
-			lastVideoLoadTime = Time.time + UnityEngine.Random.value;
+			lastVideoLoadTime = Time.time + Random.value;
 		}
 
 		private void LoadURLInternal(VRCUrl url) {
@@ -1277,7 +1311,9 @@ namespace Synergiance.MediaPlayer {
 			mediaPlayers.BlackOutPlayer = isBlackingOut = blackOut;
 		}
 
-		// ------------------- Callback Methods -------------------
+		#endregion
+
+		#region Callback Methods
 
 		public void _RelayVideoReady() {
 			LogVerbose("Relay Video Ready", this);
@@ -1459,7 +1495,9 @@ namespace Synergiance.MediaPlayer {
 			SetQueueVideoTime(Time.time + syncPeriod);
 		}
 
-		// -------------------- Utility Methods -------------------
+		#endregion
+
+		#region Utility Methods
 
 		// Checks URL to see if it needs to swap Player ID
 		private int CheckURL(string urlStr, int playerID) {
@@ -1628,8 +1666,10 @@ namespace Synergiance.MediaPlayer {
 			}
 			return errorString;
 		}
-		
-		// ------------------ Diagnostic Methods ------------------
+
+		#endregion
+
+		#region Diagnostic Methods
 
 		private void UpdateDiagnostics() {
 			diagnosticStr = "";
@@ -1739,7 +1779,9 @@ namespace Synergiance.MediaPlayer {
 			diagnosticLog[currentDiagLog] += "\n[" + Time.time + "] " + str + "\n";
 		}
 
-		// ------------ Security And Ownership Methods ------------
+		#endregion
+
+		#region Security And Ownership Methods
 
 		public override void OnPlayerJoined(VRCPlayerApi player) {
 			Initialize();
@@ -1777,6 +1819,32 @@ namespace Synergiance.MediaPlayer {
 			}
 			// If new owner is local, there is nobody else in the instance.
 			if (!newOwner.isLocal) Networking.SetOwner(newOwner, gameObject);
+		}
+
+		private ulong GenerateValidation() {
+			string validationString = "";
+			validationString += remoteTime;
+			validationString += remoteIsPlaying;
+			validationString += remoteURL == null ? "null" : remoteURL.ToString();
+			validationString += remoteQueueURL == null ? "null" : remoteQueueURL.ToString();
+			validationString += remotePlayerID;
+			validationString += remoteLock;
+			validationString += remoteLooping;
+			validationString += remoteQueueNow;
+			validationString += remoteQueueTime;
+			validationString += remoteVersion;
+
+			ulong validation = 0;
+
+			for (int i = 0; i < validationString.Length; i++) {
+				uint currentCharacter = validationString[i];
+				currentCharacter ^= (currentCharacter >> 8) & 0b11111111;
+				currentCharacter ^= (currentCharacter >> 8) & 0b11111111;
+				currentCharacter ^= (currentCharacter >> 8) & 0b11111111;
+				validation ^= currentCharacter << (8 * (i % 8));
+			}
+
+			return validation;
 		}
 
 		private void VerifyProperOwnership() {
@@ -1844,25 +1912,30 @@ namespace Synergiance.MediaPlayer {
 			suppressSecurity = false;
 		}
 
-		// ----------------- Debug Helper Methods -----------------
-		private void Log(string message, UnityEngine.Object context) {
+		#endregion
+
+		#region Debug Helper Methods
+
+		private void Log(string message, Object context) {
 			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP: " + message);
 			if (enableDebug) Debug.Log(debugPrefix + message, context);
 		}
 
-		private void LogVerbose(string message, UnityEngine.Object context) {
+		private void LogVerbose(string message, Object context) {
 			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Verbose: " + message);
 			if (verboseDebug && enableDebug) Debug.Log(debugPrefix + "(+v) " + message, context);
 		}
 
-		private void LogWarning(string message, UnityEngine.Object context) {
+		private void LogWarning(string message, Object context) {
 			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Warning: " + message);
 			Debug.LogWarning(debugPrefix + message, context);
 		}
 
-		private void LogError(string message, UnityEngine.Object context) {
+		private void LogError(string message, Object context) {
 			if (isLoggingDiagnostics) AddToDiagnosticLog("SMP Error: " + message);
 			Debug.LogError(debugPrefix + message, context);
 		}
+
+		#endregion
 	}
 }

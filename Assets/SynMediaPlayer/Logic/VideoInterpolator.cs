@@ -40,6 +40,9 @@ namespace Synergiance.MediaPlayer {
 		private bool   showPlaceholderTex;
 		private bool   playingNextEarly;
 
+		private int[]  videoWidths;
+		private int[]  videoHeights;
+
 		private string debugPrefix = "[<color=#1FAF5F>Video Interpolator</color>] ";
 
 		private void Start() {
@@ -58,6 +61,8 @@ namespace Synergiance.MediaPlayer {
 			mediaPlayers[activeID].Loop = isLooping;
 			hasAudioCallback = audioCallback != null && !string.IsNullOrWhiteSpace(audioFieldName);
 			if (gaplessSupport) nextID = mediaPlayers.Length - 1;
+			videoWidths = new int[mediaPlayers.Length];
+			videoHeights = new int[mediaPlayers.Length];
 		}
 
 		public void _SwitchPlayer(int id) {
@@ -244,7 +249,7 @@ namespace Synergiance.MediaPlayer {
 			}
 			get => showPlaceholderTex;
 		}
-		
+
 		public bool IsReady => mediaPlayers[activeID].IsReady;
 		public bool NextReady => gaplessLoaded && mediaPlayers[nextID].IsReady;
 		public bool IsPlaying => mediaPlayers[activeID].IsPlaying;
@@ -255,6 +260,9 @@ namespace Synergiance.MediaPlayer {
 		public string CurrentPlayerName => mediaPlayers[activeID].PlayerName;
 		public bool PlayingNextEarly => playingNextEarly;
 		public float PrerollTime => gaplessLoaded ? mediaPlayers[nextID].Time : 0;
+
+		public int VideoWidth => videoWidths[activeID];
+		public int VideoHeight => videoHeights[activeID];
 
 		public string GetPlayerName(int id) { return mediaPlayers[id].PlayerName; }
 		private string PlayerNameAndIDString(int id) { return mediaPlayers[id].PlayerName + " (" + id + ")"; }
@@ -328,17 +336,25 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _RelayTextureChange() {
-			if (relayIdentifier >= interpolatorTextureNames.Length || relayIdentifier < 0) {
-				Warning($"Relay identifier ({relayIdentifier}) out of range! (0-{interpolatorTextureNames.Length - 1})");
-				return;
-			}
+			string texDesc;
 
 			Texture texture = mediaPlayers[relayIdentifier].videoTexture;
-			string texDesc = texture == null ? "null" : $"{texture.width}x{texture.height} texture";
+
+			if (texture == null) {
+				videoWidths[relayIdentifier] = 0;
+				videoHeights[relayIdentifier] = 0;
+				texDesc = "null";
+			} else {
+				videoWidths[relayIdentifier] = texture.width;
+				videoHeights[relayIdentifier] = texture.height;
+				texDesc = $"{texture.width}x{texture.height} texture";
+			}
 
 			LogPlayer($"Texture Change ({relayIdentifier},{activeID},{nextID}) ({texDesc})", relayIdentifier);
 
 			interpolatorMaterial.SetTexture(interpolatorTextureNames[relayIdentifier], texture);
+
+			if (relayIdentifier == activeID) SendCallback("_RelayTextureChange");
 		}
 	}
 }
