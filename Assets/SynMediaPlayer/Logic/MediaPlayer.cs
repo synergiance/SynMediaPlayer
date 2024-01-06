@@ -146,7 +146,7 @@ namespace Synergiance.MediaPlayer {
 		private bool         isActive;                       // Value for whether media player is active or not. Videos will only load/play/sync while the player is active
 		private bool         initialized;                    // Value indicating whether this component has initialized or not.
 		private bool         hasActivated;                   // Value for whether player has activated for the first time
-		
+
 		private float        lastActivePing;                 // Time of last ping for who's active
 		private int          numActivePlayers;               // Number of active players
 		private int          numActivePlayersTmp;            // Number of replies to ping so far
@@ -564,14 +564,19 @@ namespace Synergiance.MediaPlayer {
 		// Whenever a network sync happens, this method is called to give an opportunity to grab the data ASAP.
 		public override void OnDeserialization() {
 			if (!isActive) return;
-			if (ValidateDeserializedData()) Debug.Log("Validated remote data!");
-			else Debug.LogWarning("Could not verify remote data!");
-			DecodeDeserializedData();
+
+			if (ValidateDeserializedData())
+				DecodeDeserializedData();
+			else
+				SendLastValidatedData();
 		}
 
 		private bool ValidateDeserializedData() {
 			ulong localValidation = GenerateValidation();
-			return localValidation == remoteValidation;
+			bool validated = localValidation == remoteValidation;
+			if (validated) Log($"Validated remote data! ({localValidation:x8})", this);
+			else LogWarning($"Could not verify remote data! ({localValidation:x8} vs {remoteValidation:x8})", this);
+			return validated;
 		}
 
 		// Extension of OnDeserialization to let it be called internally.  This method checks local copies of variables against remote ones.
@@ -825,10 +830,22 @@ namespace Synergiance.MediaPlayer {
 			if (Networking.IsOwner(gameObject)) Sync();
 		}
 
+		private void SendLastValidatedData() {
+			Log("Sending last validated data", this);
+			SetRemoteVariables();
+			remoteValidation = GenerateValidation();
+			if (!Networking.IsOwner(gameObject))
+				Networking.SetOwner(Networking.LocalPlayer, gameObject);
+			syncingNextFrame = true;
+			SendCustomEventDelayedFrames(nameof(_Serialize), 0);
+		}
+
+		// ReSharper disable Unity.PerformanceAnalysis
 		private void Sync() {
 			if (masterLock && !hasPermissions && !Networking.IsOwner(gameObject)) return;
 			Log("Sync", this);
 			SetRemoteVariables();
+			remoteValidation = GenerateValidation();
 			if (!Networking.IsOwner(gameObject))
 				Networking.SetOwner(Networking.LocalPlayer, gameObject);
 			if (syncingNextFrame) return;
@@ -862,13 +879,12 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public void _Serialize() {
-			if (!Networking.IsOwner(gameObject) || !syncingNextFrame) {
+			if (!Networking.IsOwner(gameObject) || !syncingNextFrame || GenerateValidation() != remoteValidation) {
 				Log("Throwing out serialization attempt", this);
 				return;
 			}
+
 			Log("Serializing", this);
-			SetRemoteVariables();
-			remoteValidation = GenerateValidation();
 			RequestSerialization();
 			syncingNextFrame = false;
 		}
