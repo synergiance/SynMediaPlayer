@@ -23,6 +23,7 @@ namespace Synergiance.MediaPlayer.UI {
 		private float nonMutedVolume;
 		private bool hasCallback;
 		private bool isSettingControl;
+		private bool hasMuteButton;
 
 		private bool initialized;
 
@@ -37,6 +38,7 @@ namespace Synergiance.MediaPlayer.UI {
 			hasCallback = callback != null;
 			hasCallback &= !string.IsNullOrWhiteSpace(callbackMethod);
 			hasCallback &= !string.IsNullOrWhiteSpace(callbackVar);
+			hasMuteButton = muteButton != null;
 			SetVolumeInternal(volumeSlider.value);
 			initialized = true;
 		}
@@ -61,6 +63,7 @@ namespace Synergiance.MediaPlayer.UI {
 
 		public void _SetMute(bool mute) {
 			Initialize();
+			if (!hasMuteButton) return;
 			isMuted = mute;
 			Log(isMuted ? "Muting" : "Unmuting", this);
 			UpdateCallback();
@@ -81,10 +84,11 @@ namespace Synergiance.MediaPlayer.UI {
 
 		private void UpdateGraphics() {
 			int state;
-			if (isMuted) state = 0;
+			if (hasMuteButton && isMuted) state = 0;
 			else if (nonMutedVolume == 0) state = 1;
 			else if (nonMutedVolume <= 0.5) state = 2;
 			else state = 3;
+			if (!hasMuteButton) return;
 			if (state == muteButton.GetCurrentMode()) return;
 			muteButton._SetMode(state);
 			volumeSlider.interactable = !isMuted;
