@@ -44,12 +44,13 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField]  private string             statusProperty = "statusText"; // Property name for status update events
 		[SerializeField]  private bool               startActive = true;            // If toggled off, videos won't load or sync until locally set to active
 		[SerializeField]  private bool               playOnNewVideo;                // Determines whether a new video will start playing when it loads
-		
+
 		[Header("Security")] // Security
 		[SerializeField]  private bool               masterCanLock = true;          // If toggled on, instance master will be able to lock and unlock the player
 		[SerializeField]  private bool               ownerCanLock = true;           // If toggled on, instance owner will be able to lock and unlock the player
 		[SerializeField]  private string[]           moderators;                    // List of players who are always allowed to unlock and unlock the player
 		[SerializeField]  private bool               lockByDefault;                 // If on, video player will be locked by default
+		[SerializeField]  private bool               secureSync = true;             // If on, video player will ignore and clobber incoming data that doesn't pass validation
 
 		// Public Callback Variables
 		[HideInInspector] public  int                relayIdentifier;               // Unused value for compatibility.
@@ -572,6 +573,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private bool ValidateDeserializedData() {
+			if (!secureSync) return true;
 			ulong localValidation = GenerateValidation();
 			bool validated = localValidation == remoteValidation;
 			if (validated) Log($"Validated remote data! ({localValidation:x8})", this);
