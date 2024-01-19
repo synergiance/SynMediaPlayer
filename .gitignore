@@ -46,4 +46,7 @@ Assets/Gizmos/
 Assets/Gizmos.meta
 .*.swp
 
+Assets/AVProVideo*
+Assets/StreamingAssets*
+
 .idea/
