@@ -31,6 +31,7 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField]  private float              seekPeriod = 2.5f;             // This is how much time the video player will wait before resuming a video.  High values could cause others to skip.
 		[SerializeField]  private float              pauseResyncFor = 2.0f;         // This value prevents the video player from being too aggressive on resync.  Lower values could cause issues on loading videos or seeking.
 		[SerializeField]  private float              preloadNextVideoTime = 15.0f;  // How much time before the current video ends to start loading the next video to get ready for gapless switch.
+		[SerializeField]  private float              timeSyncMinimum = 30.0f;       // Minimum duration a video needs to have in order to be synced
 
 		[Header("Settings")] // Settings
 		[SerializeField]  private bool               enableDebug;                   // If toggled off, all info level messages are disabled
@@ -59,19 +60,21 @@ namespace Synergiance.MediaPlayer {
 
 		// Sync Variables
 		[UdonSynced]      private float              remoteTime;                    // Network time based reference for when video began.
+		[UdonSynced]      private float              remoteVideoDuration;           // Network video duration based on player owner.
 		[UdonSynced]      private bool               remoteIsPlaying;               // Network sync boolean for whether video is playing.
 		[UdonSynced]      private VRCUrl             remoteURL = VRCUrl.Empty;      // Network sync URL of a video.
 		[UdonSynced]      private VRCUrl             remoteQueueURL = VRCUrl.Empty; // Network sync URL of queue video
 		[UdonSynced]      private int                remotePlayerID;                // Network sync media type.
 		[UdonSynced]      private bool               remoteLock;                    // Network sync player lock.
-		[UdonSynced]      private bool               remoteLooping;                 // Network sync player lock.
+		[UdonSynced]      private bool               remoteLooping;                 // Network sync player looping.
 		[UdonSynced]      private bool               remoteQueueNow;                // Network sync play queue video now
 		[UdonSynced]      private float              remoteQueueTime;               // Network sync play queue video time
 		[UdonSynced]      private ulong              remoteVersion;                 // Network sync SMP version number
 		[UdonSynced]      private ulong              remoteValidation;              // Network sync validation  value tells whether this data is legit.
 		                  private float              localTime;                     // Local variables are used for local use of network variables.
-		                  private bool               localIsPlaying;                // Before use, they will be checked against for changes.
-		                  private VRCUrl             localURL = VRCUrl.Empty;       // Upon change, the proper methods will be called.
+		                  private float              localVideoDuration;            // Before use, they will be checked against for changes.
+		                  private bool               localIsPlaying;                // Upon change, the proper methods will be called.
+		                  private VRCUrl             localURL = VRCUrl.Empty;       //
 		                  private VRCUrl             localQueueURL = VRCUrl.Empty;  //
 		                  private int                localPlayerID;                 //
 		                  private bool               localLock;                     //
@@ -124,6 +127,7 @@ namespace Synergiance.MediaPlayer {
 		private bool         hasReachedEnd = true;           // Stores whether we've reached the end of a video
 		private bool         videoHasPreRolled;              // Stores whether a video has pre-rolled
 		private bool         videoIsPreRolling;              // Caches whether we're pre-rolling a video
+		private bool         isShortVideo;
 
 		private bool         masterLock;                     // Stores state of whether the player is locked
 		private bool         hasPermissions;                 // Cached value for whether the local user has permissions
@@ -185,7 +189,7 @@ namespace Synergiance.MediaPlayer {
 		private ushort localVersionMajor =  1; // Major version number
 		private ushort localVersionMinor =  2; // Minor version number
 		private ushort localVersionPatch =  0; // Patch version number
-		private ushort localVersionBeta  =  1; // Beta number
+		private ushort localVersionBeta  =  2; // Beta number
 
 		private ushort worldVersionMajor; // Major version number
 		private ushort worldVersionMinor; // Minor version number
@@ -600,6 +604,12 @@ namespace Synergiance.MediaPlayer {
 			bool hasNewQueueNow = remoteQueueNow != localQueueNow;
 			bool hasNewQueueTime = Mathf.Abs(remoteQueueTime - localQueueTime) > 0.1f;
 			bool hasNewVersionNumber = localVersion != remoteVersion;
+			bool hasNewVideoDuration = Math.Abs(localVideoDuration - remoteVideoDuration) > 0.1f;
+
+			if (hasNewVideoDuration) {
+				Log("Deserialization found new video length: " + remoteVideoDuration, this);
+				localVideoDuration = remoteVideoDuration;
+			}
 
 			if (hasNewPlayerID) { // Determines whether we swapped media type
 				Log("Deserialization found new Media Player: " + mediaPlayers.GetPlayerName(remotePlayerID), this);
@@ -635,6 +645,7 @@ namespace Synergiance.MediaPlayer {
 			if (hasNewTime) { // Update local reference time if seek occurred
 				Log("Deserialization found new seek position: " + remoteTime, this);
 				localTime = remoteTime;
+				if (!Ready && CalcWithTime(localTime) > localVideoDuration) hasReachedEnd = true;
 				SoftResync();
 			}
 
@@ -710,6 +721,7 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void SoftResync() {
+			if (isShortVideo) return;
 			if (waitForNextNetworkSync) {
 				lastResyncTime += resyncEvery * 0.25f;
 				return;
@@ -863,6 +875,8 @@ namespace Synergiance.MediaPlayer {
 			logMsg += ", URL: " + remoteURL;
 			remoteTime = localTime;
 			logMsg += ", Time: " + CalcWithTime(remoteTime);
+			remoteVideoDuration = localVideoDuration;
+			logMsg += ", Length: " + remoteVideoDuration;
 			remoteIsPlaying = localIsPlaying;
 			logMsg += ", Playing: " + remoteIsPlaying;
 			remoteQueueURL = localQueueURL;
@@ -1140,7 +1154,7 @@ namespace Synergiance.MediaPlayer {
 							SetPlayerStatusText("Playing");
 						}
 					} else {
-						BlackOutInternal(absDeviation > deviationTolerance * 2);
+						BlackOutInternal(!isShortVideo && absDeviation > deviationTolerance * 2);
 					}
 					return;
 				}
@@ -1178,16 +1192,16 @@ namespace Synergiance.MediaPlayer {
 						SetPlayerStatusText("Playing");
 					}
 				} else {
-					BlackOutInternal(absDeviation > deviationTolerance * 2);
+					BlackOutInternal(!isShortVideo && absDeviation > deviationTolerance * 2);
 				}
 			}
 			if (isResync) return;
 			if (Time.time - lastResyncTime >= resyncEvery) SoftResync();
 			if (Time.time - lastCheckTime < checkSyncEvery) return;
-			BlackOutInternal(!waitForNextNetworkSync && Time.time - resyncPauseAt >= pauseResyncFor && referencePlayhead >= 0 && absDeviation > deviationTolerance * 2);
+			BlackOutInternal(!isShortVideo && !waitForNextNetworkSync && Time.time - resyncPauseAt >= pauseResyncFor && referencePlayhead >= 0 && absDeviation > deviationTolerance * 2);
 			if (Time.time - resyncPauseAt < pauseResyncFor) return;
 			lastCheckTime = Time.time;
-			if (mediaPlayers.IsPlaying) {
+			if (!isShortVideo && mediaPlayers.IsPlaying) {
 				if (absDeviation > deviationTolerance) {
 					ResyncTime(currentTime, referencePlayhead + videoOvershoot);
 					SetPlayerStatusText("Syncing");
@@ -1197,7 +1211,7 @@ namespace Synergiance.MediaPlayer {
 					SetPlayerStatusText("Waiting For Playhead");
 				}
 			} else {
-				if (absDeviation > deviationTolerance) ResyncTime(currentTime, referencePlayhead + videoOvershoot);
+				if (!isShortVideo && absDeviation > deviationTolerance) ResyncTime(currentTime, referencePlayhead + videoOvershoot);
 				if (deviation <= videoOvershoot / 2) {
 					LogVerbose("Resuming internal player on Soft Sync", this);
 					mediaPlayers._Play();
@@ -1252,7 +1266,7 @@ namespace Synergiance.MediaPlayer {
 			Log("Stop", this);
 			isPlaying = false;
 			BlackOutInternal(true);
-			if (Networking.IsOwner(gameObject)) SetPlaying(false);
+			SetPlaying(false);
 			currentURL = VRCUrl.Empty;
 			urlValid = false;
 			SetPlayerStatusText("No Video");
@@ -1324,6 +1338,14 @@ namespace Synergiance.MediaPlayer {
 			SetPlayerStatusText(isPlaying ? "Playing" : "Paused");
 		}
 
+		private void UpdateVideoDuration() {
+			float duration = Duration;
+			isShortVideo = duration < timeSyncMinimum;
+			if (duration - localVideoDuration < 5.0f) return;
+			localVideoDuration = duration;
+			Sync();
+		}
+
 		private void BlackOutInternal(bool blackOut) {
 			if (isBlackingOut == blackOut) return;
 			mediaPlayers.BlackOutPlayer = isBlackingOut = blackOut;
@@ -1357,6 +1379,7 @@ namespace Synergiance.MediaPlayer {
 			if (isLoading && playOnNewVideo && newVideoLoading && Networking.IsOwner(gameObject)) _Start(); 
 			isLoading = false;
 			SetReadyInternal(true);
+			UpdateVideoDuration();
 			urlValid = true;
 			newVideoLoading = false;
 			SetPlayerStatusText("Ready");
@@ -1394,6 +1417,7 @@ namespace Synergiance.MediaPlayer {
 			string errorString = GetErrorString(relayVideoError);
 			SetPlayerStatusText("Error: " + errorString);
 			SetReadyInternal(false);
+			UpdateVideoDuration();
 			if (automaticRetry) {
 				if (isPreparingForLoad) {
 					LogVerbose("Suppressing retry since we're preparing a new URL", this);
@@ -1430,6 +1454,7 @@ namespace Synergiance.MediaPlayer {
 			if (!isActive) return;
 			SetPlayerStatusText("Playing");
 			SetReadyInternal(true);
+			UpdateVideoDuration();
 			playFromBeginning = false;
 			hasReachedEnd = false;
 			isLoading = false;
@@ -1733,6 +1758,7 @@ namespace Synergiance.MediaPlayer {
 			str += ", Start Time: " + startTime.ToString("N3");
 			str += ", Paused Time: " + pausedTime.ToString("N3");
 			str += ", Reference Playhead: " + referencePlayhead.ToString("N3");
+			str += ", Video Length: " + remoteVideoDuration.ToString("N3");
 			str += ", Is Playing: " + isPlaying;
 			str += ", Network Playing: " + remoteIsPlaying;
 			str += "\nURL Valid: " + urlValid;
@@ -1842,6 +1868,7 @@ namespace Synergiance.MediaPlayer {
 		private ulong GenerateValidation() {
 			string validationString = "";
 			validationString += remoteTime;
+			validationString += remoteVideoDuration;
 			validationString += remoteIsPlaying;
 			validationString += remoteURL == null ? "null" : remoteURL.ToString();
 			validationString += remoteQueueURL == null ? "null" : remoteQueueURL.ToString();

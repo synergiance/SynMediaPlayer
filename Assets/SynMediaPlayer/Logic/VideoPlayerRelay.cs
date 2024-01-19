@@ -101,7 +101,7 @@ namespace Synergiance.MediaPlayer {
 		public bool Loop { set { if (isValid) videoPlayer.Loop = value; } get => isValid && videoPlayer.Loop; }
 		public float Volume { set { if (isValid) foreach (AudioSource speaker in speakers) { speaker.volume = value; } } get => isValid ? speakers[0].volume : 0; }
 		public float Time { set { if (isValid) videoPlayer.SetTime(value); } get => isValid ? videoPlayer.GetTime() : 0; }
-		public float Duration => isValid ? videoPlayer.GetDuration() : 0;
+		public float Duration => IsReady ? videoPlayer.GetDuration() : 0;
 		public bool IsReady => isValid && videoPlayer.IsReady;
 		public bool IsPlaying => isValid && videoPlayer.IsPlaying;
 		public string PlayerName => playerName;
