@@ -1048,6 +1048,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 1519261135447523032, guid: bbffa3dbba963fc46a784fe4bf71b5e4,
+        type: 3}
+      propertyPath: m_Camera
+      value: 
+      objectReference: {fileID: 963194227}
     - target: {fileID: 2000712216545047651, guid: bbffa3dbba963fc46a784fe4bf71b5e4,
         type: 3}
       propertyPath: enableDebug

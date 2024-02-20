@@ -188,7 +188,7 @@ namespace Synergiance.MediaPlayer {
 
 		private ushort localVersionMajor =  1; // Major version number
 		private ushort localVersionMinor =  2; // Minor version number
-		private ushort localVersionPatch =  2; // Patch version number
+		private ushort localVersionPatch =  3; // Patch version number
 		private ushort localVersionBeta  =  0; // Beta number
 
 		private ushort worldVersionMajor; // Major version number
@@ -1360,7 +1360,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			float duration = mediaPlayers.Duration;
-			if (duration <= 0.01f) { // Video loaded incorrectly, retry
+			if (!isLowLatency && duration <= 0.01f) { // Video loaded incorrectly, retry
 				Log("Video loaded incorrectly, retrying...", this);
 				ReloadVideoInternal();
 				SetPlayerStatusText("Reloading Video");

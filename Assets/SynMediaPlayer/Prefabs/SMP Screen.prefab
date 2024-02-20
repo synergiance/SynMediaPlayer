@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1994109580015297223}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: SMP Screen
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -45,7 +45,7 @@ GameObject:
   - component: {fileID: 5859530324857826440}
   - component: {fileID: 3573238672466991839}
   - component: {fileID: 5963512644221002267}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Display
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1161890800712600261}
   - component: {fileID: 7332196110300674268}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Texture Transfer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -85,7 +85,7 @@ GameObject:
   - component: {fileID: 4076113837371642441}
   - component: {fileID: 5125739690807394719}
   - component: {fileID: 6597282634855695800}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Video Player Relay Base
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -175,7 +175,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4088866826101538972}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Speaker
   m_TagString: Untagged
   m_Icon: {fileID: 0}

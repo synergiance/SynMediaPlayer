@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 3991671688628569697}
   - component: {fileID: 1612787758005462379}
   - component: {fileID: 6618530787758880827}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: SMP Relays
   m_TagString: Untagged
   m_Icon: {fileID: 0}

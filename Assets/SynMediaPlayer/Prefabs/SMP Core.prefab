@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 5956116423159690642}
   - component: {fileID: 9166022392626547436}
   - component: {fileID: 8859544746990024424}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Media Player
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -68,6 +68,7 @@ MonoBehaviour:
   seekPeriod: 2.5
   pauseResyncFor: 2
   preloadNextVideoTime: 15
+  timeSyncMinimum: 30
   enableDebug: 0
   verboseDebug: 0
   automaticRetry: 1
@@ -83,6 +84,7 @@ MonoBehaviour:
   ownerCanLock: 1
   moderators: []
   lockByDefault: 0
+  secureSync: 1
   relayIdentifier: 0
   relayVideoError: 0
   seekVal: 0
@@ -123,7 +125,7 @@ GameObject:
   - component: {fileID: 8873708755743663459}
   - component: {fileID: 6797301265450330866}
   - component: {fileID: 7525892469088113603}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Control Panel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -235,7 +237,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7755847820104696592}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: SMP Core
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -271,7 +273,7 @@ GameObject:
   - component: {fileID: 6224567354908970179}
   - component: {fileID: 1321280786614827294}
   - component: {fileID: 4054717329642950066}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: Aspect Ratio
   m_TagString: Untagged
   m_Icon: {fileID: 0}
