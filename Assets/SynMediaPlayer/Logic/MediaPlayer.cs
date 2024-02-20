@@ -1366,7 +1366,7 @@ namespace Synergiance.MediaPlayer {
 				SetPlayerStatusText("Reloading Video");
 				return;
 			}
-			bool isReallyStream = Single.IsNaN(duration) || Single.IsInfinity(duration);
+			bool isReallyStream = Single.IsNaN(duration) || Single.IsInfinity(duration) || (isLowLatency && duration < 0.01f);
 			BlackOutInternal(!waitForNextNetworkSync && !isReallyStream);
 			if (isStream != isReallyStream) {
 				isStream = isReallyStream;
