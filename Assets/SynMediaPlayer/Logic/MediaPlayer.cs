@@ -152,11 +152,6 @@ namespace Synergiance.MediaPlayer {
 		private bool         initialized;                    // Value indicating whether this component has initialized or not.
 		private bool         hasActivated;                   // Value for whether player has activated for the first time
 
-		private float        lastActivePing;                 // Time of last ping for who's active
-		private int          numActivePlayers;               // Number of active players
-		private int          numActivePlayersTmp;            // Number of replies to ping so far
-		private int          numReadyPlayers;                // Number of players who have the video loaded
-
 		// Video Checking
 		private string[] videoHosts          = {
 			"drive.google.com", "twitter.com", "vimeo.com",
@@ -188,8 +183,8 @@ namespace Synergiance.MediaPlayer {
 
 		private ushort localVersionMajor =  1; // Major version number
 		private ushort localVersionMinor =  2; // Minor version number
-		private ushort localVersionPatch =  3; // Patch version number
-		private ushort localVersionBeta  =  0; // Beta number
+		private ushort localVersionPatch =  4; // Patch version number
+		private ushort localVersionBeta  =  2; // Beta number
 
 		private ushort worldVersionMajor; // Major version number
 		private ushort worldVersionMinor; // Minor version number
@@ -233,7 +228,6 @@ namespace Synergiance.MediaPlayer {
 			if (masterLock && !isEditor && hasPermissions) VerifyProperOwnership();
 			mediaPlayers.BlackOutPlayer = isBlackingOut;
 			mediaPlayers.ShowPlaceholder = isActive;
-			ResetLastPingTime();
 			if (!isActive) {
 				// Need to set inactive status here since the update method will be disabled
 				SetPlayerStatusText("Inactive");
@@ -250,7 +244,6 @@ namespace Synergiance.MediaPlayer {
 		private void Update() {
 			if (isActive) {
 				UpdateVideoPlayer();
-				CheckOwnershipIntegrity();
 				UpdateSeek();
 			}
 			UpdateStatus();
@@ -388,7 +381,7 @@ namespace Synergiance.MediaPlayer {
 			if (!isActive) return;
 			Log("_Resync", this);
 			if (!Networking.IsOwner(gameObject)) {
-				SendCustomNetworkEvent(NetworkEventTarget.Owner, "Resync");
+				SendCustomNetworkEvent(NetworkEventTarget.Owner, nameof(Resync));
 				return;
 			}
 			Resync();
@@ -841,6 +834,7 @@ namespace Synergiance.MediaPlayer {
 
 		public void Resync() {
 			Initialize();
+			Log("Resync request received", this);
 			if (Networking.IsOwner(gameObject)) Sync();
 		}
 
@@ -929,81 +923,6 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 			Log("Ownership transferred to: " + player.displayName, this);
-			if (player.isLocal) PingActive();
-		}
-
-		private void ResetLastPingTime() {
-			lastActivePing = Time.time;
-			takeOwnershipAfter = pingActiveEvery * (1.1f + Random.value * 0.3f + (!hasPermissions && masterLock ? 0.2f : 0));
-			ownershipTransferPending = false;
-		}
-
-		public void RequestPing() {
-			if (Time.time - lastActivePing < pingActiveEvery) {
-				LogVerbose("Throwing out ping request, too soon", this);
-				return;
-			}
-			LogVerbose("Ping requested", this);
-			PingActive();
-		}
-
-		private void PingActive() {
-			if (!Networking.IsOwner(gameObject)) return;
-			LogVerbose("Pinging Active", this);
-			SendCustomNetworkEvent(NetworkEventTarget.All, "PingForActive");
-			lastActivePing = Time.time;
-			numActivePlayersTmp = 1;
-			numReadyPlayers = 0;
-			SendCustomEventDelayedSeconds("PingActive", pingActiveEvery);
-			if (playerReady) numReadyPlayers++;
-		}
-
-		public void PingForActive() {
-			if (Networking.IsOwner(gameObject)) return;
-			if (!isActive) return;
-			LogVerbose("Pinging For Active", this);
-			ResetLastPingTime();
-			SendCustomNetworkEvent(NetworkEventTarget.Owner, "ActivePing");
-			if (playerReady) SendCustomNetworkEvent(NetworkEventTarget.Owner, "VideoReadyPing");
-		}
-
-		public void ActivePing() {
-			if (!Networking.IsOwner(gameObject)) return;
-			if (Time.time - lastActivePing < holdPingOpenFor) {
-				numActivePlayersTmp++;
-			} else {
-				if (numActivePlayersTmp > 0) {
-					numActivePlayers = numActivePlayersTmp;
-					numActivePlayersTmp = 0;
-				}
-				numActivePlayers++;
-			}
-		}
-
-		public void InactivePing() {
-			if (!Networking.IsOwner(gameObject)) return;
-			if (Time.time - lastActivePing < holdPingOpenFor) {
-				numActivePlayersTmp--;
-			} else {
-				if (numActivePlayersTmp > 0) {
-					numActivePlayers = numActivePlayersTmp;
-					numActivePlayersTmp = 0;
-				}
-				numActivePlayers--;
-				if (numActivePlayers < 1) numActivePlayers = 1;
-			}
-		}
-
-		public void VideoReadyPing() {
-			if (!Networking.IsOwner(gameObject)) return;
-			numReadyPlayers++;
-		}
-
-		public void VideoNotReadyPing() {
-			if (!Networking.IsOwner(gameObject)) return;
-			numReadyPlayers--;
-			int lowReadyCount = playerReady ? 1 : 0;
-			if (numReadyPlayers < lowReadyCount) numReadyPlayers = lowReadyCount;
 		}
 
 		#endregion
@@ -1358,7 +1277,9 @@ namespace Synergiance.MediaPlayer {
 		public void _RelayVideoReady() {
 			LogVerbose("Relay Video Ready", this);
 			Initialize();
+
 			if (!isActive) return;
+
 			float duration = mediaPlayers.Duration;
 			if (!isLowLatency && duration <= 0.01f) { // Video loaded incorrectly, retry
 				Log("Video loaded incorrectly, retrying...", this);
@@ -1366,9 +1287,11 @@ namespace Synergiance.MediaPlayer {
 				SetPlayerStatusText("Reloading Video");
 				return;
 			}
+
 			bool isReallyStream = Single.IsNaN(duration) || Single.IsInfinity(duration) || (isLowLatency && duration < 0.01f);
 			BlackOutInternal(!waitForNextNetworkSync && !isReallyStream);
 			if (isStream != isReallyStream) {
+				Log($"This video is actually {(isReallyStream ? "a" : "not a")} stream, reloading!", this);
 				isStream = isReallyStream;
 				UpdateUICallback();
 				int newPlayerId = isStream ? isLowLatency ? 2 : 1 : 0;
@@ -1376,7 +1299,20 @@ namespace Synergiance.MediaPlayer {
 				else SetPlayerID(newPlayerId);
 				return;
 			}
-			if (isLoading && playOnNewVideo && newVideoLoading && Networking.IsOwner(gameObject)) _Start(); 
+
+			if (isLoading && playOnNewVideo && newVideoLoading && Networking.IsOwner(gameObject)) {
+				Log("Playing new video", this);
+				_Start();
+			} else {
+				string notPlayingReason = "";
+				if (!isLoading) notPlayingReason += "Not Loading, ";
+				if (!playOnNewVideo) notPlayingReason += "Play On New Video Disabled, ";
+				if (!newVideoLoading) notPlayingReason += "Not New Video Loading, ";
+				if (!Networking.IsOwner(gameObject)) notPlayingReason += "Not Owner, ";
+				notPlayingReason = notPlayingReason.Substring(0, Mathf.Max(notPlayingReason.Length - 2, 0));
+				Log("Didn't play because: " + notPlayingReason, this);
+			}
+
 			isLoading = false;
 			SetReadyInternal(true);
 			UpdateVideoDuration();
@@ -1622,15 +1558,12 @@ namespace Synergiance.MediaPlayer {
 			mediaPlayers.ShowPlaceholder = !ready;
 			playerReady = ready;
 			if (playerReady) hasReachedEnd = false;
-			if (Networking.IsOwner(gameObject)) numReadyPlayers += playerReady ? 1 : -1;
-			else SendCustomNetworkEvent(NetworkEventTarget.Owner, ready ? "VideoReadyPing" : "VideoNotReadyPing");
 		}
 
 		private void SetActiveInternal(bool active) {
 			if (active == isActive) return;
 			isActive = active;
 			if (Networking.IsOwner(gameObject)) return;
-			SendCustomNetworkEvent(NetworkEventTarget.Owner, active ? "ActivePing" : "InactivePing");
 			if (hasPermissions && isActive) VerifyProperOwnership();
 		}
 
@@ -1909,27 +1842,6 @@ namespace Synergiance.MediaPlayer {
 			return false;
 		}
 
-		private void CheckOwnershipIntegrity() {
-			if (isEditor || Networking.IsOwner(gameObject)) return;
-			if (ownershipTransferPending) {
-				if (Time.time > lastActivePing + takeOwnershipAfter + pingActiveEvery * 0.6f) {
-					if (questionableOwner.playerId == Networking.GetOwner(gameObject).playerId) {
-						LogWarning("Taking ownership of video player!", this);
-						Networking.SetOwner(Networking.LocalPlayer, gameObject);
-					} else {
-						Log("Another owner has been assigned", this);
-					}
-					ResetLastPingTime();
-				}
-			} else if (Time.time > lastActivePing + takeOwnershipAfter) {
-				SendCustomNetworkEvent(NetworkEventTarget.Owner, "RequestPing");
-				questionableOwner = Networking.GetOwner(gameObject);
-				string ownerName = questionableOwner == null ? "nobody" : questionableOwner.displayName;
-				LogWarning("Missed ping from owner " + ownerName, this);
-				ownershipTransferPending = true;
-			}
-		}
-
 		private void SetLockState(bool lockState) {
 			if (!hasPermissions) return;
 			SetLockStateInternal(lockState);
@@ -1950,7 +1862,7 @@ namespace Synergiance.MediaPlayer {
 			}
 			LogVerbose("Suppress Security", this);
 			suppressSecurity = true;
-			SendCustomEventDelayedFrames("EngageSecurity", 0);
+			SendCustomEventDelayedFrames(nameof(EngageSecurity), 0);
 		}
 
 		public void EngageSecurity() {
