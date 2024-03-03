@@ -127,7 +127,8 @@ namespace Synergiance.MediaPlayer {
 		private bool         hasReachedEnd = true;           // Stores whether we've reached the end of a video
 		private bool         videoHasPreRolled;              // Stores whether a video has pre-rolled
 		private bool         videoIsPreRolling;              // Caches whether we're pre-rolling a video
-		private bool         isShortVideo;
+		private bool         isShortVideo;                   // Caches whether the current video is short
+		private bool         isVideoOwner;                   // Stores the state of whether we entered the current video URL
 
 		private bool         masterLock;                     // Stores state of whether the player is locked
 		private bool         hasPermissions;                 // Cached value for whether the local user has permissions
@@ -184,7 +185,7 @@ namespace Synergiance.MediaPlayer {
 		private ushort localVersionMajor =  1; // Major version number
 		private ushort localVersionMinor =  2; // Minor version number
 		private ushort localVersionPatch =  4; // Patch version number
-		private ushort localVersionBeta  =  2; // Beta number
+		private ushort localVersionBeta  =  3; // Beta number
 
 		private ushort worldVersionMajor; // Major version number
 		private ushort worldVersionMinor; // Minor version number
@@ -615,10 +616,13 @@ namespace Synergiance.MediaPlayer {
 				Log("Deserialization found new URL: " + remoteStr, this);
 				Log("Old URL: " + localStr, this);
 				localURL = remoteURL;
+
 				if (hasNewTime) {
 					playFromBeginning = false;
 					hasReachedEnd = false;
 				}
+
+				isVideoOwner = false;
 				SetVideoURLFromLocal();
 			}
 
@@ -755,6 +759,7 @@ namespace Synergiance.MediaPlayer {
 			if (string.Equals(localStr, urlStr)) return;
 			if (Networking.IsOwner(gameObject)) _Stop();
 			localURL = url;
+			isVideoOwner = true;
 			SetVideoURLFromLocal();
 			Sync();
 		}
@@ -1300,7 +1305,7 @@ namespace Synergiance.MediaPlayer {
 				return;
 			}
 
-			if (isLoading && playOnNewVideo && newVideoLoading && Networking.IsOwner(gameObject)) {
+			if (isLoading && playOnNewVideo && newVideoLoading && !isPlaying && (isVideoOwner || Networking.IsOwner(gameObject))) {
 				Log("Playing new video", this);
 				_Start();
 			} else {
@@ -1308,7 +1313,8 @@ namespace Synergiance.MediaPlayer {
 				if (!isLoading) notPlayingReason += "Not Loading, ";
 				if (!playOnNewVideo) notPlayingReason += "Play On New Video Disabled, ";
 				if (!newVideoLoading) notPlayingReason += "Not New Video Loading, ";
-				if (!Networking.IsOwner(gameObject)) notPlayingReason += "Not Owner, ";
+				if (isPlaying) notPlayingReason += "Already Playing, ";
+				if (!isVideoOwner && !Networking.IsOwner(gameObject)) notPlayingReason += "Not Video or Object Owner, ";
 				notPlayingReason = notPlayingReason.Substring(0, Mathf.Max(notPlayingReason.Length - 2, 0));
 				Log("Didn't play because: " + notPlayingReason, this);
 			}
