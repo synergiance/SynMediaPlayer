@@ -142,10 +142,10 @@ MonoBehaviour:
     url: 
   autoPlay: 0
   loop: 0
-  renderMode: 0
+  renderMode: 1
   targetTexture: {fileID: 0}
-  targetMaterialRenderer: {fileID: 0}
-  targetMaterialProperty: 
+  targetMaterialRenderer: {fileID: 7159253341357595207}
+  targetMaterialProperty: _MainTex
   aspectRatio: 5
   targetAudioSources:
   - {fileID: 2340246127819786770}
@@ -160,6 +160,12 @@ MonoBehaviour:
 --- !u!82 &6562447331575288178 stripped
 AudioSource:
   m_CorrespondingSourceObject: {fileID: 4090307282327233250, guid: d50c01659b1abc946b9144440af10c9a,
+    type: 3}
+  m_PrefabInstance: {fileID: 7192758612657157008}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &7159253341357595207 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 39135067190749655, guid: d50c01659b1abc946b9144440af10c9a,
     type: 3}
   m_PrefabInstance: {fileID: 7192758612657157008}
   m_PrefabAsset: {fileID: 0}

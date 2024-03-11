@@ -183,11 +183,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 4736025867727086340, guid: efdd5fa6cccdd9e409d8af0d77f819d9,
         type: 3}
-    - target: {fileID: 5447402919362760086, guid: efdd5fa6cccdd9e409d8af0d77f819d9,
-        type: 3}
-      propertyPath: targetTexture
-      value: 
-      objectReference: {fileID: 8400000, guid: 66d5fde8dfb3d47478d5be9bb1b4dec7, type: 2}
     - target: {fileID: 5819312120182037657, guid: efdd5fa6cccdd9e409d8af0d77f819d9,
         type: 3}
       propertyPath: m_Name
@@ -295,11 +290,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 4736025867727086340, guid: efdd5fa6cccdd9e409d8af0d77f819d9,
         type: 3}
-    - target: {fileID: 5447402919362760086, guid: efdd5fa6cccdd9e409d8af0d77f819d9,
-        type: 3}
-      propertyPath: targetTexture
-      value: 
-      objectReference: {fileID: 8400000, guid: 325d7741e22732540a57835258218dcd, type: 2}
     - target: {fileID: 5819312120182037657, guid: efdd5fa6cccdd9e409d8af0d77f819d9,
         type: 3}
       propertyPath: m_Name

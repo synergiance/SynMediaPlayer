@@ -95,7 +95,7 @@ namespace Synergiance.MediaPlayer {
 		private bool         isLowLatency;                   // Reference variable for whether we're using an AVPro player in Low Latency mode
 		private bool         isStream;                       // Reference variable for whether we're playing a stream
 		private VRCUrl       currentURL;                     // URL of currently loaded video
-		private VRCUrl       queueURL;                       // URL of video set to load seemlessly after current
+		private VRCUrl       queueURL;                       // URL of video set to load seamlessly after current
 		private string       playerStatus      = "No Video"; // Player status string to print to status label
 		private bool         urlValid;                       // Stores state of whether a video has been determined to be a valid video.
 		private bool         playerReady;                    // Stores state of whether the video player is ready to play.
@@ -172,9 +172,6 @@ namespace Synergiance.MediaPlayer {
 		private int   diagnosticUpdatesPerLog = 5;    // Number of logs per message output
 		private float diagnosticDelay = 0.25f;        // Delay between diagnostic logs
 
-		private float pingActiveEvery = 15.0f;        // How often to ping for who's active
-		private float holdPingOpenFor = 5.0f;         // How long to wait after pinging to update player activity data
-
 		private float activateAfter = 0.5f;           // Amount of time to wait after loading a world to activate player
 
 		private float videoLoadCooldown = 5.5f;       // Minimum delay between attempted video loads
@@ -184,7 +181,7 @@ namespace Synergiance.MediaPlayer {
 
 		private ushort localVersionMajor =  1; // Major version number
 		private ushort localVersionMinor =  2; // Minor version number
-		private ushort localVersionPatch =  4; // Patch version number
+		private ushort localVersionPatch =  5; // Patch version number
 		private ushort localVersionBeta  =  0; // Beta number
 
 		private ushort worldVersionMajor; // Major version number
@@ -302,7 +299,7 @@ namespace Synergiance.MediaPlayer {
 		public void _Retry() {
 			Initialize();
 			if (!isActive) return;
-			Log("_Retry", this);
+			Log(nameof(_Retry), this);
 			if (!allowRetryWhenLoaded && urlValid) {
 				Log("Video is already successfully loaded", this);
 				return;
@@ -314,7 +311,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions && !suppressSecurity) return;
-			Log("_PlayNext", this);
+			Log(nameof(_PlayNext), this);
 			PlayQueueNow();
 		}
 
@@ -332,7 +329,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions && !suppressSecurity) return;
-			Log("_Play", this);
+			Log(nameof(_Play), this);
 			SetPlaying(true);
 			if (!playerReady) return;
 			if (playFromBeginning) { // This variable is set from video stop or video end, reset it when used
@@ -347,7 +344,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions && !suppressSecurity) return;
-			Log("_Pause", this);
+			Log(nameof(_Pause), this);
 			SetPlaying(false);
 		}
 
@@ -356,7 +353,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions) return;
-			Log("_Start", this);
+			Log(nameof(_Start), this);
 			SetPlaying(true);
 			if (playerReady) _SeekTo(0);
 			else playFromBeginning = true;
@@ -368,7 +365,7 @@ namespace Synergiance.MediaPlayer {
 			Initialize();
 			if (!isActive) return;
 			if (masterLock && !hasPermissions && !suppressSecurity) return;
-			Log("_Stop", this);
+			Log(nameof(_Stop), this);
 			SeekTo(0);
 			SetPlaying(false);
 			playFromBeginning = true;
@@ -380,7 +377,7 @@ namespace Synergiance.MediaPlayer {
 		public void _Resync() {
 			Initialize();
 			if (!isActive) return;
-			Log("_Resync", this);
+			Log(nameof(_Resync), this);
 			if (!Networking.IsOwner(gameObject)) {
 				SendCustomNetworkEvent(NetworkEventTarget.Owner, nameof(Resync));
 				return;
@@ -653,13 +650,13 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			if (hasNewLooping) {
-				Log("Deserialization found video is " + (remoteLooping ? "now" : "no longer") + " looping", this);
+				Log($"Deserialization found video is {(remoteLooping ? "now" : "no longer")} looping", this);
 				localLooping = remoteLooping;
 				SetLoopingInternal();
 			}
 
 			if (hasNewQueueNow) {
-				Log("Queue Now network state changed from " + localQueueNow + " to " + remoteQueueNow, this);
+				Log($"Queue Now network state changed from {localQueueNow} to {remoteQueueNow}", this);
 				localQueueNow = remoteQueueNow;
 				if (localQueueNow) PlayQueueNowInternal();
 				else CancelQueueNowInternal();
