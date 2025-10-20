@@ -58,10 +58,12 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		private void RenderPlaylistDetails() {
-			if (playlistNamesList.index < 0) return;
+			if (playlistNamesList.selectedIndices.Count <= 0) return;
+			if (playlistProp == null) return;
 			EditorGUILayout.Space();
 			EditorGUI.BeginChangeCheck();
 			EditorGUILayout.PropertyField(playlistProp.FindPropertyRelative("name"));
+			EditorGUILayout.PropertyField(playlistProp.FindPropertyRelative("url"), new GUIContent("Playlist Link"));
 			if (EditorGUI.EndChangeCheck()) ApplyChanges();
 			videoList?.DoLayoutList();
 			RenderVideoDetails();
@@ -69,7 +71,8 @@ namespace Synergiance.MediaPlayer {
 
 		private void RenderVideoDetails() {
 			if (videoList == null) return;
-			if (videoList.index < 0) return;
+			if (videoList.selectedIndices.Count <= 0) return;
+			if (videoProp == null) return;
 			EditorGUILayout.Space();
 			EditorGUI.BeginChangeCheck();
 			EditorGUILayout.PropertyField(videoProp.FindPropertyRelative("name"));
@@ -81,7 +84,8 @@ namespace Synergiance.MediaPlayer {
 
 		private void RenderLinkDetails() {
 			if (linkList == null) return;
-			if (linkList.index < 0) return;
+			if (linkList.selectedIndices.Count <= 0) return;
+			if (linkProp == null) return;
 			EditorGUILayout.Space();
 			EditorGUI.BeginChangeCheck();
 			EditorGUILayout.PropertyField(linkProp.FindPropertyRelative("type"));

@@ -86,6 +86,8 @@ namespace Synergiance.MediaPlayer {
 		[UdonSynced] private int syncIndexSync;
 		private bool isLocked;
 		[UdonSynced] private bool isLockedSync;
+		// TODO: Bool for using queue or playlists
+		// TODO: Int sync for playlist/video indices
 		#endregion
 
 		#region Behaviour Integrity Variables
@@ -147,7 +149,7 @@ namespace Synergiance.MediaPlayer {
 
 		private readonly string[] streamHosts = {
 			"twitch.tv", "vrcdn.live", "youtu.be", "youtube.com",
-			"www.youtube.com", "mixcloud.com"
+			"www.youtube.com", "mixcloud.com", "stream.broadcast.unity.com"
 		};
 
 		private readonly string[] audioOnlyHosts = {
@@ -539,7 +541,7 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			queue._SetCurrentVideo(_link);
-			SyncIndex++;
+			SyncIndex = queue.SyncIndex;
 			Sync();
 		}
 

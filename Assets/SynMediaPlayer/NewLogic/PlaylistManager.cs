@@ -35,6 +35,7 @@ namespace Synergiance.MediaPlayer {
 	public struct Playlist {
 		public string name;
 		public Video[] videos;
+		public string url;
 	}
 
 	/// <summary>

@@ -3,13 +3,14 @@ using Synergiance.MediaPlayer.Diagnostics;
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
+using VRC.Udon.Common;
 
 namespace Synergiance.MediaPlayer {
 	/// <summary>
 	/// The Video List Sync contains a synced list of videos, and allows
 	/// selective access to it.
 	/// </summary>
-	[UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
+	[UdonBehaviourSyncMode(BehaviourSyncMode.Manual), DefaultExecutionOrder(50)]
 	public class VideoListSync : DiagnosticBehaviour {
 		[UdonSynced] private VRCUrl[] videos;
 		[UdonSynced] private int[] syncIndex;
@@ -77,6 +78,28 @@ namespace Synergiance.MediaPlayer {
 			if (IsEditor) return;
 			Networking.SetOwner(Networking.LocalPlayer, gameObject);
 			RequestSerialization();
+		}
+
+		public override void OnPostSerialization(SerializationResult _result) {
+			if (_result.success) {
+				string serializeSize = $"{_result.byteCount} bytes";
+
+				if (_result.byteCount >= 1000) {
+					float kilobytes = _result.byteCount * 0.001f;
+					serializeSize = $"{kilobytes:N2} kilobytes";
+
+					if (kilobytes >= 10) serializeSize = $"{kilobytes:N1} kilobytes";
+					if (kilobytes >= 100) serializeSize = $"{kilobytes:N0} kilobytes";
+				}
+
+				Log($"Successfully serialized {serializeSize}");
+			} else {
+				LogWarning("Failed to serialize data!");
+			}
+		}
+
+		public override void OnDeserialization(DeserializationResult _result) {
+			//
 		}
 	}
 }

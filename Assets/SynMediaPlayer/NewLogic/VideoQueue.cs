@@ -12,7 +12,7 @@ namespace Synergiance.MediaPlayer {
 	/// the next video, and any future video in the queue. If prompted it will
 	/// tell you how many videos are remaining in the queue.
 	/// </summary>
-	[UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
+	[UdonBehaviourSyncMode(BehaviourSyncMode.Manual), DefaultExecutionOrder(10)]
 	public class VideoQueue : DiagnosticBehaviour {
 		[SerializeField] private int maxQueueLength = 64;
 		[SerializeField] private VideoListSync queuedVideos;
@@ -20,9 +20,12 @@ namespace Synergiance.MediaPlayer {
 		[UdonSynced] private int currentIndexSync;
 		[UdonSynced] private int videosInQueueSync;
 		[UdonSynced] private int syncIndexSync = -1;
+		[UdonSynced] private VRCUrl syncBuffer;
+		[UdonSynced] private int syncBufferIndex;
 		private int syncIndex = -1;
 		private int currentIndex;
 		private int videosInQueue;
+		private VRCUrl[] queue;
 
 		private bool initialized;
 		private bool isValid;

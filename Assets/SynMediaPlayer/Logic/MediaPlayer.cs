@@ -18,6 +18,8 @@ namespace Synergiance.MediaPlayer {
 		[SerializeField]  private SeekControl        seekBar;                       // Seek bar object.  Needs to be normalized
 		[SerializeField]  private Text               statisticsText;                // Text for video stats, will read out video player status
 		[SerializeField]  private Text               diagnosticsText;               // Text field for diagnosing video player
+		[SerializeField]  private Material           gammaMaterial;                 // Material where gamma setting is stored
+		[SerializeField]  private string             gammaProp = "_Gamma";          // Property name of gamma setting
 
 		[Header("Timings")] // Timings
 		[SerializeField]  private float              syncPeriod = 1.0f;             // This is an internal value used in network to local time conversion.
@@ -143,6 +145,7 @@ namespace Synergiance.MediaPlayer {
 		private bool         isActive;                       // Value for whether media player is active or not. Videos will only load/play/sync while the player is active
 		private bool         initialized;                    // Value indicating whether this component has initialized or not.
 		private bool         hasActivated;                   // Value for whether player has activated for the first time
+		private bool         hasGammaMat;                    // Stores whether we can update gamma
 		
 		private float        lastActivePing;                 // Time of last ping for who's active
 		private int          numActivePlayers;               // Number of active players
@@ -200,6 +203,7 @@ namespace Synergiance.MediaPlayer {
 			Log("Initializing", this);
 			hasCallback = callback != null;
 			hasStatsText = statisticsText != null;
+			hasGammaMat = gammaMaterial != null && gammaMaterial.HasProperty(gammaProp);
 			SetActiveInternal(false);
 			masterLock = lockByDefault;
 			setStatusEnabled = callback && !string.IsNullOrWhiteSpace(setStatusMethod) && !string.IsNullOrWhiteSpace(statusProperty);
@@ -1297,6 +1301,7 @@ namespace Synergiance.MediaPlayer {
 				int newPlayerId = isStream ? isLowLatency ? 2 : 1 : 0;
 				if (Networking.IsOwner(gameObject)) SwitchPlayer(newPlayerId);
 				else SetPlayerID(newPlayerId);
+				UpdateGamma();
 				return;
 			}
 			if (isLoading && playOnNewVideo && newVideoLoading && Networking.IsOwner(gameObject)) _Start(); 
@@ -1571,6 +1576,7 @@ namespace Synergiance.MediaPlayer {
 			if (isPlaying) ReloadVideoInternal();
 			isStream = mediaPlayers.IsStream;
 			seekBar._SetEnabled(!isStream);
+			UpdateGamma();
 		}
 
 		// Reload video properly
@@ -1627,7 +1633,12 @@ namespace Synergiance.MediaPlayer {
 			}
 			return errorString;
 		}
-		
+
+		private void UpdateGamma() {
+			if (!hasGammaMat) return;
+			gammaMaterial.SetFloat(gammaProp, isStream ? 1 : 0);
+		}
+
 		// ------------------ Diagnostic Methods ------------------
 
 		private void UpdateDiagnostics() {

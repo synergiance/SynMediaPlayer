@@ -728,14 +728,14 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			if (_handle < 0 || _handle >= secondaryHandles.Length) {
-				LogError("Handle index out of bounds!");
+				LogError($"Handle index {_handle} out of bounds!");
 				lastError = MediaError.OutOfRange;
 				return -1;
 			}
 
 			int relay = secondaryHandles[_handle];
 			if (relay < 0) {
-				LogError("Handle not bound!");
+				LogError($"Handle {_handle} not bound!");
 				lastError = MediaError.NoMedia;
 				return -1;
 			}
@@ -748,7 +748,7 @@ namespace Synergiance.MediaPlayer {
 			int relay = _secondary ? secondaryHandles[_handle] : primaryHandles[_handle];
 			VideoType videoType = _secondary ? secondaryVideoTypes[_handle] : primaryVideoTypes[_handle];
 			if (relay < 0) {
-				Log("Handle unbound, searching for compatible relay");
+				Log($"Handle {_handle} unbound, searching for compatible relay");
 				relay = GetAndBindCompatibleRelay(videoType, _handle, _secondary);
 			} else if (relays[relay].VideoType != videoType) {
 				Log("Video type mismatch, searching for compatible relay");
@@ -795,7 +795,7 @@ namespace Synergiance.MediaPlayer {
 			}
 
 			if (_handle < 0 || primaryHandles == null || _handle >= primaryHandles.Length) {
-				LogError("Handle out of bounds, cannot bind!");
+				LogError($"Handle {_handle} out of bounds, cannot bind!");
 				lastError = MediaError.OutOfRange;
 				return false;
 			}
@@ -808,13 +808,13 @@ namespace Synergiance.MediaPlayer {
 
 			if (_secondary) {
 				if (secondaryHandles[_handle] >= 0) {
-					LogError("Secondary handle still bound!");
+					LogError($"Secondary handle {_handle} still bound!");
 					lastError = MediaError.Internal;
 					return false;
 				}
 			} else {
 				if (primaryHandles[_handle] >= 0) {
-					LogError("Primary handle still bound!");
+					LogError($"Primary handle {_handle} still bound!");
 					lastError = MediaError.Internal;
 					return false;
 				}
