@@ -219,6 +219,14 @@ namespace Synergiance.MediaPlayer {
 		}
 
 		public bool SaveToJson(string _path) {
+			if (_path.Contains('/')) {
+				string directoryPath = _path.Substring(0, _path.LastIndexOf('/'));
+				if (!Directory.Exists(directoryPath)) {
+					Directory.CreateDirectory(directoryPath);
+					Debug.Log($"Created working directory: {directoryPath}/");
+				}
+			}
+
 			string serializedData = JsonUtility.ToJson(playlistData, true);
 			File.WriteAllText(_path, serializedData);
 			Debug.Log($"Saved backup to: {_path}");
